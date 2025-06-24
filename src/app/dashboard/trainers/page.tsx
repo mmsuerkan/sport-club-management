@@ -78,6 +78,23 @@ export default function TrainersPage() {
     }
   }, [formData.branchId, groups]);
 
+  // Update trainer names when branches or groups change
+  useEffect(() => {
+    if (branches.length > 0 || groups.length > 0) {
+      setTrainers(prevTrainers => 
+        prevTrainers.map(trainer => {
+          const branch = branches.find(b => b.id === trainer.branchId);
+          const group = groups.find(g => g.id === trainer.groupId);
+          return {
+            ...trainer,
+            branchName: branch?.name || trainer.branchName || '',
+            groupName: group?.name || trainer.groupName || ''
+          };
+        })
+      );
+    }
+  }, [branches, groups]);
+
   const fetchBranches = async () => {
     try {
       const querySnapshot = await getDocs(collection(db, 'branches'));

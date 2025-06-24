@@ -84,6 +84,23 @@ export default function StudentsPage() {
     }
   }, [formData.branchId, groups]);
 
+  // Update student names when branches or groups change
+  useEffect(() => {
+    if (branches.length > 0 || groups.length > 0) {
+      setStudents(prevStudents => 
+        prevStudents.map(student => {
+          const branch = branches.find(b => b.id === student.branchId);
+          const group = groups.find(g => g.id === student.groupId);
+          return {
+            ...student,
+            branchName: branch?.name || student.branchName || '',
+            groupName: group?.name || student.groupName || ''
+          };
+        })
+      );
+    }
+  }, [branches, groups]);
+
   const fetchBranches = async () => {
     try {
       const querySnapshot = await getDocs(collection(db, 'branches'));
