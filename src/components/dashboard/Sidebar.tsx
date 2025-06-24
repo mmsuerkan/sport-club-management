@@ -55,9 +55,9 @@ const menuItems = [
     href: '/dashboard/trainings'
   },
   {
-    title: 'Turnuvalar',
-    icon: Trophy,
-    href: '/dashboard/tournaments'
+    title: 'Maç Takvimi',
+    icon: Calendar,
+    href: '/dashboard/matches'
   },
   {
     title: 'Aktiviteler',
