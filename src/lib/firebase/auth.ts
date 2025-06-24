@@ -3,7 +3,11 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
-  User
+  User,
+  sendPasswordResetEmail,
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from './config';
@@ -17,8 +21,11 @@ export interface UserData {
   createdAt: Date;
 }
 
-export const signIn = async (email: string, password: string) => {
+export const signIn = async (email: string, password: string, rememberMe: boolean = false) => {
   try {
+    // Set persistence based on remember me
+    await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
+    
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
     
@@ -86,4 +93,12 @@ export const getUserData = async (uid: string): Promise<UserData | null> => {
 
 export const onAuthChange = (callback: (user: User | null) => void) => {
   return onAuthStateChanged(auth, callback);
+};
+
+export const resetPassword = async (email: string) => {
+  try {
+    await sendPasswordResetEmail(auth, email);
+  } catch (error) {
+    throw error;
+  }
 };
