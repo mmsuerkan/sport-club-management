@@ -14,7 +14,8 @@ import {
   Activity,
   Building,
   UsersIcon,
-  GraduationCap
+  GraduationCap,
+  Dumbbell
 } from 'lucide-react';
 
 const menuItems = [
@@ -50,7 +51,7 @@ const menuItems = [
   },
   {
     title: 'Antrenmanlar',
-    icon: Calendar,
+    icon: Dumbbell,
     href: '/dashboard/trainings'
   },
   {
