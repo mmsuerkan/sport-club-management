@@ -2,13 +2,21 @@
 
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, Edit2, Trash2, Users, Phone, Mail, GraduationCap, Clock } from 'lucide-react';
+import { Plus, Edit2, Trash2, Users, Phone, Mail, Award, Building, Clock } from 'lucide-react';
 import { collection, getDocs, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 
 interface Branch {
   id: string;
   name: string;
+}
+
+interface Group {
+  id: string;
+  name: string;
+  branchId: string;
+  branchName: string;
+  time: string;
 }
 
 interface Trainer {
@@ -22,6 +30,8 @@ interface Trainer {
   salary: string;
   branchId: string;
   branchName: string;
+  groupId: string;
+  groupName: string;
   notes: string;
   createdAt: Date;
 }
@@ -29,6 +39,8 @@ interface Trainer {
 export default function TrainersPage() {
   const [trainers, setTrainers] = useState<Trainer[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [filteredGroups, setFilteredGroups] = useState<Group[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingTrainer, setEditingTrainer] = useState<Trainer | null>(null);
   const [formData, setFormData] = useState({
@@ -40,6 +52,7 @@ export default function TrainersPage() {
     certification: '',
     salary: '',
     branchId: '',
+    groupId: '',
     notes: ''
   });
   const [loading, setLoading] = useState(true);
@@ -47,7 +60,23 @@ export default function TrainersPage() {
   useEffect(() => {
     fetchTrainers();
     fetchBranches();
+    fetchGroups();
   }, []);
+
+  useEffect(() => {
+    // Filter groups when branch changes
+    if (formData.branchId) {
+      const filtered = groups.filter(group => group.branchId === formData.branchId);
+      setFilteredGroups(filtered);
+      // Reset group selection if current group doesn't belong to selected branch
+      if (formData.groupId && !filtered.find(g => g.id === formData.groupId)) {
+        setFormData(prev => ({ ...prev, groupId: '' }));
+      }
+    } else {
+      setFilteredGroups([]);
+      setFormData(prev => ({ ...prev, groupId: '' }));
+    }
+  }, [formData.branchId, groups]);
 
   const fetchBranches = async () => {
     try {
@@ -59,6 +88,19 @@ export default function TrainersPage() {
       setBranches(branchesData);
     } catch (error) {
       console.error('Şubeler yüklenirken hata:', error);
+    }
+  };
+
+  const fetchGroups = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, 'groups'));
+      const groupsData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Group[];
+      setGroups(groupsData);
+    } catch (error) {
+      console.error('Gruplar yüklenirken hata:', error);
     }
   };
 
@@ -85,6 +127,7 @@ export default function TrainersPage() {
 
     try {
       const selectedBranch = branches.find(b => b.id === formData.branchId);
+      const selectedGroup = groups.find(g => g.id === formData.groupId);
       
       const trainerData = {
         ...formData,
@@ -96,17 +139,16 @@ export default function TrainersPage() {
         certification: formData.certification.trim(),
         salary: formData.salary.trim(),
         notes: formData.notes.trim(),
-        branchName: selectedBranch?.name || ''
+        branchName: selectedBranch?.name || '',
+        groupName: selectedGroup?.name || ''
       };
 
       if (editingTrainer) {
-        // Güncelleme
         await updateDoc(doc(db, 'trainers', editingTrainer.id), {
           ...trainerData,
           updatedAt: new Date()
         });
       } else {
-        // Yeni ekleme
         const newTrainerRef = doc(collection(db, 'trainers'));
         await setDoc(newTrainerRef, {
           ...trainerData,
@@ -124,15 +166,16 @@ export default function TrainersPage() {
   const handleEdit = (trainer: Trainer) => {
     setEditingTrainer(trainer);
     setFormData({
-      fullName: trainer.fullName,
-      phone: trainer.phone,
-      email: trainer.email,
-      specialization: trainer.specialization,
-      experience: trainer.experience,
-      certification: trainer.certification,
-      salary: trainer.salary,
-      branchId: trainer.branchId,
-      notes: trainer.notes
+      fullName: trainer.fullName || '',
+      phone: trainer.phone || '',
+      email: trainer.email || '',
+      specialization: trainer.specialization || '',
+      experience: trainer.experience || '',
+      certification: trainer.certification || '',
+      salary: trainer.salary || '',
+      branchId: trainer.branchId || '',
+      groupId: trainer.groupId || '',
+      notes: trainer.notes || ''
     });
     setShowForm(true);
   };
@@ -160,6 +203,7 @@ export default function TrainersPage() {
       certification: '',
       salary: '',
       branchId: '',
+      groupId: '',
       notes: ''
     });
   };
@@ -183,13 +227,12 @@ export default function TrainersPage() {
       {/* Form Modal */}
       {showForm && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-[9999] p-4" onClick={resetForm}>
-          <div className="bg-white rounded-2xl p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-100 transform transition-all" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl p-8 w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-100 transform transition-all" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-xl font-semibold mb-4">
               {editingTrainer ? 'Antrenör Düzenle' : 'Yeni Antrenör Kayıt'}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Temel Bilgiler */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Ad Soyad *
@@ -249,6 +292,25 @@ export default function TrainersPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Grup
+                  </label>
+                  <select
+                    value={formData.groupId}
+                    onChange={(e) => setFormData({ ...formData, groupId: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={!formData.branchId}
+                  >
+                    <option value="">Grup seçiniz</option>
+                    {filteredGroups.map((group) => (
+                      <option key={group.id} value={group.id}>
+                        {group.name} ({group.time})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Uzmanlık Alanı
                   </label>
                   <input
@@ -300,7 +362,6 @@ export default function TrainersPage() {
                 </div>
               </div>
 
-              {/* Notlar */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Notlar
@@ -362,10 +423,10 @@ export default function TrainersPage() {
                     İletişim
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Uzmanlık & Şube
+                    Şube & Grup
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Deneyim
+                    Kayıt Tarihi
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     İşlemler
@@ -382,9 +443,9 @@ export default function TrainersPage() {
                           <div className="text-sm font-medium text-gray-900">
                             {trainer.fullName}
                           </div>
-                          {trainer.specialization && (
+                          {trainer.experience && (
                             <div className="text-xs text-gray-500">
-                              {trainer.specialization}
+                              Deneyim: {trainer.experience}
                             </div>
                           )}
                         </div>
@@ -406,27 +467,26 @@ export default function TrainersPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="space-y-1">
-                        {trainer.specialization && (
+                        <div className="flex items-center text-sm text-gray-600">
+                          <Building className="h-3 w-3 mr-2" />
+                          {trainer.branchName}
+                        </div>
+                        {trainer.groupName && (
                           <div className="flex items-center text-sm text-gray-600">
-                            <GraduationCap className="h-3 w-3 mr-2" />
+                            <Clock className="h-3 w-3 mr-2" />
+                            {trainer.groupName}
+                          </div>
+                        )}
+                        {trainer.specialization && (
+                          <div className="flex items-center text-xs text-gray-500">
+                            <Award className="h-3 w-3 mr-2" />
                             {trainer.specialization}
                           </div>
                         )}
-                        <div className="flex items-center text-sm text-gray-600">
-                          <Clock className="h-3 w-3 mr-2" />
-                          {trainer.branchName}
-                        </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-600">
-                        {trainer.experience || '-'}
-                      </div>
-                      {trainer.certification && (
-                        <div className="text-xs text-gray-500">
-                          {trainer.certification}
-                        </div>
-                      )}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      {trainer.createdAt.toLocaleDateString('tr-TR')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end gap-2">

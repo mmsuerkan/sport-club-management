@@ -39,8 +39,13 @@ const menuItems = [
     href: '/dashboard/students'
   },
   {
-    title: 'Üyeler',
+    title: 'Antrenörler',
     icon: Users,
+    href: '/dashboard/trainers'
+  },
+  {
+    title: 'Üyeler',
+    icon: UsersIcon,
     href: '/dashboard/members'
   },
   {
