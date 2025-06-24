@@ -1,0 +1,24 @@
+
+> sport-club-management@0.1.0 dev
+> next dev --turbopack
+
+   ▲ Next.js 15.3.4 (Turbopack)
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.1.114:3000
+   - Environments: .env.local
+
+ ✓ Starting...
+ ○ Compiling middleware ...
+ ✓ Compiled middleware in 952ms
+ ✓ Ready in 31.9s
+ ○ Compiling / ...
+ ✓ Compiled / in 17.7s
+ GET / 200 in 20543ms
+ ○ Compiling /_not-found/page ...
+ ✓ Compiled /_not-found/page in 3.1s
+ GET /api/settings/trading/mode 404 in 3633ms
+ GET /api/settings/trading/mode 404 in 655ms
+ GET /api/settings/trading/mode 404 in 651ms
+ GET /api/settings/trading/mode 404 in 616ms
+ GET /api/settings/trading/mode 404 in 604ms
+[?25h

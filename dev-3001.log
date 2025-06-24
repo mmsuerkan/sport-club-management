@@ -1,0 +1,14 @@
+
+> sport-club-management@0.1.0 dev
+> next dev --turbopack
+
+   ▲ Next.js 15.3.4 (Turbopack)
+   - Local:        http://localhost:3001
+   - Network:      http://192.168.1.114:3001
+   - Environments: .env.local
+
+ ✓ Starting...
+ ○ Compiling middleware ...
+ ✓ Compiled middleware in 869ms
+ ✓ Ready in 35.8s
+ ○ Compiling / ...
