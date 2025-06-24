@@ -13,7 +13,8 @@ import {
   FileText,
   Activity,
   Building,
-  UsersIcon
+  UsersIcon,
+  GraduationCap
 } from 'lucide-react';
 
 const menuItems = [
@@ -31,6 +32,11 @@ const menuItems = [
     title: 'Gruplar',
     icon: UsersIcon,
     href: '/dashboard/groups'
+  },
+  {
+    title: 'Öğrenciler',
+    icon: GraduationCap,
+    href: '/dashboard/students'
   },
   {
     title: 'Üyeler',

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Plus, Edit2, Trash2, UsersIcon, Clock, Building } from 'lucide-react';
-import { collection, getDocs, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, deleteDoc, updateDoc, query, where, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 
 interface Branch {
@@ -73,13 +73,34 @@ export default function GroupsPage() {
       
       if (editingGroup) {
         // Güncelleme
-        await updateDoc(doc(db, 'groups', editingGroup.id), {
+        const batch = writeBatch(db);
+        
+        // Grup bilgisini güncelle
+        const groupRef = doc(db, 'groups', editingGroup.id);
+        batch.update(groupRef, {
           name: formData.name.trim(),
           branchId: formData.branchId,
           branchName: selectedBranch?.name || '',
           time: formData.time.trim(),
           updatedAt: new Date()
         });
+        
+        // İlgili öğrencilerin groupName ve branchName'ini güncelle
+        const studentsQuery = query(
+          collection(db, 'students'),
+          where('groupId', '==', editingGroup.id)
+        );
+        const studentsSnapshot = await getDocs(studentsQuery);
+        
+        studentsSnapshot.docs.forEach((studentDoc) => {
+          batch.update(studentDoc.ref, {
+            groupName: formData.name.trim(),
+            branchName: selectedBranch?.name || '',
+            branchId: formData.branchId
+          });
+        });
+        
+        await batch.commit();
       } else {
         // Yeni ekleme
         const newGroupRef = doc(collection(db, 'groups'));
@@ -142,8 +163,8 @@ export default function GroupsPage() {
 
       {/* Form Modal */}
       {showForm && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-[9999]" onClick={handleCancel}>
-          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-[9999] p-4" onClick={handleCancel}>
+          <div className="bg-white rounded-2xl p-8 w-full max-w-lg shadow-2xl border border-gray-100 transform transition-all" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-xl font-semibold mb-4">
               {editingGroup ? 'Grup Düzenle' : 'Yeni Grup Ekle'}
             </h2>

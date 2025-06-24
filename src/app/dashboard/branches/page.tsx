@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Plus, Edit2, Trash2, Building, MapPin } from 'lucide-react';
-import { collection, getDocs, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, deleteDoc, updateDoc, query, where, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 
 interface Branch {
@@ -48,11 +48,43 @@ export default function BranchesPage() {
     try {
       if (editingBranch) {
         // Güncelleme
-        await updateDoc(doc(db, 'branches', editingBranch.id), {
+        const batch = writeBatch(db);
+        
+        // Şube bilgisini güncelle
+        const branchRef = doc(db, 'branches', editingBranch.id);
+        batch.update(branchRef, {
           name: formData.name.trim(),
           address: formData.address.trim(),
           updatedAt: new Date()
         });
+        
+        // İlgili öğrencilerin branchName'ini güncelle
+        const studentsQuery = query(
+          collection(db, 'students'),
+          where('branchId', '==', editingBranch.id)
+        );
+        const studentsSnapshot = await getDocs(studentsQuery);
+        
+        studentsSnapshot.docs.forEach((studentDoc) => {
+          batch.update(studentDoc.ref, {
+            branchName: formData.name.trim()
+          });
+        });
+        
+        // İlgili grupların branchName'ini güncelle
+        const groupsQuery = query(
+          collection(db, 'groups'),
+          where('branchId', '==', editingBranch.id)
+        );
+        const groupsSnapshot = await getDocs(groupsQuery);
+        
+        groupsSnapshot.docs.forEach((groupDoc) => {
+          batch.update(groupDoc.ref, {
+            branchName: formData.name.trim()
+          });
+        });
+        
+        await batch.commit();
       } else {
         // Yeni ekleme
         const newBranchRef = doc(collection(db, 'branches'));
@@ -113,8 +145,8 @@ export default function BranchesPage() {
 
       {/* Form Modal */}
       {showForm && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-[9999]" onClick={handleCancel}>
-          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-[9999] p-4" onClick={handleCancel}>
+          <div className="bg-white rounded-2xl p-8 w-full max-w-lg shadow-2xl border border-gray-100 transform transition-all" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-xl font-semibold mb-4">
               {editingBranch ? 'Şube Düzenle' : 'Yeni Şube Ekle'}
             </h2>
