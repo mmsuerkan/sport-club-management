@@ -54,8 +54,18 @@ interface Training {
   currentParticipants: number;
   status: 'scheduled' | 'ongoing' | 'completed' | 'cancelled';
   recurringDays?: string[];
+  isRecurring?: boolean;
+  recurringEndDate?: string;
+  recurringCount?: number;
+  recurringType?: 'weeks' | 'months';
+  excludedDates?: string[];
   createdAt: Timestamp;
   updatedAt: Timestamp;
+}
+
+interface RecurringTrainingInstance extends Training {
+  parentId: string;
+  instanceDate: string;
 }
 
 interface Branch {
@@ -78,6 +88,7 @@ interface Trainer {
 
 export default function TrainingsPage() {
   const [trainings, setTrainings] = useState<Training[]>([]);
+  const [expandedTrainings, setExpandedTrainings] = useState<(Training | RecurringTrainingInstance)[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [trainers, setTrainers] = useState<Trainer[]>([]);
@@ -103,8 +114,82 @@ export default function TrainingsPage() {
     startTime: '',
     endTime: '',
     maxParticipants: '',
-    recurringDays: [] as string[]
+    recurringDays: [] as string[],
+    isRecurring: false,
+    recurringEndDate: '',
+    recurringCount: '',
+    recurringType: 'weeks' as 'weeks' | 'months'
   });
+
+  // Tekrarlanan antrenmanları generate eden fonksiyon
+  const generateRecurringTrainings = (baseTraining: Training, maxEndDate: Date): RecurringTrainingInstance[] => {
+    if (!baseTraining.isRecurring || !baseTraining.recurringDays || baseTraining.recurringDays.length === 0) {
+      return [];
+    }
+
+    const instances: RecurringTrainingInstance[] = [];
+    const startDate = new Date(baseTraining.date);
+    
+    // End date'i hesapla
+    let endDate = maxEndDate;
+    
+    // Eğer recurringEndDate varsa onu kullan
+    if (baseTraining.recurringEndDate) {
+      endDate = new Date(baseTraining.recurringEndDate);
+    }
+    // Eğer recurringCount varsa o kadar period hesapla
+    else if (baseTraining.recurringCount && baseTraining.recurringCount > 0) {
+      endDate = new Date(startDate);
+      const multiplier = baseTraining.recurringType === 'months' ? 
+        baseTraining.recurringCount * 4 : // 4 hafta = 1 ay yaklaşık
+        baseTraining.recurringCount;
+      
+      endDate.setDate(endDate.getDate() + (multiplier * 7)); // Hafta cinsinden hesapla
+    }
+    
+    const dayNames = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+    
+    // Tekrarlanan günlerin numara karşılıkları
+    const recurringDayNumbers = baseTraining.recurringDays.map(day => {
+      switch(day) {
+        case 'Pazartesi': return 1;
+        case 'Salı': return 2;
+        case 'Çarşamba': return 3;
+        case 'Perşembe': return 4;
+        case 'Cuma': return 5;
+        case 'Cumartesi': return 6;
+        case 'Pazar': return 0;
+        default: return -1;
+      }
+    }).filter(n => n !== -1);
+
+    let currentDate = new Date(startDate);
+    currentDate.setDate(currentDate.getDate() + 1); // Bir sonraki günden başla
+    
+    while (currentDate <= endDate) {
+      const dayOfWeek = currentDate.getDay();
+      
+      if (recurringDayNumbers.includes(dayOfWeek)) {
+        const instanceDate = currentDate.toISOString().split('T')[0];
+        
+        // Eğer bu tarih excludedDates listesinde varsa, instance oluşturma
+        if (!baseTraining.excludedDates?.includes(instanceDate)) {
+          instances.push({
+            ...baseTraining,
+            id: `${baseTraining.id}_${instanceDate}`,
+            parentId: baseTraining.id,
+            instanceDate,
+            date: instanceDate,
+            currentParticipants: 0
+          });
+        }
+      }
+      
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    return instances;
+  };
 
   useEffect(() => {
     const unsubscribeTrainings = onSnapshot(
@@ -115,6 +200,22 @@ export default function TrainingsPage() {
           ...doc.data()
         } as Training));
         setTrainings(trainingsData);
+        
+        // Tekrarlanan antrenmanları generate et
+        const expanded: (Training | RecurringTrainingInstance)[] = [];
+        const endDate = new Date();
+        endDate.setMonth(endDate.getMonth() + 6); // 6 ay ileri
+        
+        trainingsData.forEach(training => {
+          expanded.push(training);
+          
+          if (training.isRecurring) {
+            const instances = generateRecurringTrainings(training, endDate);
+            expanded.push(...instances);
+          }
+        });
+        
+        setExpandedTrainings(expanded);
         setLoading(false);
       }
     );
@@ -176,16 +277,37 @@ export default function TrainingsPage() {
         maxParticipants: parseInt(formData.maxParticipants),
         currentParticipants: 0,
         status: 'scheduled' as const,
+        isRecurring: formData.isRecurring && formData.recurringDays.length > 0,
+        recurringDays: formData.isRecurring ? formData.recurringDays : [],
+        recurringEndDate: formData.isRecurring ? formData.recurringEndDate : '',
+        recurringCount: formData.isRecurring && formData.recurringCount ? parseInt(formData.recurringCount) : undefined,
+        recurringType: formData.isRecurring ? formData.recurringType : undefined,
         updatedAt: Timestamp.now()
       };
 
-      if (editingTraining) {
+      if (editingTraining && editingTraining.id) {
+        // Mevcut antrenmanı güncelle
         await updateDoc(doc(db, 'trainings', editingTraining.id), trainingData);
       } else {
+        // Yeni antrenman ekle (recurring instance düzenlemeden de buraya gelir)
         await addDoc(collection(db, 'trainings'), {
           ...trainingData,
           createdAt: Timestamp.now()
         });
+        
+        // Eğer bu bir recurring instance'dan türetilmişse, o instance'ı exclude et
+        if (editingTraining && 'parentId' in editingTraining) {
+          const parentTraining = trainings.find(t => t.id === editingTraining.parentId);
+          if (parentTraining) {
+            const excludedDates = parentTraining.excludedDates || [];
+            excludedDates.push(formData.date);
+            
+            await updateDoc(doc(db, 'trainings', editingTraining.parentId), {
+              excludedDates,
+              updatedAt: Timestamp.now()
+            });
+          }
+        }
       }
 
       setShowModal(false);
@@ -195,18 +317,90 @@ export default function TrainingsPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Bu antrenmanı silmek istediğinizden emin misiniz?')) {
+  const handleDelete = async (trainingToDelete: Training | RecurringTrainingInstance) => {
+    // Eğer bu bir recurring instance ise (parentId var), sadece o instance'ı işaretleyelim
+    if ('parentId' in trainingToDelete) {
+      const confirmMessage = `${new Date(trainingToDelete.date).toLocaleDateString('tr-TR')} tarihli bu antrenmanı silmek istediğinizden emin misiniz?\n\nNot: Bu sadece seçili tarih için antrenmanı siler, diğer tekrarlanan antrenmanlar etkilenmez.`;
+      
+      if (window.confirm(confirmMessage)) {
+        // Instance silme: Bu durumda sadece o tarihi hariç tutmak için parent'a silinen tarihler listesi ekleyeceğiz
+        try {
+          const parentId = trainingToDelete.parentId;
+          const parentTraining = trainings.find(t => t.id === parentId);
+          
+          if (parentTraining) {
+            const excludedDates = [...(parentTraining.excludedDates || [])];
+            const dateToExclude = trainingToDelete.date;
+            excludedDates.push(dateToExclude);
+            
+            await updateDoc(doc(db, 'trainings', parentId), {
+              excludedDates,
+              updatedAt: Timestamp.now()
+            });
+          }
+        } catch (error) {
+          console.error('Error excluding training instance:', error);
+          alert('Antrenman silinirken hata oluştu: ' + error.message);
+        }
+      }
+    } else {
+      // Ana antrenman silme
+      const isRecurring = trainingToDelete.isRecurring;
+      
+      if (isRecurring) {
+        // Tekrarlanan antrenmanlar için özel uyarı
+        const recurringCount = expandedTrainings.filter(t => 
+          'parentId' in t && t.parentId === trainingToDelete.id
+        ).length;
+        
+        const confirmMessage = `⚠️ ANA ANTRENMAN SİLME UYARISI ⚠️\n\n` +
+          `"${trainingToDelete.name}" ana antrenmanını silmek istediğinizden emin misiniz?\n\n` +
+          `Bu işlem aynı zamanda ${recurringCount} adet tekrarlanan antrenmanı da silecektir.\n\n` +
+          `Eğer sadece belirli bir tarihi silmek istiyorsanız "İPTAL" tuşuna basın ve ` +
+          `"Oluşturulan" etiketli antrenmanı silin.\n\n` +
+          `Devam etmek istiyor musunuz?`;
+          
+        if (!window.confirm(confirmMessage)) return;
+      } else {
+        // Normal antrenman silme
+        const confirmMessage = `"${trainingToDelete.name}" antrenmanını silmek istediğinizden emin misiniz?`;
+        if (!window.confirm(confirmMessage)) return;
+      }
+      
       try {
-        await deleteDoc(doc(db, 'trainings', id));
+        await deleteDoc(doc(db, 'trainings', trainingToDelete.id));
       } catch (error) {
         console.error('Error deleting training:', error);
+        alert('Antrenman silinirken hata oluştu: ' + error.message);
       }
     }
   };
 
-  const handleEdit = (training: Training) => {
-    setEditingTraining(training);
+  const handleEdit = (training: Training | RecurringTrainingInstance) => {
+    // Eğer bu bir recurring instance ise, kullanıcıyı uyar
+    if ('parentId' in training) {
+      const shouldContinue = window.confirm(
+        'Bu otomatik oluşturulan bir antrenman. Değişiklik yapmak istediğinizden emin misiniz?\n\n' +
+        'Evet: Sadece bu tarih için özel antrenman oluştur\n' +
+        'Hayır: Ana antrenmanı düzenlemek için iptal et'
+      );
+      
+      if (!shouldContinue) return;
+      
+      // Instance düzenleme: Parent ID'yi temizle ve özel bir antrenman olarak kaydet
+      setEditingTraining({
+        ...training,
+        id: '', // Yeni ID oluşturacak
+        parentId: undefined,
+        instanceDate: undefined,
+        isRecurring: false,
+        recurringDays: [],
+        recurringEndDate: ''
+      } as Training);
+    } else {
+      setEditingTraining(training);
+    }
+    
     setFormData({
       name: training.name,
       description: training.description,
@@ -218,7 +412,11 @@ export default function TrainingsPage() {
       startTime: training.startTime,
       endTime: training.endTime,
       maxParticipants: training.maxParticipants.toString(),
-      recurringDays: training.recurringDays || []
+      recurringDays: 'parentId' in training ? [] : (training.recurringDays || []),
+      isRecurring: 'parentId' in training ? false : (training.isRecurring || false),
+      recurringEndDate: 'parentId' in training ? '' : (training.recurringEndDate || ''),
+      recurringCount: 'parentId' in training ? '' : (training.recurringCount?.toString() || ''),
+      recurringType: 'parentId' in training ? 'weeks' : (training.recurringType || 'weeks')
     });
     setShowModal(true);
   };
@@ -240,7 +438,11 @@ export default function TrainingsPage() {
       startTime: '',
       endTime: '',
       maxParticipants: '',
-      recurringDays: []
+      recurringDays: [],
+      isRecurring: false,
+      recurringEndDate: '',
+      recurringCount: '',
+      recurringType: 'weeks'
     });
     setEditingTraining(null);
   };
@@ -265,7 +467,7 @@ export default function TrainingsPage() {
     }
   };
 
-  const filteredTrainings = trainings.filter(training => {
+  const filteredTrainings = expandedTrainings.filter(training => {
     const matchesSearch = training.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          training.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          training.location.toLowerCase().includes(searchTerm.toLowerCase());
@@ -343,7 +545,7 @@ export default function TrainingsPage() {
             <span className="text-sm text-gray-500">Bu Ay</span>
           </div>
           <h3 className="text-2xl font-bold text-gray-900">
-            {trainings.filter(t => new Date(t.date).getMonth() === new Date().getMonth()).length}
+            {expandedTrainings.filter(t => new Date(t.date).getMonth() === new Date().getMonth()).length}
           </h3>
           <p className="text-gray-600 text-sm mt-1">Toplam Antrenman</p>
         </div>
@@ -356,7 +558,7 @@ export default function TrainingsPage() {
             <span className="text-sm text-gray-500">Bugün</span>
           </div>
           <h3 className="text-2xl font-bold text-gray-900">
-            {trainings.filter(t => t.date === new Date().toISOString().split('T')[0] && t.status === 'ongoing').length}
+            {expandedTrainings.filter(t => t.date === new Date().toISOString().split('T')[0] && t.status === 'ongoing').length}
           </h3>
           <p className="text-gray-600 text-sm mt-1">Devam Eden</p>
         </div>
@@ -369,7 +571,7 @@ export default function TrainingsPage() {
             <span className="text-sm text-gray-500">Aktif</span>
           </div>
           <h3 className="text-2xl font-bold text-gray-900">
-            {trainings.filter(t => t.status === 'scheduled').length}
+            {expandedTrainings.filter(t => t.status === 'scheduled').length}
           </h3>
           <p className="text-gray-600 text-sm mt-1">Planlanmış</p>
         </div>
@@ -382,7 +584,7 @@ export default function TrainingsPage() {
             <span className="text-sm text-gray-500">Kapasite</span>
           </div>
           <h3 className="text-2xl font-bold text-gray-900">
-            {trainings.reduce((acc, t) => acc + t.currentParticipants, 0)}
+            {expandedTrainings.reduce((acc, t) => acc + t.currentParticipants, 0)}
           </h3>
           <p className="text-gray-600 text-sm mt-1">Toplam Katılımcı</p>
         </div>
@@ -489,7 +691,19 @@ export default function TrainingsPage() {
                     <tr key={training.id} className="border-b border-gray-50 hover:bg-gray-50">
                       <td className="p-4">
                         <div>
-                          <p className="font-medium text-gray-900">{training.name}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-gray-900">{training.name}</p>
+                            {training.isRecurring && !('parentId' in training) && (
+                              <span className="px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded-full font-medium">
+                                📅 Ana Tekrarlı
+                              </span>
+                            )}
+                            {'parentId' in training && (
+                              <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full font-medium">
+                                🔄 Otomatik Oluşturulan
+                              </span>
+                            )}
+                          </div>
                           <p className="text-sm text-gray-500 truncate max-w-xs">{training.description}</p>
                         </div>
                       </td>
@@ -556,7 +770,7 @@ export default function TrainingsPage() {
                             <Edit className="h-4 w-4" />
                           </button>
                           <button
-                            onClick={() => handleDelete(training.id)}
+                            onClick={() => handleDelete(training)}
                             className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -816,28 +1030,106 @@ export default function TrainingsPage() {
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tekrarlanan Günler (İsteğe bağlı)
-                  </label>
-                  <div className="flex flex-wrap gap-3">
-                    {['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'].map((day) => (
-                      <label key={day} className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={formData.recurringDays.includes(day)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setFormData({ ...formData, recurringDays: [...formData.recurringDays, day] });
-                            } else {
-                              setFormData({ ...formData, recurringDays: formData.recurringDays.filter(d => d !== day) });
-                            }
-                          }}
-                          className="mr-2"
-                        />
-                        <span className="text-sm text-gray-700">{day}</span>
-                      </label>
-                    ))}
+                  <div className="flex items-center mb-4">
+                    <input
+                      type="checkbox"
+                      id="isRecurring"
+                      checked={formData.isRecurring}
+                      onChange={(e) => setFormData({ ...formData, isRecurring: e.target.checked })}
+                      className="mr-2"
+                    />
+                    <label htmlFor="isRecurring" className="text-sm font-medium text-gray-700">
+                      🔄 Bu antrenman tekrarlansın
+                    </label>
                   </div>
+                  
+                  {formData.isRecurring && (
+                    <div className="space-y-6 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-3">
+                          📅 Tekrarlanan Günler
+                        </label>
+                        <div className="flex flex-wrap gap-3">
+                          {['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'].map((day) => (
+                            <label key={day} className="flex items-center bg-white px-3 py-2 rounded-lg border border-gray-200 hover:bg-blue-50 cursor-pointer transition-colors">
+                              <input
+                                type="checkbox"
+                                checked={formData.recurringDays.includes(day)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setFormData({ ...formData, recurringDays: [...formData.recurringDays, day] });
+                                  } else {
+                                    setFormData({ ...formData, recurringDays: formData.recurringDays.filter(d => d !== day) });
+                                  }
+                                }}
+                                className="mr-2 text-blue-600"
+                              />
+                              <span className="text-sm text-gray-700 font-medium">{day}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            ⏱️ Tekrarlama Süresi
+                          </label>
+                          <div className="flex gap-2">
+                            <input
+                              type="number"
+                              min="1"
+                              max="52"
+                              value={formData.recurringCount}
+                              onChange={(e) => setFormData({ ...formData, recurringCount: e.target.value })}
+                              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="Sayı"
+                            />
+                            <select
+                              value={formData.recurringType}
+                              onChange={(e) => setFormData({ ...formData, recurringType: e.target.value as 'weeks' | 'months' })}
+                              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="weeks">Hafta</option>
+                              <option value="months">Ay</option>
+                            </select>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Örn: "8 Hafta" = 8 hafta boyunca tekrarla
+                          </p>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            📆 Veya Bitiş Tarihi
+                          </label>
+                          <input
+                            type="date"
+                            value={formData.recurringEndDate}
+                            onChange={(e) => setFormData({ ...formData, recurringEndDate: e.target.value, recurringCount: e.target.value ? '' : formData.recurringCount })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            min={formData.date}
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Tarih seçilirse tekrarlama sayısı iptal olur
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {formData.recurringDays.length > 0 && (formData.recurringCount || formData.recurringEndDate) && (
+                        <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                          <p className="text-sm text-green-700">
+                            <span className="font-medium">Özet:</span> Bu antrenman{' '}
+                            <span className="font-semibold">{formData.recurringDays.join(', ')}</span> günlerinde{' '}
+                            {formData.recurringEndDate 
+                              ? `${new Date(formData.recurringEndDate).toLocaleDateString('tr-TR')} tarihine kadar`
+                              : `${formData.recurringCount} ${formData.recurringType === 'weeks' ? 'hafta' : 'ay'} boyunca`
+                            } tekrarlanacak.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -958,15 +1250,46 @@ export default function TrainingsPage() {
                 </div>
               </div>
 
-              {selectedTraining.recurringDays && selectedTraining.recurringDays.length > 0 && (
+              {selectedTraining.isRecurring && selectedTraining.recurringDays && selectedTraining.recurringDays.length > 0 && (
                 <div>
-                  <h4 className="font-medium text-gray-700 mb-2">Tekrarlanan Günler</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedTraining.recurringDays.map((day) => (
-                      <span key={day} className="px-3 py-1 bg-gray-100 text-gray-700 rounded-lg text-sm">
-                        {day}
-                      </span>
-                    ))}
+                  <h4 className="font-medium text-gray-700 mb-3">🔄 Tekrarlama Bilgileri</h4>
+                  <div className="space-y-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <div>
+                      <span className="text-sm text-gray-600 font-medium">📅 Tekrarlanan Günler:</span>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {selectedTraining.recurringDays.map((day) => (
+                          <span key={day} className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-sm font-medium">
+                            {day}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {selectedTraining.recurringCount && (
+                      <div>
+                        <span className="text-sm text-gray-600 font-medium">⏱️ Tekrarlama Süresi: </span>
+                        <span className="text-sm text-gray-900 font-semibold">
+                          {selectedTraining.recurringCount} {selectedTraining.recurringType === 'weeks' ? 'Hafta' : 'Ay'}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {selectedTraining.recurringEndDate && (
+                      <div>
+                        <span className="text-sm text-gray-600 font-medium">📆 Bitiş Tarihi: </span>
+                        <span className="text-sm text-gray-900 font-semibold">
+                          {new Date(selectedTraining.recurringEndDate).toLocaleDateString('tr-TR')}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {'parentId' in selectedTraining && (
+                      <div className="pt-2 border-t border-blue-200">
+                        <span className="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-sm font-medium">
+                          🤖 Bu antrenman otomatik olarak oluşturulmuştur
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
