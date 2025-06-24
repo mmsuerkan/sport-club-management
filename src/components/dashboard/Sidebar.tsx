@@ -44,9 +44,9 @@ const menuItems = [
     href: '/dashboard/trainers'
   },
   {
-    title: 'Üyeler',
+    title: 'Çalışanlar',
     icon: UsersIcon,
-    href: '/dashboard/members'
+    href: '/dashboard/employees'
   },
   {
     title: 'Antrenmanlar',

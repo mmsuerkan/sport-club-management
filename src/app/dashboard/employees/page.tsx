@@ -49,6 +49,21 @@ export default function EmployeesPage() {
     fetchBranches();
   }, []);
 
+  // Update employee branch names when branches change
+  useEffect(() => {
+    if (branches.length > 0) {
+      setEmployees(prevEmployees => 
+        prevEmployees.map(employee => {
+          const branch = branches.find(b => b.id === employee.branchId);
+          return {
+            ...employee,
+            branchName: branch?.name || employee.branchName || ''
+          };
+        })
+      );
+    }
+  }, [branches]);
+
   const fetchBranches = async () => {
     try {
       const querySnapshot = await getDocs(collection(db, 'branches'));
@@ -123,15 +138,15 @@ export default function EmployeesPage() {
   const handleEdit = (employee: Employee) => {
     setEditingEmployee(employee);
     setFormData({
-      fullName: employee.fullName,
-      phone: employee.phone,
-      email: employee.email,
-      position: employee.position,
-      department: employee.department,
-      salary: employee.salary,
-      startDate: employee.startDate,
-      branchId: employee.branchId,
-      notes: employee.notes
+      fullName: employee.fullName || '',
+      phone: employee.phone || '',
+      email: employee.email || '',
+      position: employee.position || '',
+      department: employee.department || '',
+      salary: employee.salary || '',
+      startDate: employee.startDate || '',
+      branchId: employee.branchId || '',
+      notes: employee.notes || ''
     });
     setShowForm(true);
   };
@@ -250,39 +265,64 @@ export default function EmployeesPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Pozisyon
                   </label>
-                  <input
-                    type="text"
+                  <select
                     value={formData.position}
                     onChange={(e) => setFormData({ ...formData, position: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Müdür, Sekreter, Temizlik Görevlisi vb."
-                  />
+                  >
+                    <option value="">Pozisyon seçiniz</option>
+                    <option value="Genel Müdür">Genel Müdür</option>
+                    <option value="Şube Müdürü">Şube Müdürü</option>
+                    <option value="İK Uzmanı">İK Uzmanı</option>
+                    <option value="Muhasebe Uzmanı">Muhasebe Uzmanı</option>
+                    <option value="Pazarlama Uzmanı">Pazarlama Uzmanı</option>
+                    <option value="Sekreter">Sekreter</option>
+                    <option value="Resepsiyon Görevlisi">Resepsiyon Görevlisi</option>
+                    <option value="Temizlik Görevlisi">Temizlik Görevlisi</option>
+                    <option value="Güvenlik Görevlisi">Güvenlik Görevlisi</option>
+                    <option value="Teknik Personel">Teknik Personel</option>
+                    <option value="Diğer">Diğer</option>
+                  </select>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Departman
                   </label>
-                  <input
-                    type="text"
+                  <select
                     value={formData.department}
                     onChange={(e) => setFormData({ ...formData, department: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="İdari, Teknik, Halkla İlişkiler vb."
-                  />
+                  >
+                    <option value="">Departman seçiniz</option>
+                    <option value="Yönetim">Yönetim</option>
+                    <option value="İnsan Kaynakları">İnsan Kaynakları</option>
+                    <option value="Muhasebe & Finans">Muhasebe & Finans</option>
+                    <option value="Pazarlama & Satış">Pazarlama & Satış</option>
+                    <option value="Operasyon">Operasyon</option>
+                    <option value="Teknik">Teknik</option>
+                    <option value="Güvenlik">Güvenlik</option>
+                    <option value="Temizlik">Temizlik</option>
+                    <option value="Diğer">Diğer</option>
+                  </select>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Maaş
                   </label>
-                  <input
-                    type="text"
-                    value={formData.salary}
-                    onChange={(e) => setFormData({ ...formData, salary: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="12.000 TL vb."
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={formData.salary}
+                      onChange={(e) => setFormData({ ...formData, salary: e.target.value })}
+                      className="w-full pl-3 pr-12 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="12.000"
+                    />
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                      <span className="text-gray-500 text-sm font-medium">₺</span>
+                    </div>
+                  </div>
                 </div>
 
                 <div>
@@ -422,7 +462,7 @@ export default function EmployeesPage() {
                       </div>
                       {employee.salary && (
                         <div className="text-xs text-gray-500">
-                          {employee.salary}
+                          {employee.salary} ₺
                         </div>
                       )}
                     </td>
