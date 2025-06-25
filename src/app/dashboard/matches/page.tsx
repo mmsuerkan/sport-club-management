@@ -27,12 +27,12 @@ import {
   addDoc, 
   updateDoc, 
   deleteDoc, 
-  onSnapshot,
   query,
   orderBy,
   Timestamp,
   getDocs
 } from 'firebase/firestore';
+import { createListener } from '@/lib/firebase/listener-utils';
 
 interface Match {
   id: string;
@@ -191,7 +191,7 @@ export default function MatchesPage() {
   });
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(
+    const unsubscribe = createListener(
       query(collection(db, 'matches'), orderBy('date', 'desc')),
       (snapshot) => {
         const matchesData = snapshot.docs.map(doc => ({

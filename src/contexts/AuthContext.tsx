@@ -49,10 +49,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logOut = async () => {
-    await firebaseLogOut();
-    setUser(null);
-    setUserData(null);
-    router.push('/login');
+    try {
+      // Clear user data first to prevent listeners from trying to fetch data
+      setUser(null);
+      setUserData(null);
+      
+      // Clear auth cookie
+      document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
+      
+      // Then sign out from Firebase
+      await firebaseLogOut();
+      
+      // Navigate to login page
+      router.push('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Even if logout fails, redirect to login
+      router.push('/login');
+    }
   };
 
   return (

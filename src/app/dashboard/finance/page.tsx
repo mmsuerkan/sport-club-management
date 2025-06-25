@@ -45,12 +45,12 @@ import { db } from '@/lib/firebase/config';
 import { 
   collection, 
   addDoc, 
-  onSnapshot,
   query,
   orderBy,
   Timestamp,
   getDocs
 } from 'firebase/firestore';
+import { createListener } from '@/lib/firebase/listener-utils';
 
 // Finansal Veri Tipleri
 interface FinancialTransaction {
@@ -249,7 +249,7 @@ export default function FinancePage() {
   };
 
   useEffect(() => {
-    const unsubscribeTransactions = onSnapshot(
+    const unsubscribeTransactions = createListener(
       query(collection(db, 'financial_transactions'), orderBy('date', 'desc')),
       (snapshot) => {
         const transactionsData = snapshot.docs.map(doc => ({
@@ -260,7 +260,7 @@ export default function FinancePage() {
       }
     );
 
-    const unsubscribeBudgets = onSnapshot(
+    const unsubscribeBudgets = createListener(
       collection(db, 'budgets'),
       (snapshot) => {
         const budgetsData = snapshot.docs.map(doc => ({
@@ -271,7 +271,7 @@ export default function FinancePage() {
       }
     );
 
-    const unsubscribePayments = onSnapshot(
+    const unsubscribePayments = createListener(
       collection(db, 'payment_plans'),
       (snapshot) => {
         const paymentsData = snapshot.docs.map(doc => ({

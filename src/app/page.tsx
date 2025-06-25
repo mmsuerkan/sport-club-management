@@ -12,7 +12,13 @@ import {
   FiPlay,
   FiAward,
   FiShield,
-  FiZap
+  FiZap,
+  FiSmartphone,
+  FiBarChart,
+  FiClock,
+  FiDollarSign,
+  FiStar,
+  FiHeart
 } from "react-icons/fi";
 
 export default function Home() {
@@ -94,49 +100,238 @@ export default function Home() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative z-10 px-6 py-20">
-        <div className={`max-w-7xl mx-auto text-center transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-          <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full mb-6">
-            <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-            <span className="text-sm">Yeni: AI destekli performans analizi</span>
-          </div>
-          
-          <h1 className="text-6xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-            Spor Klübünüzü
-            <br />
-            Geleceğe Taşıyın
-          </h1>
-          
-          <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto">
-            Modern teknoloji ile spor klübünüzü yönetin. Üyeler, antrenmanlar ve finansal işlemler tek platformda.
-          </p>
+      <section className="relative z-10 px-6 py-12 md:py-20 min-h-[calc(100vh-80px)] flex items-center">
+        <div className={`max-w-7xl mx-auto w-full transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Left Content */}
+            <div className="text-center lg:text-left">
+              <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-sm px-4 py-2 rounded-full mb-6">
+                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                <span className="text-sm font-medium">Yeni: AI destekli performans analizi</span>
+              </div>
+              
+              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6">
+                <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                  Spor Klübünüzü
+                </span>
+                <br />
+                <span className="text-white">Geleceğe Taşıyın</span>
+              </h1>
+              
+              <p className="text-lg sm:text-xl text-gray-300 mb-8 max-w-2xl mx-auto lg:mx-0">
+                Modern teknoloji ile spor klübünüzü yönetin. Üyeler, antrenmanlar ve finansal işlemler tek platformda.
+              </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
-            <Link
-              href="/login"
-              className="group bg-gradient-to-r from-blue-500 to-purple-600 px-8 py-4 rounded-full font-medium text-lg hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-300 transform hover:scale-105 flex items-center space-x-2"
-            >
-              <span>Giriş Yap</span>
-              <FiArrowRight className="group-hover:translate-x-1 transition-transform" />
-            </Link>
-            <button className="group bg-white/10 backdrop-blur-sm px-8 py-4 rounded-full font-medium text-lg hover:bg-white/20 transition-all duration-300 flex items-center space-x-2">
-              <FiPlay />
-              <span>Demo İzle</span>
-            </button>
+              <div className="flex flex-col sm:flex-row items-center lg:items-start justify-center lg:justify-start space-y-4 sm:space-y-0 sm:space-x-4 mb-12">
+                <Link
+                  href="/login"
+                  className="group bg-gradient-to-r from-blue-500 to-purple-600 px-8 py-4 rounded-full font-medium text-lg hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-300 transform hover:scale-105 flex items-center space-x-2"
+                >
+                  <span>Hemen Başla</span>
+                  <FiArrowRight className="group-hover:translate-x-1 transition-transform" />
+                </Link>
+                <button className="group bg-white/10 backdrop-blur-sm px-8 py-4 rounded-full font-medium text-lg hover:bg-white/20 transition-all duration-300 flex items-center space-x-2">
+                  <FiPlay />
+                  <span>Demo İzle</span>
+                </button>
+              </div>
+
+              {/* Trust Badges */}
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-6 text-sm text-gray-400">
+                <div className="flex items-center space-x-2">
+                  <FiCheck className="text-green-400" />
+                  <span>14 Gün Ücretsiz Deneme</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <FiCheck className="text-green-400" />
+                  <span>Kredi Kartı Gerekmez</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <FiCheck className="text-green-400" />
+                  <span>İptal Garantisi</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Visual */}
+            <div className="relative">
+              <div className="relative z-10 bg-gradient-to-br from-blue-500/10 to-purple-500/10 backdrop-blur-sm rounded-3xl p-8 border border-white/10">
+                <div className="grid grid-cols-2 gap-4">
+                  {features.map((feature, index) => (
+                    <div
+                      key={index}
+                      className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-all duration-300 transform hover:scale-105 cursor-pointer"
+                    >
+                      <div className={`p-3 rounded-lg bg-gradient-to-r ${feature.color} bg-opacity-20 inline-block mb-3`}>
+                        {feature.icon}
+                      </div>
+                      <h3 className="font-semibold mb-1 text-sm">{feature.title}</h3>
+                      <p className="text-xs text-gray-400 line-clamp-2">{feature.description}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* Decorative Elements */}
+              <div className="absolute -top-4 -right-4 w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full opacity-20 blur-xl"></div>
+              <div className="absolute -bottom-4 -left-4 w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full opacity-20 blur-xl"></div>
+            </div>
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-20">
+          {/* Stats - Now part of hero */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mt-16 lg:mt-20">
             {stats.map((stat, index) => (
               <div
                 key={index}
-                className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 hover:bg-white/10 transition-all duration-300 transform hover:scale-105"
+                className="bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-sm rounded-2xl p-4 md:p-6 hover:from-white/10 hover:to-white/15 transition-all duration-300 transform hover:scale-105 border border-white/10"
               >
-                <div className="text-3xl mb-2 text-blue-400">{stat.icon}</div>
-                <div className="text-3xl font-bold mb-1">{stat.value}</div>
-                <div className="text-sm text-gray-400">{stat.label}</div>
+                <div className="text-2xl md:text-3xl mb-2 text-blue-400">{stat.icon}</div>
+                <div className="text-2xl md:text-3xl font-bold mb-1 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">{stat.value}</div>
+                <div className="text-xs md:text-sm text-gray-400">{stat.label}</div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Benefits Section */}
+      <section className="relative z-10 px-6 py-20 bg-gradient-to-b from-transparent via-blue-500/5 to-transparent">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Neden SportClub Pro?
+            </h2>
+            <p className="text-lg text-gray-400 max-w-2xl mx-auto">
+              Spor klübünüzü dijitalleştirin, verimliliği artırın
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="group relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
+              <div className="relative bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10 hover:border-white/20 transition-all duration-300">
+                <div className="w-14 h-14 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mb-6">
+                  <FiSmartphone className="w-7 h-7 text-white" />
+                </div>
+                <h3 className="text-xl font-semibold mb-3">Mobil Uyumlu</h3>
+                <p className="text-gray-400 mb-4">
+                  Her yerden erişim sağlayın. Telefon, tablet veya bilgisayardan klübünüzü yönetin.
+                </p>
+                <div className="flex items-center text-sm text-blue-400">
+                  <span>iOS & Android uygulamaları</span>
+                  <FiArrowRight className="ml-2" />
+                </div>
+              </div>
+            </div>
+
+            <div className="group relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
+              <div className="relative bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10 hover:border-white/20 transition-all duration-300">
+                <div className="w-14 h-14 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mb-6">
+                  <FiBarChart className="w-7 h-7 text-white" />
+                </div>
+                <h3 className="text-xl font-semibold mb-3">Detaylı Raporlama</h3>
+                <p className="text-gray-400 mb-4">
+                  Gelir-gider analizleri, üye istatistikleri ve performans raporları ile büyümeyi takip edin.
+                </p>
+                <div className="flex items-center text-sm text-purple-400">
+                  <span>Gerçek zamanlı veriler</span>
+                  <FiArrowRight className="ml-2" />
+                </div>
+              </div>
+            </div>
+
+            <div className="group relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
+              <div className="relative bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10 hover:border-white/20 transition-all duration-300">
+                <div className="w-14 h-14 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mb-6">
+                  <FiClock className="w-7 h-7 text-white" />
+                </div>
+                <h3 className="text-xl font-semibold mb-3">Zaman Tasarrufu</h3>
+                <p className="text-gray-400 mb-4">
+                  Otomatik hatırlatmalar, toplu mesajlaşma ve hızlı işlemlerle zamandan tasarruf edin.
+                </p>
+                <div className="flex items-center text-sm text-green-400">
+                  <span>%80 daha hızlı işlemler</span>
+                  <FiArrowRight className="ml-2" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="relative z-10 px-6 py-20">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Kullanıcılarımız Ne Diyor?
+            </h2>
+            <p className="text-lg text-gray-400">
+              Binlerce spor klübü SportClub Pro'yu tercih ediyor
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+              <div className="flex items-center mb-4">
+                <FiStar className="text-yellow-400 fill-current" />
+                <FiStar className="text-yellow-400 fill-current" />
+                <FiStar className="text-yellow-400 fill-current" />
+                <FiStar className="text-yellow-400 fill-current" />
+                <FiStar className="text-yellow-400 fill-current" />
+              </div>
+              <p className="text-gray-300 mb-4">
+                "SportClub Pro sayesinde üye takibi ve aidat yönetimi çok kolaylaştı. Artık sporculara daha fazla zaman ayırabiliyorum."
+              </p>
+              <div className="flex items-center">
+                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full mr-3"></div>
+                <div>
+                  <p className="font-semibold">Ahmet Yılmaz</p>
+                  <p className="text-sm text-gray-400">Basketbol Antrenörü</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+              <div className="flex items-center mb-4">
+                <FiStar className="text-yellow-400 fill-current" />
+                <FiStar className="text-yellow-400 fill-current" />
+                <FiStar className="text-yellow-400 fill-current" />
+                <FiStar className="text-yellow-400 fill-current" />
+                <FiStar className="text-yellow-400 fill-current" />
+              </div>
+              <p className="text-gray-300 mb-4">
+                "Finansal raporlama özellikleri harika. Gelir-gider takibi yapmak hiç bu kadar kolay olmamıştı."
+              </p>
+              <div className="flex items-center">
+                <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mr-3"></div>
+                <div>
+                  <p className="font-semibold">Zeynep Kaya</p>
+                  <p className="text-sm text-gray-400">Fitness Salonu Sahibi</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+              <div className="flex items-center mb-4">
+                <FiStar className="text-yellow-400 fill-current" />
+                <FiStar className="text-yellow-400 fill-current" />
+                <FiStar className="text-yellow-400 fill-current" />
+                <FiStar className="text-yellow-400 fill-current" />
+                <FiStar className="text-yellow-400 fill-current" />
+              </div>
+              <p className="text-gray-300 mb-4">
+                "Mobil uygulama sayesinde sahada bile üye kaydı yapabiliyorum. Müthiş bir kolaylık!"
+              </p>
+              <div className="flex items-center">
+                <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full mr-3"></div>
+                <div>
+                  <p className="font-semibold">Mehmet Demir</p>
+                  <p className="text-sm text-gray-400">Futbol Okulu Müdürü</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>

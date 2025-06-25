@@ -3,8 +3,6 @@
 import { Bell, Search, User, LogOut, Menu } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
-import { logOut } from '@/lib/firebase/auth';
 import Link from 'next/link';
 
 interface HeaderProps {
@@ -13,17 +11,11 @@ interface HeaderProps {
 
 export default function Header({ onMenuToggle }: HeaderProps) {
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const { user, userData } = useAuth();
-  const router = useRouter();
+  const { user, userData, logOut } = useAuth();
 
   const handleLogout = async () => {
     try {
       await logOut();
-      
-      // Clear auth cookie
-      document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
-      
-      router.push('/login');
     } catch (error) {
       console.error('Logout error:', error);
     }

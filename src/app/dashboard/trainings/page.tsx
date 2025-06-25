@@ -29,12 +29,12 @@ import {
   addDoc, 
   updateDoc, 
   deleteDoc, 
-  onSnapshot,
   query,
   orderBy,
   Timestamp,
   getDocs
 } from 'firebase/firestore';
+import { createListener } from '@/lib/firebase/listener-utils';
 
 interface Training {
   id: string;
@@ -193,7 +193,7 @@ export default function TrainingsPage() {
   };
 
   useEffect(() => {
-    const unsubscribeTrainings = onSnapshot(
+    const unsubscribeTrainings = createListener(
       query(collection(db, 'trainings'), orderBy('date', 'desc')),
       (snapshot) => {
         const trainingsData = snapshot.docs.map(doc => ({
@@ -221,7 +221,7 @@ export default function TrainingsPage() {
       }
     );
 
-    const unsubscribeBranches = onSnapshot(
+    const unsubscribeBranches = createListener(
       collection(db, 'branches'),
       (snapshot) => {
         const branchesData = snapshot.docs.map(doc => ({
@@ -232,7 +232,7 @@ export default function TrainingsPage() {
       }
     );
 
-    const unsubscribeGroups = onSnapshot(
+    const unsubscribeGroups = createListener(
       collection(db, 'groups'),
       (snapshot) => {
         const groupsData = snapshot.docs.map(doc => ({
@@ -243,7 +243,7 @@ export default function TrainingsPage() {
       }
     );
 
-    const unsubscribeTrainers = onSnapshot(
+    const unsubscribeTrainers = createListener(
       collection(db, 'trainers'),
       (snapshot) => {
         const trainersData = snapshot.docs.map(doc => ({
