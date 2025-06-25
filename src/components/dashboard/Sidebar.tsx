@@ -15,7 +15,8 @@ import {
   Building,
   UsersIcon,
   GraduationCap,
-  Dumbbell
+  Dumbbell,
+  ClipboardCheck
 } from 'lucide-react';
 
 const menuItems = [
@@ -43,6 +44,11 @@ const menuItems = [
     title: 'Antrenörler',
     icon: Users,
     href: '/dashboard/trainers'
+  },
+  {
+    title: 'Yoklama Takip',
+    icon: ClipboardCheck,
+    href: '/dashboard/attendance'
   },
   {
     title: 'Çalışanlar',
