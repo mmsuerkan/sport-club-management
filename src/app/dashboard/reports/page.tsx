@@ -51,7 +51,8 @@ import {
   doc,
   updateDoc,
   deleteDoc,
-  where
+  where,
+  getDocs
 } from 'firebase/firestore';
 import { createListener } from '@/lib/firebase/listener-utils';
 import { uploadReportToStorage, deleteReportFromStorage, getFileSizeInKB, sanitizeFileName, parseStoragePath } from '@/lib/firebase/storage-utils';
@@ -287,6 +288,46 @@ export default function ReportsPage() {
     }
   };
 
+  // Firebase'den gerçek verileri çekme fonksiyonları
+  const fetchStudentsData = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, 'students'));
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+    } catch (error) {
+      console.error('Öğrenci verileri yüklenirken hata:', error);
+      return [];
+    }
+  };
+
+  const fetchFinancialData = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, 'financial_transactions'));
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+    } catch (error) {
+      console.error('Finansal veriler yüklenirken hata:', error);
+      return [];
+    }
+  };
+
+  const fetchTrainingsData = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, 'trainings'));
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+    } catch (error) {
+      console.error('Antrenman verileri yüklenirken hata:', error);
+      return [];
+    }
+  };
+
   // PDF rapor oluşturma
   const generatePDFReport = async (template: ReportTemplate, parameters: any, reportId: string) => {
     const pdf = new jsPDF();
@@ -315,105 +356,283 @@ export default function ReportsPage() {
     pdf.setFont('helvetica', 'bold');
     pdf.text('Rapor Icerigi', 20, 60);
     
-    // Tablo örneği
+    // Gerçek verilerle tablo oluşturma
     if (template.type === 'financial') {
-      autoTable(pdf, {
-        head: [['Tarih', 'Kategori', 'Aciklama', 'Tutar', 'Bakiye']],
-        body: [
-          ['01.01.2024', 'Gelir', 'Aidat Odemesi - Ocak', '2,500 TL', '+2,500 TL'],
-          ['02.01.2024', 'Gider', 'Antrenor Maasi', '1,200 TL', '+1,300 TL'],
-          ['03.01.2024', 'Gelir', 'Sponsorluk Anlasmasi', '5,000 TL', '+6,300 TL'],
-          ['05.01.2024', 'Gider', 'Ekipman Alimi', '800 TL', '+5,500 TL'],
-          ['10.01.2024', 'Gelir', 'Kamp Ucreti', '1,500 TL', '+7,000 TL'],
-          ['15.01.2024', 'Gider', 'Tesis Kirasi', '2,000 TL', '+5,000 TL'],
-        ],
-        startY: 70,
-        theme: 'grid',
-        headStyles: { 
-          fillColor: [66, 139, 202],
-          textColor: [255, 255, 255],
-          font: 'helvetica',
-          fontStyle: 'bold'
-        },
-        styles: { 
-          fontSize: 9, 
-          cellPadding: 3,
-          font: 'helvetica',
-          textColor: [0, 0, 0]
-        }
-      });
+      const financialData = await fetchFinancialData();
       
-      // Özet bilgileri ekle
-      pdf.setFontSize(12);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Finansal Ozet:', 20, pdf.lastAutoTable?.finalY + 20 || 150);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text('Toplam Gelir: 9,000 TL', 30, pdf.lastAutoTable?.finalY + 30 || 160);
-      pdf.text('Toplam Gider: 4,000 TL', 30, pdf.lastAutoTable?.finalY + 40 || 170);
-      pdf.text('Net Kar: 5,000 TL', 30, pdf.lastAutoTable?.finalY + 50 || 180);
+      // Tarih filtreleme
+      let filteredData = financialData;
+      if (parameters.dateRange?.start && parameters.dateRange?.end) {
+        const startDate = new Date(parameters.dateRange.start);
+        const endDate = new Date(parameters.dateRange.end);
+        filteredData = financialData.filter((transaction: any) => {
+          const transactionDate = transaction.date?.toDate ? transaction.date.toDate() : new Date(transaction.date);
+          return transactionDate >= startDate && transactionDate <= endDate;
+        });
+      }
+
+      // Tablo verilerini hazırla
+      const tableData = filteredData.slice(0, 20).map((transaction: any) => {
+        const date = transaction.date?.toDate ? transaction.date.toDate() : new Date(transaction.date);
+        const amount = transaction.type === 'income' ? `+${transaction.amount} TL` : `-${transaction.amount} TL`;
+        return [
+          date.toLocaleDateString('tr-TR'),
+          transaction.type === 'income' ? 'Gelir' : 'Gider',
+          transaction.description || transaction.category || '',
+          `${transaction.amount} TL`,
+          amount
+        ];
+      });
+
+      if (tableData.length > 0) {
+        autoTable(pdf, {
+          head: [['Tarih', 'Kategori', 'Aciklama', 'Tutar', 'Durum']],
+          body: tableData,
+          startY: 70,
+          theme: 'grid',
+          headStyles: { 
+            fillColor: [66, 139, 202],
+            textColor: [255, 255, 255],
+            font: 'helvetica',
+            fontStyle: 'bold'
+          },
+          styles: { 
+            fontSize: 9, 
+            cellPadding: 3,
+            font: 'helvetica',
+            textColor: [0, 0, 0]
+          }
+        });
+        
+        // Özet bilgileri hesapla ve ekle
+        const totalIncome = filteredData
+          .filter((t: any) => t.type === 'income')
+          .reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
+        const totalExpense = filteredData
+          .filter((t: any) => t.type === 'expense')
+          .reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
+        const netProfit = totalIncome - totalExpense;
+        
+        pdf.setFontSize(12);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Finansal Ozet:', 20, pdf.lastAutoTable?.finalY + 20 || 150);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(`Toplam Gelir: ${totalIncome.toLocaleString('tr-TR')} TL`, 30, pdf.lastAutoTable?.finalY + 30 || 160);
+        pdf.text(`Toplam Gider: ${totalExpense.toLocaleString('tr-TR')} TL`, 30, pdf.lastAutoTable?.finalY + 40 || 170);
+        pdf.text(`Net Kar: ${netProfit.toLocaleString('tr-TR')} TL`, 30, pdf.lastAutoTable?.finalY + 50 || 180);
+      } else {
+        pdf.setFontSize(12);
+        pdf.text('Bu tarih araliginda finansal islem bulunamadi.', 20, 80);
+      }
       
     } else if (template.type === 'student') {
-      autoTable(pdf, {
-        head: [['Ad Soyad', 'Brans', 'Telefon', 'E-posta', 'Kayit Tarihi', 'Durum']],
-        body: [
-          ['Ahmet Yilmaz', 'Basketbol', '0532 123 4567', 'ahmet@email.com', '15.09.2023', 'Aktif'],
-          ['Ayse Demir', 'Voleybol', '0533 987 6543', 'ayse@email.com', '20.09.2023', 'Aktif'],
-          ['Mehmet Kaya', 'Futbol', '0534 555 1234', 'mehmet@email.com', '25.09.2023', 'Aktif'],
-          ['Fatma Ozkan', 'Basketbol', '0535 444 5678', 'fatma@email.com', '01.10.2023', 'Pasif'],
-          ['Can Sahin', 'Futbol', '0536 777 8899', 'can@email.com', '10.10.2023', 'Aktif'],
-        ],
-        startY: 70,
-        theme: 'grid',
-        headStyles: { 
-          fillColor: [52, 152, 219],
-          textColor: [255, 255, 255],
-          font: 'helvetica',
-          fontStyle: 'bold'
-        },
-        styles: { 
-          fontSize: 8, 
-          cellPadding: 2,
-          font: 'helvetica',
-          textColor: [0, 0, 0]
-        }
+      const studentsData = await fetchStudentsData();
+      
+      // Filtreleme (branş, durum vs.)
+      let filteredStudents = studentsData;
+      if (parameters.branches && parameters.branches.length > 0) {
+        filteredStudents = studentsData.filter((student: any) => 
+          parameters.branches.includes(student.branchId || student.branchName)
+        );
+      }
+      if (parameters.status && parameters.status !== 'all') {
+        // Durum filtrelemesi - varsayılan olarak tüm öğrenciler aktif kabul edilir
+        filteredStudents = filteredStudents.filter((student: any) => {
+          if (parameters.status === 'active') return true; // Tüm öğrenciler aktif varsayılır
+          return false; // Pasif öğrenci sistemi henüz yok
+        });
+      }
+
+      // Tablo verilerini hazırla
+      const tableData = filteredStudents.slice(0, 50).map((student: any) => {
+        const createdDate = student.createdAt?.toDate ? student.createdAt.toDate() : new Date();
+        // Türkçe karakterleri düzelt
+        const cleanName = (student.fullName || '').replace(/[çÇğĞıİöÖşŞüÜ]/g, (match: string) => {
+          const map: {[key: string]: string} = {
+            'ç': 'c', 'Ç': 'C', 'ğ': 'g', 'Ğ': 'G', 'ı': 'i', 'İ': 'I',
+            'ö': 'o', 'Ö': 'O', 'ş': 's', 'Ş': 'S', 'ü': 'u', 'Ü': 'U'
+          };
+          return map[match] || match;
+        });
+        const cleanBranch = (student.branchName || '').replace(/[çÇğĞıİöÖşŞüÜ]/g, (match: string) => {
+          const map: {[key: string]: string} = {
+            'ç': 'c', 'Ç': 'C', 'ğ': 'g', 'Ğ': 'G', 'ı': 'i', 'İ': 'I',
+            'ö': 'o', 'Ö': 'O', 'ş': 's', 'Ş': 'S', 'ü': 'u', 'Ü': 'U'
+          };
+          return map[match] || match;
+        });
+        
+        return [
+          cleanName,
+          cleanBranch,
+          student.phone || '',
+          student.email || '',
+          createdDate.toLocaleDateString('tr-TR'),
+          'Aktif'
+        ];
       });
+
+      if (tableData.length > 0) {
+        autoTable(pdf, {
+          head: [['Ad Soyad', 'Brans', 'Telefon', 'E-posta', 'Kayit Tarihi', 'Durum']],
+          body: tableData,
+          startY: 70,
+          theme: 'grid',
+          headStyles: { 
+            fillColor: [52, 152, 219],
+            textColor: [255, 255, 255],
+            font: 'helvetica',
+            fontStyle: 'bold'
+          },
+          styles: { 
+            fontSize: 8, 
+            cellPadding: 2,
+            font: 'helvetica',
+            textColor: [0, 0, 0]
+          }
+        });
+        
+        // Özet bilgileri
+        pdf.setFontSize(12);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Ogrenci Ozeti:', 20, pdf.lastAutoTable?.finalY + 20 || 150);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(`Toplam Ogrenci Sayisi: ${filteredStudents.length}`, 30, pdf.lastAutoTable?.finalY + 30 || 160);
+        
+        // Branşlara göre dağılım
+        const branchCounts: {[key: string]: number} = {};
+        filteredStudents.forEach((student: any) => {
+          const branchName = student.branchName || 'Belirtilmemis';
+          branchCounts[branchName] = (branchCounts[branchName] || 0) + 1;
+        });
+        
+        let yPos = pdf.lastAutoTable?.finalY + 40 || 170;
+        Object.entries(branchCounts).forEach(([branch, count]) => {
+          const cleanBranch = branch.replace(/[çÇğĞıİöÖşŞüÜ]/g, (match: string) => {
+            const map: {[key: string]: string} = {
+              'ç': 'c', 'Ç': 'C', 'ğ': 'g', 'Ğ': 'G', 'ı': 'i', 'İ': 'I',
+              'ö': 'o', 'Ö': 'O', 'ş': 's', 'Ş': 'S', 'ü': 'u', 'Ü': 'U'
+            };
+            return map[match] || match;
+          });
+          pdf.text(`${cleanBranch}: ${count} ogrenci`, 30, yPos);
+          yPos += 10;
+        });
+      } else {
+        pdf.setFontSize(12);
+        pdf.text('Belirtilen kriterlere uygun ogrenci bulunamadi.', 20, 80);
+      }
       
     } else if (template.type === 'training') {
-      autoTable(pdf, {
-        head: [['Tarih', 'Saat', 'Brans', 'Antrenor', 'Grup', 'Katilimci Sayisi']],
-        body: [
-          ['Pazartesi', '16:00-17:30', 'Basketbol', 'Ahmet Hoca', 'U-14 Erkek', '12/15'],
-          ['Pazartesi', '17:30-19:00', 'Basketbol', 'Mehmet Hoca', 'U-16 Kiz', '10/12'],
-          ['Sali', '16:00-17:30', 'Futbol', 'Ali Hoca', 'U-12 Erkek', '18/20'],
-          ['Carsamba', '15:00-16:30', 'Voleybol', 'Ayse Hoca', 'U-15 Kiz', '14/16'],
-          ['Persembe', '17:00-18:30', 'Basketbol', 'Ahmet Hoca', 'U-18 Erkek', '8/10'],
-        ],
-        startY: 70,
-        theme: 'grid',
-        headStyles: { 
-          fillColor: [155, 89, 182],
-          textColor: [255, 255, 255],
-          font: 'helvetica',
-          fontStyle: 'bold'
-        },
-        styles: { 
-          fontSize: 9, 
-          cellPadding: 3,
-          font: 'helvetica',
-          textColor: [0, 0, 0]
-        }
+      const trainingsData = await fetchTrainingsData();
+      
+      // Tarih filtreleme
+      let filteredTrainings = trainingsData;
+      if (parameters.dateRange?.start && parameters.dateRange?.end) {
+        const startDate = new Date(parameters.dateRange.start);
+        const endDate = new Date(parameters.dateRange.end);
+        filteredTrainings = trainingsData.filter((training: any) => {
+          const trainingDate = training.date?.toDate ? training.date.toDate() : new Date(training.date);
+          return trainingDate >= startDate && trainingDate <= endDate;
+        });
+      }
+
+      // Tablo verilerini hazırla
+      const tableData = filteredTrainings.slice(0, 30).map((training: any) => {
+        const date = training.date?.toDate ? training.date.toDate() : new Date(training.date);
+        
+        // Türkçe karakterleri düzelt
+        const cleanFields = (text: string) => (text || '').replace(/[çÇğĞıİöÖşŞüÜ]/g, (match: string) => {
+          const map: {[key: string]: string} = {
+            'ç': 'c', 'Ç': 'C', 'ğ': 'g', 'Ğ': 'G', 'ı': 'i', 'İ': 'I',
+            'ö': 'o', 'Ö': 'O', 'ş': 's', 'Ş': 'S', 'ü': 'u', 'Ü': 'U'
+          };
+          return map[match] || match;
+        });
+        
+        return [
+          date.toLocaleDateString('tr-TR'),
+          training.time || training.startTime || '',
+          cleanFields(training.branchName || training.sport || ''),
+          cleanFields(training.trainerName || ''),
+          cleanFields(training.groupName || ''),
+          training.participants ? `${training.participants}/${training.maxParticipants || training.participants}` : ''
+        ];
       });
+
+      if (tableData.length > 0) {
+        autoTable(pdf, {
+          head: [['Tarih', 'Saat', 'Brans', 'Antrenor', 'Grup', 'Katilimci Sayisi']],
+          body: tableData,
+          startY: 70,
+          theme: 'grid',
+          headStyles: { 
+            fillColor: [155, 89, 182],
+            textColor: [255, 255, 255],
+            font: 'helvetica',
+            fontStyle: 'bold'
+          },
+          styles: { 
+            fontSize: 9, 
+            cellPadding: 3,
+            font: 'helvetica',
+            textColor: [0, 0, 0]
+          }
+        });
+        
+        // Özet bilgileri
+        pdf.setFontSize(12);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Antrenman Ozeti:', 20, pdf.lastAutoTable?.finalY + 20 || 150);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(`Toplam Antrenman Sayisi: ${filteredTrainings.length}`, 30, pdf.lastAutoTable?.finalY + 30 || 160);
+        
+        // Branşlara göre dağılım
+        const branchCounts: {[key: string]: number} = {};
+        filteredTrainings.forEach((training: any) => {
+          const branchName = training.branchName || training.sport || 'Belirtilmemis';
+          branchCounts[branchName] = (branchCounts[branchName] || 0) + 1;
+        });
+        
+        let yPos = pdf.lastAutoTable?.finalY + 40 || 170;
+        Object.entries(branchCounts).forEach(([branch, count]) => {
+          const cleanBranch = branch.replace(/[çÇğĞıİöÖşŞüÜ]/g, (match: string) => {
+            const map: {[key: string]: string} = {
+              'ç': 'c', 'Ç': 'C', 'ğ': 'g', 'Ğ': 'G', 'ı': 'i', 'İ': 'I',
+              'ö': 'o', 'Ö': 'O', 'ş': 's', 'Ş': 'S', 'ü': 'u', 'Ü': 'U'
+            };
+            return map[match] || match;
+          });
+          pdf.text(`${cleanBranch}: ${count} antrenman`, 30, yPos);
+          yPos += 10;
+        });
+      } else {
+        pdf.setFontSize(12);
+        pdf.text('Bu tarih araliginda antrenman bulunamadi.', 20, 80);
+      }
       
     } else {
-      // Diğer rapor tipleri için basit tablo
+      // Performans raporu için gerçek veriler
+      const [studentsData, financialData, trainingsData] = await Promise.all([
+        fetchStudentsData(),
+        fetchFinancialData(),
+        fetchTrainingsData()
+      ]);
+
+      const totalIncome = financialData
+        .filter((t: any) => t.type === 'income')
+        .reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
+
+      const performanceData = [
+        ['Toplam Uye Sayisi', studentsData.length.toString(), '50', studentsData.length >= 50 ? 'Iyi' : 'Orta'],
+        ['Aylik Gelir', `${totalIncome.toLocaleString('tr-TR')} TL`, '15,000 TL', totalIncome >= 15000 ? 'Iyi' : 'Orta'],
+        ['Antrenman Sayisi', trainingsData.length.toString(), '20', trainingsData.length >= 20 ? 'Mukemmel' : 'Iyi'],
+        ['Katilim Orani', '%85', '%80', 'Iyi'],
+      ];
+
       autoTable(pdf, {
         head: [['Metrik', 'Deger', 'Hedef', 'Durum']],
-        body: [
-          ['Toplam Uye Sayisi', '45', '50', 'Iyi'],
-          ['Aylik Gelir', '12,500 TL', '15,000 TL', 'Orta'],
-          ['Antrenman Sayisi', '24', '20', 'Mukemmel'],
-          ['Katilim Orani', '%85', '%80', 'Iyi'],
-        ],
+        body: performanceData,
         startY: 70,
         theme: 'grid',
         headStyles: { 
@@ -429,6 +648,13 @@ export default function ReportsPage() {
           textColor: [0, 0, 0]
         }
       });
+
+      // Özet bilgileri
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Performans Ozeti:', 20, pdf.lastAutoTable?.finalY + 20 || 150);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`Sistem Durumu: ${studentsData.length >= 50 && totalIncome >= 15000 ? 'Mukemmel' : 'Iyi'}`, 30, pdf.lastAutoTable?.finalY + 30 || 160);
     }
     
     // PDF'i blob olarak oluştur
@@ -473,37 +699,94 @@ export default function ReportsPage() {
     try {
       let data: any[] = [];
       
-      // Rapor tipine göre farklı veri setleri
+      // Rapor tipine göre gerçek veri setleri
       if (template.type === 'financial') {
-        data = [
-          { Tarih: '01.01.2024', Kategori: 'Gelir', Aciklama: 'Aidat Odemesi - Ocak', Tutar: 2500, Bakiye: 2500 },
-          { Tarih: '02.01.2024', Kategori: 'Gider', Aciklama: 'Antrenor Maasi', Tutar: -1200, Bakiye: 1300 },
-          { Tarih: '03.01.2024', Kategori: 'Gelir', Aciklama: 'Sponsorluk Anlasmasi', Tutar: 5000, Bakiye: 6300 },
-          { Tarih: '05.01.2024', Kategori: 'Gider', Aciklama: 'Ekipman Alimi', Tutar: -800, Bakiye: 5500 },
-          { Tarih: '10.01.2024', Kategori: 'Gelir', Aciklama: 'Kamp Ucreti', Tutar: 1500, Bakiye: 7000 },
-          { Tarih: '15.01.2024', Kategori: 'Gider', Aciklama: 'Tesis Kirasi', Tutar: -2000, Bakiye: 5000 },
-        ];
+        const financialData = await fetchFinancialData();
+        
+        // Tarih filtreleme
+        let filteredData = financialData;
+        if (parameters.dateRange?.start && parameters.dateRange?.end) {
+          const startDate = new Date(parameters.dateRange.start);
+          const endDate = new Date(parameters.dateRange.end);
+          filteredData = financialData.filter((transaction: any) => {
+            const transactionDate = transaction.date?.toDate ? transaction.date.toDate() : new Date(transaction.date);
+            return transactionDate >= startDate && transactionDate <= endDate;
+          });
+        }
+
+        data = filteredData.map((transaction: any) => {
+          const date = transaction.date?.toDate ? transaction.date.toDate() : new Date(transaction.date);
+          return {
+            Tarih: date.toLocaleDateString('tr-TR'),
+            Kategori: transaction.type === 'income' ? 'Gelir' : 'Gider',
+            Aciklama: transaction.description || transaction.category || '',
+            Tutar: transaction.amount || 0,
+            Durum: transaction.type === 'income' ? `+${transaction.amount} TL` : `-${transaction.amount} TL`
+          };
+        });
       } else if (template.type === 'student') {
-        data = [
-          { 'Ad Soyad': 'Ahmet Yilmaz', Brans: 'Basketbol', Telefon: '0532 123 4567', 'E-posta': 'ahmet@email.com', 'Kayit Tarihi': '15.09.2023', Durum: 'Aktif' },
-          { 'Ad Soyad': 'Ayse Demir', Brans: 'Voleybol', Telefon: '0533 987 6543', 'E-posta': 'ayse@email.com', 'Kayit Tarihi': '20.09.2023', Durum: 'Aktif' },
-          { 'Ad Soyad': 'Mehmet Kaya', Brans: 'Futbol', Telefon: '0534 555 1234', 'E-posta': 'mehmet@email.com', 'Kayit Tarihi': '25.09.2023', Durum: 'Aktif' },
-          { 'Ad Soyad': 'Fatma Ozkan', Brans: 'Basketbol', Telefon: '0535 444 5678', 'E-posta': 'fatma@email.com', 'Kayit Tarihi': '01.10.2023', Durum: 'Pasif' },
-          { 'Ad Soyad': 'Can Sahin', Brans: 'Futbol', Telefon: '0536 777 8899', 'E-posta': 'can@email.com', 'Kayit Tarihi': '10.10.2023', Durum: 'Aktif' },
-        ];
+        const studentsData = await fetchStudentsData();
+        
+        // Filtreleme
+        let filteredStudents = studentsData;
+        if (parameters.branches && parameters.branches.length > 0) {
+          filteredStudents = studentsData.filter((student: any) => 
+            parameters.branches.includes(student.branchId || student.branchName)
+          );
+        }
+
+        data = filteredStudents.map((student: any) => {
+          const createdDate = student.createdAt?.toDate ? student.createdAt.toDate() : new Date();
+          return {
+            'Ad Soyad': student.fullName || '',
+            Brans: student.branchName || '',
+            Telefon: student.phone || '',
+            'E-posta': student.email || '',
+            'Kayit Tarihi': createdDate.toLocaleDateString('tr-TR'),
+            Durum: 'Aktif'
+          };
+        });
       } else if (template.type === 'training') {
-        data = [
-          { Gun: 'Pazartesi', Saat: '16:00-17:30', Brans: 'Basketbol', Antrenor: 'Ahmet Hoca', Grup: 'U-14 Erkek', 'Katilimci': '12/15' },
-          { Gun: 'Pazartesi', Saat: '17:30-19:00', Brans: 'Basketbol', Antrenor: 'Mehmet Hoca', Grup: 'U-16 Kiz', 'Katilimci': '10/12' },
-          { Gun: 'Sali', Saat: '16:00-17:30', Brans: 'Futbol', Antrenor: 'Ali Hoca', Grup: 'U-12 Erkek', 'Katilimci': '18/20' },
-          { Gun: 'Carsamba', Saat: '15:00-16:30', Brans: 'Voleybol', Antrenor: 'Ayse Hoca', Grup: 'U-15 Kiz', 'Katilimci': '14/16' },
-          { Gun: 'Persembe', Saat: '17:00-18:30', Brans: 'Basketbol', Antrenor: 'Ahmet Hoca', Grup: 'U-18 Erkek', 'Katilimci': '8/10' },
-        ];
+        const trainingsData = await fetchTrainingsData();
+        
+        // Tarih filtreleme
+        let filteredTrainings = trainingsData;
+        if (parameters.dateRange?.start && parameters.dateRange?.end) {
+          const startDate = new Date(parameters.dateRange.start);
+          const endDate = new Date(parameters.dateRange.end);
+          filteredTrainings = trainingsData.filter((training: any) => {
+            const trainingDate = training.date?.toDate ? training.date.toDate() : new Date(training.date);
+            return trainingDate >= startDate && trainingDate <= endDate;
+          });
+        }
+
+        data = filteredTrainings.map((training: any) => {
+          const date = training.date?.toDate ? training.date.toDate() : new Date(training.date);
+          return {
+            Tarih: date.toLocaleDateString('tr-TR'),
+            Saat: training.time || training.startTime || '',
+            Brans: training.branchName || training.sport || '',
+            Antrenor: training.trainerName || '',
+            Grup: training.groupName || '',
+            Katilimci: training.participants ? `${training.participants}/${training.maxParticipants || training.participants}` : ''
+          };
+        });
       } else {
+        // Performans verileri için temel istatistikleri hesapla
+        const [studentsData, financialData, trainingsData] = await Promise.all([
+          fetchStudentsData(),
+          fetchFinancialData(),
+          fetchTrainingsData()
+        ]);
+
+        const totalIncome = financialData
+          .filter((t: any) => t.type === 'income')
+          .reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
+
         data = [
-          { Metrik: 'Toplam Uye Sayisi', Deger: 45, Hedef: 50, Durum: 'Iyi' },
-          { Metrik: 'Aylik Gelir', Deger: '12,500 TL', Hedef: '15,000 TL', Durum: 'Orta' },
-          { Metrik: 'Antrenman Sayisi', Deger: 24, Hedef: 20, Durum: 'Mukemmel' },
+          { Metrik: 'Toplam Uye Sayisi', Deger: studentsData.length, Hedef: Math.max(50, studentsData.length), Durum: studentsData.length >= 50 ? 'Iyi' : 'Orta' },
+          { Metrik: 'Aylik Gelir', Deger: `${totalIncome.toLocaleString('tr-TR')} TL`, Hedef: '15,000 TL', Durum: totalIncome >= 15000 ? 'Iyi' : 'Orta' },
+          { Metrik: 'Antrenman Sayisi', Deger: trainingsData.length, Hedef: 20, Durum: trainingsData.length >= 20 ? 'Mukemmel' : 'Iyi' },
           { Metrik: 'Katilim Orani', Deger: '%85', Hedef: '%80', Durum: 'Iyi' },
         ];
       }
@@ -520,11 +803,19 @@ export default function ReportsPage() {
       XLSX.utils.book_append_sheet(wb, ws, 'Rapor Verileri');
       
       // Özet sayfası ekle (finansal raporlar için)
-      if (template.type === 'financial') {
+      if (template.type === 'financial' && data.length > 0) {
+        const totalIncome = data
+          .filter((item: any) => item.Kategori === 'Gelir')
+          .reduce((sum: number, item: any) => sum + (item.Tutar || 0), 0);
+        const totalExpense = data
+          .filter((item: any) => item.Kategori === 'Gider')
+          .reduce((sum: number, item: any) => sum + (item.Tutar || 0), 0);
+        const netProfit = totalIncome - totalExpense;
+
         const summaryData = [
-          { Kategori: 'Toplam Gelir', Tutar: '9,000 TL' },
-          { Kategori: 'Toplam Gider', Tutar: '4,000 TL' },
-          { Kategori: 'Net Kar', Tutar: '5,000 TL' },
+          { Kategori: 'Toplam Gelir', Tutar: `${totalIncome.toLocaleString('tr-TR')} TL` },
+          { Kategori: 'Toplam Gider', Tutar: `${totalExpense.toLocaleString('tr-TR')} TL` },
+          { Kategori: 'Net Kar', Tutar: `${netProfit.toLocaleString('tr-TR')} TL` },
         ];
         const summaryWs = XLSX.utils.json_to_sheet(summaryData);
         XLSX.utils.book_append_sheet(wb, summaryWs, 'Ozet');
