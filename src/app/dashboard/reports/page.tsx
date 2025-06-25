@@ -263,7 +263,8 @@ export default function ReportsPage() {
       // Rapor oluşturma simülasyonu (gerçek uygulamada backend'de yapılacak)
       setTimeout(async () => {
         // Raporu oluştur
-        if (reportParameters.format === 'pdf') {
+        const finalFormat = reportParameters.format || 'pdf';
+        if (finalFormat === 'pdf') {
           await generatePDFReport(selectedTemplate, reportParameters, docRef.id);
         } else {
           await generateExcelReport(selectedTemplate, reportParameters, docRef.id);
@@ -290,94 +291,143 @@ export default function ReportsPage() {
   const generatePDFReport = async (template: ReportTemplate, parameters: any, reportId: string) => {
     const pdf = new jsPDF();
     
+    // Türkçe karakter desteği için font ayarları
+    pdf.setFont('helvetica');
+    pdf.setLanguage('tr');
+    
     // Başlık
     pdf.setFontSize(20);
+    pdf.setFont('helvetica', 'bold');
     pdf.text(template.name, 20, 20);
     
     // Tarih bilgisi
     pdf.setFontSize(12);
-    pdf.text(`Oluşturma Tarihi: ${new Date().toLocaleDateString('tr-TR')}`, 20, 30);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(`Olusturma Tarihi: ${new Date().toLocaleDateString('tr-TR')}`, 20, 30);
     
     // Parametre bilgileri
     if (parameters.dateRange) {
-      pdf.text(`Tarih Aralığı: ${parameters.dateRange.start} - ${parameters.dateRange.end}`, 20, 40);
+      pdf.text(`Tarih Araligi: ${parameters.dateRange.start} - ${parameters.dateRange.end}`, 20, 40);
     }
     
     // İçerik (örnek)
     pdf.setFontSize(14);
-    pdf.text('Rapor İçeriği', 20, 60);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Rapor Icerigi', 20, 60);
     
     // Tablo örneği
     if (template.type === 'financial') {
       autoTable(pdf, {
-        head: [['Tarih', 'Kategori', 'Açıklama', 'Tutar', 'Bakiye']],
+        head: [['Tarih', 'Kategori', 'Aciklama', 'Tutar', 'Bakiye']],
         body: [
-          ['01.01.2024', 'Gelir', 'Aidat Ödemesi - Ocak', '2,500 TL', '+2,500 TL'],
-          ['02.01.2024', 'Gider', 'Antrenör Maaşı', '1,200 TL', '+1,300 TL'],
-          ['03.01.2024', 'Gelir', 'Sponsorluk Anlaşması', '5,000 TL', '+6,300 TL'],
-          ['05.01.2024', 'Gider', 'Ekipman Alımı', '800 TL', '+5,500 TL'],
-          ['10.01.2024', 'Gelir', 'Kamp Ücreti', '1,500 TL', '+7,000 TL'],
-          ['15.01.2024', 'Gider', 'Tesis Kirası', '2,000 TL', '+5,000 TL'],
+          ['01.01.2024', 'Gelir', 'Aidat Odemesi - Ocak', '2,500 TL', '+2,500 TL'],
+          ['02.01.2024', 'Gider', 'Antrenor Maasi', '1,200 TL', '+1,300 TL'],
+          ['03.01.2024', 'Gelir', 'Sponsorluk Anlasmasi', '5,000 TL', '+6,300 TL'],
+          ['05.01.2024', 'Gider', 'Ekipman Alimi', '800 TL', '+5,500 TL'],
+          ['10.01.2024', 'Gelir', 'Kamp Ucreti', '1,500 TL', '+7,000 TL'],
+          ['15.01.2024', 'Gider', 'Tesis Kirasi', '2,000 TL', '+5,000 TL'],
         ],
         startY: 70,
         theme: 'grid',
-        headStyles: { fillColor: [66, 139, 202] },
-        styles: { fontSize: 9, cellPadding: 3 }
+        headStyles: { 
+          fillColor: [66, 139, 202],
+          textColor: [255, 255, 255],
+          font: 'helvetica',
+          fontStyle: 'bold'
+        },
+        styles: { 
+          fontSize: 9, 
+          cellPadding: 3,
+          font: 'helvetica',
+          textColor: [0, 0, 0]
+        }
       });
       
       // Özet bilgileri ekle
       pdf.setFontSize(12);
-      pdf.text('Finansal Özet:', 20, pdf.lastAutoTable?.finalY + 20 || 150);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Finansal Ozet:', 20, pdf.lastAutoTable?.finalY + 20 || 150);
+      pdf.setFont('helvetica', 'normal');
       pdf.text('Toplam Gelir: 9,000 TL', 30, pdf.lastAutoTable?.finalY + 30 || 160);
       pdf.text('Toplam Gider: 4,000 TL', 30, pdf.lastAutoTable?.finalY + 40 || 170);
       pdf.text('Net Kar: 5,000 TL', 30, pdf.lastAutoTable?.finalY + 50 || 180);
       
     } else if (template.type === 'student') {
       autoTable(pdf, {
-        head: [['Ad Soyad', 'Branş', 'Telefon', 'E-posta', 'Kayıt Tarihi', 'Durum']],
+        head: [['Ad Soyad', 'Brans', 'Telefon', 'E-posta', 'Kayit Tarihi', 'Durum']],
         body: [
-          ['Ahmet Yılmaz', 'Basketbol', '0532 123 4567', 'ahmet@email.com', '15.09.2023', 'Aktif'],
-          ['Ayşe Demir', 'Voleybol', '0533 987 6543', 'ayse@email.com', '20.09.2023', 'Aktif'],
+          ['Ahmet Yilmaz', 'Basketbol', '0532 123 4567', 'ahmet@email.com', '15.09.2023', 'Aktif'],
+          ['Ayse Demir', 'Voleybol', '0533 987 6543', 'ayse@email.com', '20.09.2023', 'Aktif'],
           ['Mehmet Kaya', 'Futbol', '0534 555 1234', 'mehmet@email.com', '25.09.2023', 'Aktif'],
-          ['Fatma Özkan', 'Basketbol', '0535 444 5678', 'fatma@email.com', '01.10.2023', 'Pasif'],
-          ['Can Şahin', 'Futbol', '0536 777 8899', 'can@email.com', '10.10.2023', 'Aktif'],
+          ['Fatma Ozkan', 'Basketbol', '0535 444 5678', 'fatma@email.com', '01.10.2023', 'Pasif'],
+          ['Can Sahin', 'Futbol', '0536 777 8899', 'can@email.com', '10.10.2023', 'Aktif'],
         ],
         startY: 70,
         theme: 'grid',
-        headStyles: { fillColor: [52, 152, 219] },
-        styles: { fontSize: 8, cellPadding: 2 }
+        headStyles: { 
+          fillColor: [52, 152, 219],
+          textColor: [255, 255, 255],
+          font: 'helvetica',
+          fontStyle: 'bold'
+        },
+        styles: { 
+          fontSize: 8, 
+          cellPadding: 2,
+          font: 'helvetica',
+          textColor: [0, 0, 0]
+        }
       });
       
     } else if (template.type === 'training') {
       autoTable(pdf, {
-        head: [['Tarih', 'Saat', 'Branş', 'Antrenör', 'Grup', 'Katılımcı Sayısı']],
+        head: [['Tarih', 'Saat', 'Brans', 'Antrenor', 'Grup', 'Katilimci Sayisi']],
         body: [
           ['Pazartesi', '16:00-17:30', 'Basketbol', 'Ahmet Hoca', 'U-14 Erkek', '12/15'],
-          ['Pazartesi', '17:30-19:00', 'Basketbol', 'Mehmet Hoca', 'U-16 Kız', '10/12'],
-          ['Salı', '16:00-17:30', 'Futbol', 'Ali Hoca', 'U-12 Erkek', '18/20'],
-          ['Çarşamba', '15:00-16:30', 'Voleybol', 'Ayşe Hoca', 'U-15 Kız', '14/16'],
-          ['Perşembe', '17:00-18:30', 'Basketbol', 'Ahmet Hoca', 'U-18 Erkek', '8/10'],
+          ['Pazartesi', '17:30-19:00', 'Basketbol', 'Mehmet Hoca', 'U-16 Kiz', '10/12'],
+          ['Sali', '16:00-17:30', 'Futbol', 'Ali Hoca', 'U-12 Erkek', '18/20'],
+          ['Carsamba', '15:00-16:30', 'Voleybol', 'Ayse Hoca', 'U-15 Kiz', '14/16'],
+          ['Persembe', '17:00-18:30', 'Basketbol', 'Ahmet Hoca', 'U-18 Erkek', '8/10'],
         ],
         startY: 70,
         theme: 'grid',
-        headStyles: { fillColor: [155, 89, 182] },
-        styles: { fontSize: 9, cellPadding: 3 }
+        headStyles: { 
+          fillColor: [155, 89, 182],
+          textColor: [255, 255, 255],
+          font: 'helvetica',
+          fontStyle: 'bold'
+        },
+        styles: { 
+          fontSize: 9, 
+          cellPadding: 3,
+          font: 'helvetica',
+          textColor: [0, 0, 0]
+        }
       });
       
     } else {
       // Diğer rapor tipleri için basit tablo
       autoTable(pdf, {
-        head: [['Metrik', 'Değer', 'Hedef', 'Durum']],
+        head: [['Metrik', 'Deger', 'Hedef', 'Durum']],
         body: [
-          ['Toplam Üye Sayısı', '45', '50', 'İyi'],
-          ['Aylık Gelir', '12,500 TL', '15,000 TL', 'Orta'],
-          ['Antrenman Sayısı', '24', '20', 'Mükemmel'],
-          ['Katılım Oranı', '%85', '%80', 'İyi'],
+          ['Toplam Uye Sayisi', '45', '50', 'Iyi'],
+          ['Aylik Gelir', '12,500 TL', '15,000 TL', 'Orta'],
+          ['Antrenman Sayisi', '24', '20', 'Mukemmel'],
+          ['Katilim Orani', '%85', '%80', 'Iyi'],
         ],
         startY: 70,
         theme: 'grid',
-        headStyles: { fillColor: [255, 152, 0] },
-        styles: { fontSize: 10, cellPadding: 3 }
+        headStyles: { 
+          fillColor: [255, 152, 0],
+          textColor: [255, 255, 255],
+          font: 'helvetica',
+          fontStyle: 'bold'
+        },
+        styles: { 
+          fontSize: 10, 
+          cellPadding: 3,
+          font: 'helvetica',
+          textColor: [0, 0, 0]
+        }
       });
     }
     
@@ -426,35 +476,35 @@ export default function ReportsPage() {
       // Rapor tipine göre farklı veri setleri
       if (template.type === 'financial') {
         data = [
-          { Tarih: '01.01.2024', Kategori: 'Gelir', Açıklama: 'Aidat Ödemesi - Ocak', Tutar: 2500, Bakiye: 2500 },
-          { Tarih: '02.01.2024', Kategori: 'Gider', Açıklama: 'Antrenör Maaşı', Tutar: -1200, Bakiye: 1300 },
-          { Tarih: '03.01.2024', Kategori: 'Gelir', Açıklama: 'Sponsorluk Anlaşması', Tutar: 5000, Bakiye: 6300 },
-          { Tarih: '05.01.2024', Kategori: 'Gider', Açıklama: 'Ekipman Alımı', Tutar: -800, Bakiye: 5500 },
-          { Tarih: '10.01.2024', Kategori: 'Gelir', Açıklama: 'Kamp Ücreti', Tutar: 1500, Bakiye: 7000 },
-          { Tarih: '15.01.2024', Kategori: 'Gider', Açıklama: 'Tesis Kirası', Tutar: -2000, Bakiye: 5000 },
+          { Tarih: '01.01.2024', Kategori: 'Gelir', Aciklama: 'Aidat Odemesi - Ocak', Tutar: 2500, Bakiye: 2500 },
+          { Tarih: '02.01.2024', Kategori: 'Gider', Aciklama: 'Antrenor Maasi', Tutar: -1200, Bakiye: 1300 },
+          { Tarih: '03.01.2024', Kategori: 'Gelir', Aciklama: 'Sponsorluk Anlasmasi', Tutar: 5000, Bakiye: 6300 },
+          { Tarih: '05.01.2024', Kategori: 'Gider', Aciklama: 'Ekipman Alimi', Tutar: -800, Bakiye: 5500 },
+          { Tarih: '10.01.2024', Kategori: 'Gelir', Aciklama: 'Kamp Ucreti', Tutar: 1500, Bakiye: 7000 },
+          { Tarih: '15.01.2024', Kategori: 'Gider', Aciklama: 'Tesis Kirasi', Tutar: -2000, Bakiye: 5000 },
         ];
       } else if (template.type === 'student') {
         data = [
-          { 'Ad Soyad': 'Ahmet Yılmaz', Branş: 'Basketbol', Telefon: '0532 123 4567', 'E-posta': 'ahmet@email.com', 'Kayıt Tarihi': '15.09.2023', Durum: 'Aktif' },
-          { 'Ad Soyad': 'Ayşe Demir', Branş: 'Voleybol', Telefon: '0533 987 6543', 'E-posta': 'ayse@email.com', 'Kayıt Tarihi': '20.09.2023', Durum: 'Aktif' },
-          { 'Ad Soyad': 'Mehmet Kaya', Branş: 'Futbol', Telefon: '0534 555 1234', 'E-posta': 'mehmet@email.com', 'Kayıt Tarihi': '25.09.2023', Durum: 'Aktif' },
-          { 'Ad Soyad': 'Fatma Özkan', Branş: 'Basketbol', Telefon: '0535 444 5678', 'E-posta': 'fatma@email.com', 'Kayıt Tarihi': '01.10.2023', Durum: 'Pasif' },
-          { 'Ad Soyad': 'Can Şahin', Branş: 'Futbol', Telefon: '0536 777 8899', 'E-posta': 'can@email.com', 'Kayıt Tarihi': '10.10.2023', Durum: 'Aktif' },
+          { 'Ad Soyad': 'Ahmet Yilmaz', Brans: 'Basketbol', Telefon: '0532 123 4567', 'E-posta': 'ahmet@email.com', 'Kayit Tarihi': '15.09.2023', Durum: 'Aktif' },
+          { 'Ad Soyad': 'Ayse Demir', Brans: 'Voleybol', Telefon: '0533 987 6543', 'E-posta': 'ayse@email.com', 'Kayit Tarihi': '20.09.2023', Durum: 'Aktif' },
+          { 'Ad Soyad': 'Mehmet Kaya', Brans: 'Futbol', Telefon: '0534 555 1234', 'E-posta': 'mehmet@email.com', 'Kayit Tarihi': '25.09.2023', Durum: 'Aktif' },
+          { 'Ad Soyad': 'Fatma Ozkan', Brans: 'Basketbol', Telefon: '0535 444 5678', 'E-posta': 'fatma@email.com', 'Kayit Tarihi': '01.10.2023', Durum: 'Pasif' },
+          { 'Ad Soyad': 'Can Sahin', Brans: 'Futbol', Telefon: '0536 777 8899', 'E-posta': 'can@email.com', 'Kayit Tarihi': '10.10.2023', Durum: 'Aktif' },
         ];
       } else if (template.type === 'training') {
         data = [
-          { Gün: 'Pazartesi', Saat: '16:00-17:30', Branş: 'Basketbol', Antrenör: 'Ahmet Hoca', Grup: 'U-14 Erkek', 'Katılımcı': '12/15' },
-          { Gün: 'Pazartesi', Saat: '17:30-19:00', Branş: 'Basketbol', Antrenör: 'Mehmet Hoca', Grup: 'U-16 Kız', 'Katılımcı': '10/12' },
-          { Gün: 'Salı', Saat: '16:00-17:30', Branş: 'Futbol', Antrenör: 'Ali Hoca', Grup: 'U-12 Erkek', 'Katılımcı': '18/20' },
-          { Gün: 'Çarşamba', Saat: '15:00-16:30', Branş: 'Voleybol', Antrenör: 'Ayşe Hoca', Grup: 'U-15 Kız', 'Katılımcı': '14/16' },
-          { Gün: 'Perşembe', Saat: '17:00-18:30', Branş: 'Basketbol', Antrenör: 'Ahmet Hoca', Grup: 'U-18 Erkek', 'Katılımcı': '8/10' },
+          { Gun: 'Pazartesi', Saat: '16:00-17:30', Brans: 'Basketbol', Antrenor: 'Ahmet Hoca', Grup: 'U-14 Erkek', 'Katilimci': '12/15' },
+          { Gun: 'Pazartesi', Saat: '17:30-19:00', Brans: 'Basketbol', Antrenor: 'Mehmet Hoca', Grup: 'U-16 Kiz', 'Katilimci': '10/12' },
+          { Gun: 'Sali', Saat: '16:00-17:30', Brans: 'Futbol', Antrenor: 'Ali Hoca', Grup: 'U-12 Erkek', 'Katilimci': '18/20' },
+          { Gun: 'Carsamba', Saat: '15:00-16:30', Brans: 'Voleybol', Antrenor: 'Ayse Hoca', Grup: 'U-15 Kiz', 'Katilimci': '14/16' },
+          { Gun: 'Persembe', Saat: '17:00-18:30', Brans: 'Basketbol', Antrenor: 'Ahmet Hoca', Grup: 'U-18 Erkek', 'Katilimci': '8/10' },
         ];
       } else {
         data = [
-          { Metrik: 'Toplam Üye Sayısı', Değer: 45, Hedef: 50, Durum: 'İyi' },
-          { Metrik: 'Aylık Gelir', Değer: '12,500 TL', Hedef: '15,000 TL', Durum: 'Orta' },
-          { Metrik: 'Antrenman Sayısı', Değer: 24, Hedef: 20, Durum: 'Mükemmel' },
-          { Metrik: 'Katılım Oranı', Değer: '%85', Hedef: '%80', Durum: 'İyi' },
+          { Metrik: 'Toplam Uye Sayisi', Deger: 45, Hedef: 50, Durum: 'Iyi' },
+          { Metrik: 'Aylik Gelir', Deger: '12,500 TL', Hedef: '15,000 TL', Durum: 'Orta' },
+          { Metrik: 'Antrenman Sayisi', Deger: 24, Hedef: 20, Durum: 'Mukemmel' },
+          { Metrik: 'Katilim Orani', Deger: '%85', Hedef: '%80', Durum: 'Iyi' },
         ];
       }
 
@@ -477,7 +527,7 @@ export default function ReportsPage() {
           { Kategori: 'Net Kar', Tutar: '5,000 TL' },
         ];
         const summaryWs = XLSX.utils.json_to_sheet(summaryData);
-        XLSX.utils.book_append_sheet(wb, summaryWs, 'Özet');
+        XLSX.utils.book_append_sheet(wb, summaryWs, 'Ozet');
       }
 
       // Excel'i blob olarak oluştur
@@ -902,7 +952,10 @@ export default function ReportsPage() {
                   {reportTemplates.map((template) => (
                     <button
                       key={template.id}
-                      onClick={() => setSelectedTemplate(template)}
+                      onClick={() => {
+                        setSelectedTemplate(template);
+                        setReportParameters({ format: 'pdf' });
+                      }}
                       className="bg-gradient-to-br from-white to-gray-50 border-2 border-gray-200 rounded-xl p-6 hover:border-blue-500 hover:shadow-lg transition-all duration-200 text-left group"
                     >
                       <div className={`inline-flex p-3 rounded-lg bg-gradient-to-r ${template.color} bg-opacity-10 mb-4`}>
