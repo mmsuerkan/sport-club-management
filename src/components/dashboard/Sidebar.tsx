@@ -60,9 +60,9 @@ const menuItems = [
     href: '/dashboard/matches'
   },
   {
-    title: 'Aktiviteler',
+    title: 'Etkinlikler',
     icon: Activity,
-    href: '/dashboard/activities'
+    href: '/dashboard/events'
   },
   {
     title: 'Finansal',
