@@ -270,7 +270,7 @@ export default function TrainingsPage() {
       const selectedBranch = branches.find(b => b.id === formData.branchId);
       const selectedTrainer = trainers.find(t => t.id === formData.trainerId);
 
-      const trainingData = {
+      const trainingData: any = {
         ...formData,
         groupName: selectedGroup?.name || '',
         branchName: selectedBranch?.name || '',
@@ -281,10 +281,24 @@ export default function TrainingsPage() {
         isRecurring: formData.isRecurring && formData.recurringDays.length > 0,
         recurringDays: formData.isRecurring ? formData.recurringDays : [],
         recurringEndDate: formData.isRecurring ? formData.recurringEndDate : '',
-        recurringCount: formData.isRecurring && formData.recurringCount ? parseInt(formData.recurringCount) : undefined,
-        recurringType: formData.isRecurring ? formData.recurringType : undefined,
         updatedAt: Timestamp.now()
       };
+
+      // Sadece değer varsa ekle (undefined'ları Firebase'e gönderme)
+      if (formData.isRecurring && formData.recurringCount && formData.recurringCount.trim()) {
+        trainingData.recurringCount = parseInt(formData.recurringCount);
+      }
+      
+      if (formData.isRecurring && formData.recurringType) {
+        trainingData.recurringType = formData.recurringType;
+      }
+
+      // Firebase'e göndermeden önce undefined alanları temizle
+      Object.keys(trainingData).forEach(key => {
+        if (trainingData[key] === undefined) {
+          delete trainingData[key];
+        }
+      });
 
       if (editingTraining && editingTraining.id) {
         // Mevcut antrenmanı güncelle
