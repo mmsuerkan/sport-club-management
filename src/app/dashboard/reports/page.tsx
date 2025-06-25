@@ -263,24 +263,37 @@ export default function ReportsPage() {
 
       // Rapor oluşturma simülasyonu (gerçek uygulamada backend'de yapılacak)
       setTimeout(async () => {
-        // Raporu oluştur
-        const finalFormat = reportParameters.format || 'pdf';
-        if (finalFormat === 'pdf') {
-          await generatePDFReport(selectedTemplate, reportParameters, docRef.id);
-        } else {
-          await generateExcelReport(selectedTemplate, reportParameters, docRef.id);
+        try {
+          // Raporu oluştur
+          const finalFormat = reportParameters.format || 'pdf';
+          if (finalFormat === 'pdf') {
+            await generatePDFReport(selectedTemplate, reportParameters, docRef.id);
+          } else {
+            await generateExcelReport(selectedTemplate, reportParameters, docRef.id);
+          }
+
+          // Rapor durumunu güncelle
+          await updateDoc(doc(db, 'reports', docRef.id), {
+            status: 'completed',
+            size: Math.floor(Math.random() * 5000) + 500 // KB cinsinden örnek boyut
+          });
+
+          setGeneratingReport(false);
+          setShowCreateModal(false);
+          setSelectedTemplate(null);
+          setReportParameters({});
+        } catch (error) {
+          console.error('Rapor oluşturma simülasyonu hatası:', error);
+          // Hata durumunda rapor durumunu güncelle
+          try {
+            await updateDoc(doc(db, 'reports', docRef.id), {
+              status: 'failed'
+            });
+          } catch (updateError) {
+            console.error('Rapor durumu güncelleme hatası:', updateError);
+          }
+          setGeneratingReport(false);
         }
-
-        // Rapor durumunu güncelle
-        await updateDoc(doc(db, 'reports', docRef.id), {
-          status: 'completed',
-          size: Math.floor(Math.random() * 5000) + 500 // KB cinsinden örnek boyut
-        });
-
-        setGeneratingReport(false);
-        setShowCreateModal(false);
-        setSelectedTemplate(null);
-        setReportParameters({});
       }, 3000);
     } catch (error) {
       console.error('Rapor oluşturma hatası:', error);
@@ -289,39 +302,42 @@ export default function ReportsPage() {
   };
 
   // Firebase'den gerçek verileri çekme fonksiyonları
-  const fetchStudentsData = async () => {
+  const fetchStudentsData = async (): Promise<any[]> => {
     try {
       const querySnapshot = await getDocs(collection(db, 'students'));
-      return querySnapshot.docs.map(doc => ({
+      const data = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
+      return data || [];
     } catch (error) {
       console.error('Öğrenci verileri yüklenirken hata:', error);
       return [];
     }
   };
 
-  const fetchFinancialData = async () => {
+  const fetchFinancialData = async (): Promise<any[]> => {
     try {
       const querySnapshot = await getDocs(collection(db, 'financial_transactions'));
-      return querySnapshot.docs.map(doc => ({
+      const data = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
+      return data || [];
     } catch (error) {
       console.error('Finansal veriler yüklenirken hata:', error);
       return [];
     }
   };
 
-  const fetchTrainingsData = async () => {
+  const fetchTrainingsData = async (): Promise<any[]> => {
     try {
       const querySnapshot = await getDocs(collection(db, 'trainings'));
-      return querySnapshot.docs.map(doc => ({
+      const data = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
+      return data || [];
     } catch (error) {
       console.error('Antrenman verileri yüklenirken hata:', error);
       return [];
@@ -330,11 +346,12 @@ export default function ReportsPage() {
 
   // PDF rapor oluşturma
   const generatePDFReport = async (template: ReportTemplate, parameters: any, reportId: string) => {
-    const pdf = new jsPDF();
-    
-    // Türkçe karakter desteği için font ayarları
-    pdf.setFont('helvetica');
-    pdf.setLanguage('tr');
+    try {
+      const pdf = new jsPDF();
+      
+      // Türkçe karakter desteği için font ayarları
+      pdf.setFont('helvetica');
+      pdf.setLanguage('tr');
     
     // Başlık
     pdf.setFontSize(20);
