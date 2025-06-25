@@ -27,47 +27,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (user) {
         try {
-          // Check if token is valid
-          const token = await user.getIdToken(true);
-          
-          // Set auth cookie
-          document.cookie = `auth-token=${token}; path=/; max-age=3600; SameSite=Lax`;
-          
           const data = await getUserData(user.uid);
           setUserData(data);
-        } catch (error: any) {
+        } catch (error) {
           console.error('Error fetching user data:', error);
-          // If token is expired or invalid, sign out
-          if (error.code === 'auth/user-token-expired' || error.code === 'auth/invalid-user-token') {
-            await logOut();
-          }
         }
       } else {
         setUserData(null);
-        // Clear auth cookie when user is null
-        document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
       }
       
       setLoading(false);
     });
 
-    // Check token validity every 30 minutes
-    const interval = setInterval(async () => {
-      if (user) {
-        try {
-          await user.getIdToken(true);
-        } catch (error) {
-          console.error('Token refresh failed:', error);
-          await logOut();
-        }
-      }
-    }, 30 * 60 * 1000); // 30 minutes
-
-    return () => {
-      unsubscribe();
-      clearInterval(interval);
-    };
-  }, [user, router]);
+    return unsubscribe;
+  }, []);
 
   const signIn = async (email: string, password: string) => {
     const user = await firebaseSignIn(email, password);

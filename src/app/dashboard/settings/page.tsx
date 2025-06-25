@@ -6,7 +6,6 @@ import { Save, Settings as SettingsIcon, Bell, Shield, User, Palette, Globe, Dat
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTheme } from '@/contexts/ThemeContext';
 
 interface Settings {
   id?: string;
@@ -65,7 +64,7 @@ const defaultSettings: Settings = {
     dataCollection: true
   },
   appearance: {
-    theme: 'dark',
+    theme: 'light',
     language: 'tr',
     dateFormat: 'dd/mm/yyyy'
   },
@@ -84,7 +83,6 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const { user } = useAuth();
-  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
     fetchSettings();
@@ -161,16 +159,6 @@ export default function SettingsPage() {
         [field]: value
       }
     }));
-    
-    // Update global theme when appearance.theme changes
-    if (section === 'appearance' && field === 'theme') {
-      if (value === 'auto') {
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        setTheme(prefersDark ? 'dark' : 'light');
-      } else {
-        setTheme(value as 'light' | 'dark');
-      }
-    }
   };
 
   const tabs = [
@@ -185,29 +173,29 @@ export default function SettingsPage() {
     return (
       <div className="flex items-center justify-center min-h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <p className="ml-3 text-gray-300 dark:text-gray-600">Ayarlar yükleniyor...</p>
+        <p className="ml-3 text-gray-600">Ayarlar yükleniyor...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 dark:from-gray-50 dark:via-gray-100 dark:to-gray-50">
+    <div>
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-white dark:text-gray-900">Ayarlar</h1>
-          <p className="text-gray-300 dark:text-gray-600 mt-2">Sistem ayarlarını yönetin</p>
+          <h1 className="text-3xl font-bold text-gray-900">Ayarlar</h1>
+          <p className="text-gray-600 mt-2">Sistem ayarlarını yönetin</p>
         </div>
         <div className="flex gap-3">
           <button
             onClick={() => setShowResetModal(true)}
-            className="bg-gray-500 hover:bg-gray-600 dark:bg-gray-400 dark:hover:bg-gray-500 text-white dark:text-gray-800 px-4 py-2 rounded-lg transition-colors"
+            className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors"
           >
             Sıfırla
           </button>
           <button
             onClick={handleSave}
             disabled={saving}
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+            className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
           >
             {saving ? (
               <>
@@ -224,10 +212,10 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div className="bg-gray-800/50 dark:bg-white backdrop-blur-md rounded-xl shadow-sm border border-gray-700 dark:border-gray-100">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100">
         <div className="flex">
           {/* Sidebar */}
-          <div className="w-64 border-r border-gray-700 dark:border-gray-200">
+          <div className="w-64 border-r border-gray-200">
             <nav className="p-6 space-y-2">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
@@ -237,8 +225,8 @@ export default function SettingsPage() {
                     onClick={() => setActiveTab(tab.id)}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
                       activeTab === tab.id
-                        ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30 dark:bg-blue-50 dark:text-blue-700 dark:border-blue-200'
-                        : 'text-gray-300 hover:bg-gray-700/50 dark:text-gray-600 dark:hover:bg-gray-50'
+                        ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                        : 'text-gray-600 hover:bg-gray-50'
                     }`}
                   >
                     <Icon size={20} />
@@ -253,17 +241,17 @@ export default function SettingsPage() {
           <div className="flex-1 p-8">
             {activeTab === 'general' && (
               <div className="space-y-6">
-                <h2 className="text-xl font-semibold text-white dark:text-gray-900">Genel Ayarlar</h2>
+                <h2 className="text-xl font-semibold text-gray-900">Genel Ayarlar</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 dark:text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Klüp Adı
                     </label>
                     <input
                       type="text"
                       value={settings.general.clubName}
                       onChange={(e) => updateSettings('general', 'clubName', e.target.value)}
-                      className="w-full px-3 py-2 bg-gray-700/50 border border-gray-600 text-white placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-white dark:border-gray-300 dark:text-gray-900 dark:placeholder-gray-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="Klüp adını giriniz"
                     />
                   </div>

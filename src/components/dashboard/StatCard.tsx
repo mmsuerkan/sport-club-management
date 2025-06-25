@@ -15,13 +15,13 @@ export default function StatCard({ title, value, change, icon, color = 'blue' }:
   };
 
   return (
-    <div className="bg-gray-800/50 backdrop-blur-md rounded-xl p-6 shadow-sm border border-gray-700">
+    <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-gray-400 mb-1">{title}</p>
-          <h3 className="text-2xl font-bold text-white">{value}</h3>
+          <p className="text-sm text-gray-600 mb-1">{title}</p>
+          <h3 className="text-2xl font-bold text-gray-900">{value}</h3>
           {change !== undefined && (
-            <p className={`text-sm mt-2 ${change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+            <p className={`text-sm mt-2 ${change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {change >= 0 ? '+' : ''}{change}% geçen aya göre
             </p>
           )}

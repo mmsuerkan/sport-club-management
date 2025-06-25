@@ -47,10 +47,9 @@ export default function LoginPage() {
       
       console.log('User object type:', typeof user, user);
       
-      // Set auth cookie for middleware (7 days if remember me, 1 hour if not)
+      // Set auth cookie for middleware
       const token = await user.getIdToken();
-      const maxAge = data.rememberMe ? 7 * 24 * 60 * 60 : 3600; // 7 days or 1 hour
-      document.cookie = `auth-token=${token}; path=/; max-age=${maxAge}; SameSite=Lax`;
+      document.cookie = `auth-token=${token}; path=/; max-age=3600; SameSite=Lax`;
       
       console.log('Login successful, token:', token.substring(0, 50) + '...');
       console.log('Cookie set, checking cookies:', document.cookie);

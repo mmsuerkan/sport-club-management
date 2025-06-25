@@ -12,7 +12,7 @@ export default function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <div className="flex h-screen bg-gray-50">
       <div className={`${sidebarOpen ? 'block' : 'hidden'} lg:block`}>
         <Sidebar />
       </div>

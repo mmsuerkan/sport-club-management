@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, Edit2, Trash2, Building, MapPin, AlertCircle } from 'lucide-react';
+import { Plus, Edit2, Trash2, Building, MapPin } from 'lucide-react';
 import { collection, getDocs, doc, setDoc, deleteDoc, query, where, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import { useAuth } from '@/contexts/AuthContext';
 
 interface Branch {
   id: string;
@@ -20,24 +19,14 @@ export default function BranchesPage() {
   const [editingBranch, setEditingBranch] = useState<Branch | null>(null);
   const [formData, setFormData] = useState({ name: '', address: '' });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
 
   useEffect(() => {
     fetchBranches();
   }, []);
 
   const fetchBranches = async () => {
-    if (!user) {
-      setError('Giriş yapmanız gerekiyor');
-      setLoading(false);
-      return;
-    }
-    
     try {
       setLoading(true);
-      setError(null);
-      console.log('Fetching branches, user:', user.uid);
       const querySnapshot = await getDocs(collection(db, 'branches'));
       const branchesData = querySnapshot.docs.map(doc => ({
         id: doc.id,
@@ -45,9 +34,8 @@ export default function BranchesPage() {
         createdAt: doc.data().createdAt?.toDate() || new Date()
       })) as Branch[];
       setBranches(branchesData);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Şubeler yüklenirken hata:', error);
-      setError(error.message || 'Veriler yüklenirken bir hata oluştu');
     } finally {
       setLoading(false);
     }
@@ -143,8 +131,8 @@ export default function BranchesPage() {
     <div>
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-white">Şubeler</h1>
-          <p className="text-gray-400 mt-2">Klüp şubelerini yönetin</p>
+          <h1 className="text-3xl font-bold text-gray-900">Şubeler</h1>
+          <p className="text-gray-600 mt-2">Klüp şubelerini yönetin</p>
         </div>
         <button
           onClick={() => setShowForm(true)}
@@ -158,32 +146,32 @@ export default function BranchesPage() {
       {/* Form Modal */}
       {showForm && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-[9999] p-4" onClick={handleCancel}>
-          <div className="bg-gray-800 rounded-2xl p-8 w-full max-w-lg shadow-2xl border border-gray-700 transform transition-all" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-xl font-semibold mb-4 text-white">
+          <div className="bg-white rounded-2xl p-8 w-full max-w-lg shadow-2xl border border-gray-100 transform transition-all" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-xl font-semibold mb-4">
               {editingBranch ? 'Şube Düzenle' : 'Yeni Şube Ekle'}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Şube Adı
                 </label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Örnek: Merkez Şube"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Adres
                 </label>
                 <textarea
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Şube adresini giriniz"
                   rows={3}
                   required
@@ -199,7 +187,7 @@ export default function BranchesPage() {
                 <button
                   type="button"
                   onClick={handleCancel}
-                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-gray-200 py-2 rounded-lg transition-colors"
+                  className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 rounded-lg transition-colors"
                 >
                   İptal
                 </button>
@@ -211,78 +199,72 @@ export default function BranchesPage() {
       )}
 
       {/* Branches List */}
-      <div className="bg-gray-800/50 backdrop-blur-md rounded-xl shadow-sm border border-gray-700">
-        {error ? (
-          <div className="p-8 text-center">
-            <AlertCircle className="mx-auto h-12 w-12 text-red-400 mb-4" />
-            <h3 className="text-lg font-medium text-white mb-2">Hata</h3>
-            <p className="text-gray-400">{error}</p>
-          </div>
-        ) : loading ? (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+        {loading ? (
           <div className="p-8 text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-2 text-gray-400">Şubeler yükleniyor...</p>
+            <p className="mt-2 text-gray-600">Şubeler yükleniyor...</p>
           </div>
         ) : branches.length === 0 ? (
           <div className="p-8 text-center">
-            <Building className="mx-auto h-12 w-12 text-gray-500" />
-            <h3 className="mt-2 text-sm font-medium text-gray-200">Şube bulunamadı</h3>
-            <p className="mt-1 text-sm text-gray-400">
+            <Building className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">Şube bulunamadı</h3>
+            <p className="mt-1 text-sm text-gray-500">
               İlk şubenizi eklemek için &quot;Yeni Şube&quot; butonuna tıklayın.
             </p>
           </div>
         ) : (
           <div className="overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-700">
-              <thead className="bg-gray-700/50">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Şube Adı
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Adres
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Oluşturulma Tarihi
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     İşlemler
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-700">
+              <tbody className="bg-white divide-y divide-gray-200">
                 {branches.map((branch) => (
-                  <tr key={branch.id} className="hover:bg-gray-700/30">
+                  <tr key={branch.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <Building className="h-5 w-5 text-gray-500 mr-3" />
-                        <div className="text-sm font-medium text-gray-200">
+                        <Building className="h-5 w-5 text-gray-400 mr-3" />
+                        <div className="text-sm font-medium text-gray-900">
                           {branch.name}
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-start">
-                        <MapPin className="h-4 w-4 text-gray-500 mr-2 mt-0.5 flex-shrink-0" />
-                        <div className="text-sm text-gray-300">
+                        <MapPin className="h-4 w-4 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
+                        <div className="text-sm text-gray-600">
                           {branch.address}
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {branch.createdAt.toLocaleDateString('tr-TR')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => handleEdit(branch)}
-                          className="text-blue-400 hover:text-blue-300 p-1 hover:bg-gray-700/50 rounded"
+                          className="text-blue-600 hover:text-blue-700 p-1 hover:bg-blue-50 rounded"
                         >
                           <Edit2 size={16} />
                         </button>
                         <button
                           onClick={() => handleDelete(branch.id)}
-                          className="text-red-400 hover:text-red-300 p-1 hover:bg-gray-700/50 rounded"
+                          className="text-red-600 hover:text-red-700 p-1 hover:bg-red-50 rounded"
                         >
                           <Trash2 size={16} />
                         </button>
