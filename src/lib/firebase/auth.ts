@@ -14,10 +14,8 @@ import { auth, db } from './config';
 
 export interface UserData {
   email: string;
-  role: 'admin' | 'manager' | 'staff';
   clubId: string;
   branchIds: string[];
-  permissions: string[];
   createdAt: Date;
 }
 
@@ -36,10 +34,8 @@ export const signIn = async (email: string, password: string, rememberMe: boolea
     if (!userDoc.exists()) {
       await setDoc(doc(db, 'users', user.uid), {
         email: user.email,
-        role: 'staff', // Default role
-        clubId: '', // Will be set by admin
+        clubId: '',
         branchIds: [],
-        permissions: [],
         createdAt: new Date()
       });
     }
@@ -53,7 +49,7 @@ export const signIn = async (email: string, password: string, rememberMe: boolea
 export const signUp = async (
   email: string, 
   password: string, 
-  userData: Omit<UserData, 'email' | 'createdAt'>
+  userData?: Omit<UserData, 'email' | 'createdAt'>
 ) => {
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -61,7 +57,8 @@ export const signUp = async (
     
     await setDoc(doc(db, 'users', user.uid), {
       email,
-      ...userData,
+      clubId: userData?.clubId || '',
+      branchIds: userData?.branchIds || [],
       createdAt: new Date()
     });
     

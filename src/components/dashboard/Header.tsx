@@ -13,7 +13,7 @@ interface HeaderProps {
 
 export default function Header({ onMenuToggle }: HeaderProps) {
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const { user } = useAuth();
+  const { user, userData } = useAuth();
   const router = useRouter();
 
   const handleLogout = async () => {

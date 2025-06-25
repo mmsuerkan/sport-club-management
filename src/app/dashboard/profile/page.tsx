@@ -59,7 +59,6 @@ interface UserProfile {
   city: string;
   country: string;
   photoURL: string;
-  role: string;
   department: string;
   joinedDate: Date;
   bio: string;
@@ -157,7 +156,6 @@ export default function ProfilePage() {
           city: userData.city || '',
           country: userData.country || 'Türkiye',
           photoURL: userData.photoURL || auth.currentUser?.photoURL || '',
-          role: userData.role || 'user',
           department: userData.department || '',
           joinedDate: userData.createdAt?.toDate() || new Date(),
           bio: userData.bio || '',
@@ -448,14 +446,11 @@ export default function ProfilePage() {
             <div>
               <h2 className="text-2xl font-semibold text-gray-900">{user.displayName}</h2>
               <p className="text-gray-600">{user.email}</p>
-              <div className="flex items-center gap-4 mt-2">
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  {user.role === 'admin' ? 'Yönetici' : 'Kullanıcı'}
-                </span>
-                {user.department && (
+              {user.department && (
+                <div className="flex items-center gap-4 mt-2">
                   <span className="text-sm text-gray-500">{user.department}</span>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
           
