@@ -90,10 +90,10 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <div className="w-[280px] bg-white border-r border-gray-200 h-screen overflow-y-auto">
-      <div className="p-5 border-b border-gray-200">
-        <h1 className="text-2xl font-bold text-gray-900">Sports Club</h1>
-        <p className="text-sm text-gray-500 mt-1">Yönetim Paneli</p>
+    <div className="w-[280px] bg-gray-800/50 backdrop-blur-md border-r border-gray-700 h-screen overflow-y-auto">
+      <div className="p-5 border-b border-gray-700">
+        <h1 className="text-2xl font-bold text-white">Sports Club</h1>
+        <p className="text-sm text-gray-400 mt-1">Yönetim Paneli</p>
       </div>
 
       <nav className="p-4">
@@ -108,8 +108,8 @@ export default function Sidebar() {
                   href={item.href}
                   className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                     isActive
-                      ? 'bg-blue-50 text-blue-600 font-medium'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-400 font-medium border-l-4 border-blue-500'
+                      : 'text-gray-300 hover:bg-gray-700/50 hover:text-white'
                   }`}
                 >
                   <Icon size={20} />
