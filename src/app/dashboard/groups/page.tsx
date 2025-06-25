@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Plus, Edit2, Trash2, UsersIcon, Clock, Building } from 'lucide-react';
-import { collection, getDocs, doc, setDoc, deleteDoc, updateDoc, query, where, writeBatch } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, deleteDoc, query, where, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 
 interface Branch {
@@ -246,7 +246,7 @@ export default function GroupsPage() {
             <UsersIcon className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-2 text-sm font-medium text-gray-900">Grup bulunamadı</h3>
             <p className="mt-1 text-sm text-gray-500">
-              İlk grubunuzu eklemek için "Yeni Grup" butonuna tıklayın.
+              İlk grubunuzu eklemek için &quot;Yeni Grup&quot; butonuna tıklayın.
             </p>
           </div>
         ) : (

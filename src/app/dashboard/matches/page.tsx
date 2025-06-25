@@ -1,30 +1,22 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { 
   Calendar, 
   Clock, 
   Users, 
   MapPin, 
   Search,
-  Filter,
   Plus,
   Edit,
   Trash2,
-  Eye,
   Trophy,
-  Target,
-  TrendingUp,
   Award,
   Activity,
   BarChart3,
   Zap,
-  Timer,
   CheckCircle2,
   XCircle,
-  Minus,
-  ArrowRight,
   AlertCircle,
   Star
 } from 'lucide-react';
@@ -60,8 +52,9 @@ interface Match {
   attendance?: number;
   homeTeamLogo?: string;
   awayTeamLogo?: string;
-  statistics?: MatchStatistics;
+  playerStats?: PlayerStats[];
   events?: MatchEvent[];
+  statistics?: MatchStatistics;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
@@ -232,7 +225,7 @@ export default function MatchesPage() {
     e.preventDefault();
     
     try {
-      const matchData: any = {
+      const matchData: Partial<Match> = {
         homeTeam: formData.homeTeam,
         awayTeam: formData.awayTeam,
         date: formData.date,
@@ -442,8 +435,8 @@ export default function MatchesPage() {
     }
     
     // Load player stats if available
-    if ((match as any).playerStats) {
-      setPlayerStats((match as any).playerStats);
+    if (match.playerStats) {
+      setPlayerStats(match.playerStats);
     } else {
       setPlayerStats([]);
     }
@@ -1185,7 +1178,7 @@ export default function MatchesPage() {
                       <div className="space-y-1">
                         {matchEvents.slice(-3).map((event, index) => (
                           <div key={index} className="text-sm text-gray-600">
-                            {event.minute}' {getEventIcon(event.type)} {event.playerName}
+                            {event.minute}&apos; {getEventIcon(event.type)} {event.playerName}
                           </div>
                         ))}
                       </div>
@@ -1337,7 +1330,7 @@ export default function MatchesPage() {
               )}
 
               {/* Player Stats Display */}
-              {selectedMatch && (selectedMatch as any).playerStats && (
+              {selectedMatch && selectedMatch.playerStats && (
                 <div className="mt-8">
                   <h4 className="text-lg font-semibold text-gray-900 mb-4">Oyuncu İstatistikleri</h4>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1345,7 +1338,7 @@ export default function MatchesPage() {
                     <div>
                       <h5 className="font-medium text-blue-600 mb-3">{selectedMatch.homeTeam}</h5>
                       <div className="space-y-2">
-                        {((selectedMatch as any).playerStats || [])
+                        {(selectedMatch.playerStats || [])
                           .filter((stat: PlayerStats) => stat.team === 'home')
                           .map((stat: PlayerStats, index: number) => (
                             <div key={index} className="bg-blue-50 p-3 rounded-lg">
@@ -1356,7 +1349,7 @@ export default function MatchesPage() {
                                 </div>
                                 <div className="text-right">
                                   <p className="text-lg font-bold text-blue-600">{stat.rating}/10</p>
-                                  <p className="text-xs text-blue-600">{stat.minutesPlayed}'</p>
+                                  <p className="text-xs text-blue-600">{stat.minutesPlayed}&apos;</p>
                                 </div>
                               </div>
                               <div className="grid grid-cols-3 gap-2 mt-2 text-xs text-blue-700">
@@ -1373,7 +1366,7 @@ export default function MatchesPage() {
                     <div>
                       <h5 className="font-medium text-purple-600 mb-3">{selectedMatch.awayTeam}</h5>
                       <div className="space-y-2">
-                        {((selectedMatch as any).playerStats || [])
+                        {(selectedMatch.playerStats || [])
                           .filter((stat: PlayerStats) => stat.team === 'away')
                           .map((stat: PlayerStats, index: number) => (
                             <div key={index} className="bg-purple-50 p-3 rounded-lg">
@@ -1384,7 +1377,7 @@ export default function MatchesPage() {
                                 </div>
                                 <div className="text-right">
                                   <p className="text-lg font-bold text-purple-600">{stat.rating}/10</p>
-                                  <p className="text-xs text-purple-600">{stat.minutesPlayed}'</p>
+                                  <p className="text-xs text-purple-600">{stat.minutesPlayed}&apos;</p>
                                 </div>
                               </div>
                               <div className="grid grid-cols-3 gap-2 mt-2 text-xs text-purple-700">
@@ -1410,7 +1403,7 @@ export default function MatchesPage() {
                       .map((event, index) => (
                         <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                           <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center font-bold text-gray-700">
-                            {event.minute}'
+                            {event.minute}&apos;
                           </div>
                           <div className="text-2xl">{getEventIcon(event.type)}</div>
                           <div className="flex-1">
@@ -1786,7 +1779,7 @@ export default function MatchesPage() {
                         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 text-sm">
                           <div className="text-center">
                             <p className="text-gray-500">Dakika</p>
-                            <p className="font-medium">{stat.minutesPlayed}'</p>
+                            <p className="font-medium">{stat.minutesPlayed}&apos;</p>
                           </div>
                           <div className="text-center">
                             <p className="text-gray-500">Sayı</p>
@@ -1983,7 +1976,7 @@ export default function MatchesPage() {
                       .map((event, index) => (
                         <div key={event.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
                           <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center font-bold text-gray-700">
-                            {event.minute}'
+                            {event.minute}&apos;
                           </div>
                           <div className="text-2xl">{getEventIcon(event.type)}</div>
                           <div className="flex-1">

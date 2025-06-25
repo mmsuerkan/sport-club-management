@@ -14,19 +14,19 @@ import {
   updateDoc,
   deleteDoc,
   doc,
-  Timestamp,
-  where
+  Timestamp
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from 'date-fns';
 import { tr } from 'date-fns/locale';
+import Image from 'next/image';
 import { 
   Calendar,
   Clock,
   MapPin,
   Users,
   Tag,
-  Image,
+  Image as ImageIcon,
   Edit2,
   Trash2,
   Plus,
@@ -44,7 +44,6 @@ import {
   Sparkles,
   Star,
   UserPlus,
-  ExternalLink,
   CalendarDays,
   User
 } from 'lucide-react';
@@ -191,7 +190,7 @@ export default function EventsPage() {
       let imageUrl = editingEvent?.imageUrl;
       
       if (imageFile) {
-        imageUrl = await uploadImage();
+        imageUrl = await uploadImage() || undefined;
       }
 
       const eventData = {
@@ -455,10 +454,11 @@ export default function EventsPage() {
               {/* Event Image */}
               <div className="relative h-48 bg-gradient-to-br from-blue-400 to-purple-400 overflow-hidden">
                 {event.imageUrl ? (
-                  <img 
+                  <Image 
                     src={event.imageUrl} 
                     alt={event.title}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                    fill
+                    className="object-cover group-hover:scale-110 transition-transform duration-300"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
@@ -616,11 +616,14 @@ export default function EventsPage() {
                     <td className="px-6 py-4">
                       <div className="flex items-center">
                         {event.imageUrl ? (
-                          <img 
-                            src={event.imageUrl} 
-                            alt={event.title}
-                            className="h-10 w-10 rounded-lg object-cover mr-3"
-                          />
+                          <div className="relative h-10 w-10 rounded-lg overflow-hidden mr-3">
+                            <Image 
+                              src={event.imageUrl} 
+                              alt={event.title}
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
                         ) : (
                           <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-400 to-purple-400 flex items-center justify-center mr-3">
                             <Calendar className="h-5 w-5 text-white" />
@@ -832,10 +835,11 @@ export default function EventsPage() {
                   <div className="relative w-32 h-32 bg-gray-100 rounded-lg overflow-hidden">
                     {imagePreview ? (
                       <>
-                        <img 
+                        <Image 
                           src={imagePreview} 
                           alt="Preview" 
-                          className="w-full h-full object-cover"
+                          fill
+                          className="object-cover"
                         />
                         <button
                           type="button"
@@ -850,7 +854,7 @@ export default function EventsPage() {
                       </>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <Image className="h-8 w-8 text-gray-400" />
+                        <ImageIcon className="h-8 w-8 text-gray-400" />
                       </div>
                     )}
                   </div>
@@ -1077,7 +1081,7 @@ export default function EventsPage() {
                 Etkinliği Sil
               </h3>
               <p className="text-sm text-gray-500 mb-6">
-                "{eventToDelete.title}" etkinliğini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
+                &quot;{eventToDelete.title}&quot; etkinliğini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
               </p>
               <div className="flex gap-3">
                 <button
@@ -1108,10 +1112,11 @@ export default function EventsPage() {
             {/* Event Header Image */}
             <div className="relative h-64 bg-gradient-to-br from-blue-400 to-purple-400">
               {selectedEvent.imageUrl ? (
-                <img 
+                <Image 
                   src={selectedEvent.imageUrl} 
                   alt={selectedEvent.title}
-                  className="w-full h-full object-cover"
+                  fill
+                  className="object-cover"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">

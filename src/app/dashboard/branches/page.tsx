@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Plus, Edit2, Trash2, Building, MapPin } from 'lucide-react';
-import { collection, getDocs, doc, setDoc, deleteDoc, updateDoc, query, where, writeBatch } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, deleteDoc, query, where, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 
 interface Branch {
@@ -210,7 +210,7 @@ export default function BranchesPage() {
             <Building className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-2 text-sm font-medium text-gray-900">Şube bulunamadı</h3>
             <p className="mt-1 text-sm text-gray-500">
-              İlk şubenizi eklemek için "Yeni Şube" butonuna tıklayın.
+              İlk şubenizi eklemek için &quot;Yeni Şube&quot; butonuna tıklayın.
             </p>
           </div>
         ) : (

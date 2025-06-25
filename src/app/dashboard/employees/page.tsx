@@ -385,7 +385,7 @@ export default function EmployeesPage() {
             <UserCheck className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-2 text-sm font-medium text-gray-900">Çalışan bulunamadı</h3>
             <p className="mt-1 text-sm text-gray-500">
-              İlk çalışanı eklemek için "Yeni Çalışan" butonuna tıklayın.
+              İlk çalışanı eklemek için &quot;Yeni Çalışan&quot; butonuna tıklayın.
             </p>
           </div>
         ) : (

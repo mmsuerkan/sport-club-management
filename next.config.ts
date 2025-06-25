@@ -15,7 +15,13 @@ const nextConfig: NextConfig = {
   productionBrowserSourceMaps: false,
   // Optimize images
   images: {
-    remotePatterns: []
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'firebasestorage.googleapis.com',
+        pathname: '/**',
+      },
+    ]
   },
   // Reduce bundle size
   compiler: {

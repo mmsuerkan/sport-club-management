@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { signIn, resetPassword } from '@/lib/firebase/auth';
 import { Loader2, Mail, Lock, Eye, EyeOff, Activity, ArrowRight } from 'lucide-react';
@@ -13,7 +12,6 @@ interface LoginForm {
 }
 
 export default function LoginPage() {
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -60,11 +58,10 @@ export default function LoginPage() {
       setTimeout(() => {
         window.location.href = '/dashboard';
       }, 500);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Login error details:', error);
-      console.error('Error message:', error.message);
-      console.error('Error code:', error.code);
-      setError(`Giriş hatası: ${error.message || 'E-posta veya şifre hatalı'}`);
+      const errorMessage = error instanceof Error ? error.message : 'E-posta veya şifre hatalı';
+      setError(`Giriş hatası: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
@@ -84,8 +81,9 @@ export default function LoginPage() {
       setSuccess('Şifre sıfırlama bağlantısı e-posta adresinize gönderildi');
       setShowForgotPassword(false);
       setResetEmail('');
-    } catch (error: any) {
-      setError(`Hata: ${error.message || 'Şifre sıfırlama işlemi başarısız'}`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Şifre sıfırlama işlemi başarısız';
+      setError(`Hata: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }

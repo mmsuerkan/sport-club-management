@@ -8,7 +8,6 @@ import {
   CreditCard,
   PiggyBank,
   Receipt,
-  Calendar,
   Users,
   AlertTriangle,
   CheckCircle2,
@@ -18,24 +17,16 @@ import {
   Trash2,
   Eye,
   Download,
-  Upload,
-  Filter,
   Search,
   BarChart3,
   PieChart,
   LineChart,
   Target,
-  Wallet,
   Building,
   Car,
   Utensils,
-  Zap,
   Shirt,
   Trophy,
-  BookOpen,
-  Phone,
-  Wifi,
-  Wrench,
   Heart,
   Star,
   ArrowUpRight,
@@ -45,28 +36,20 @@ import {
   CreditCard as CreditCardIcon,
   Smartphone,
   Globe,
-  MapPin,
   FileText,
-  Bell,
   Settings,
   Calculator,
-  TrendingUpIcon,
-  Activity,
   XCircle
 } from 'lucide-react';
 import { db } from '@/lib/firebase/config';
 import { 
   collection, 
-  doc, 
   addDoc, 
-  updateDoc, 
-  deleteDoc, 
   onSnapshot,
   query,
   orderBy,
   Timestamp,
-  getDocs,
-  where
+  getDocs
 } from 'firebase/firestore';
 
 // Finansal Veri Tipleri
@@ -130,6 +113,18 @@ interface PaymentInstallment {
   status: 'pending' | 'paid' | 'overdue';
 }
 
+interface Student {
+  id: string;
+  firstName?: string;
+  lastName?: string;
+  fullName?: string;
+  phone?: string;
+  email?: string;
+  branchName?: string;
+  groupName?: string;
+  [key: string]: any;
+}
+
 export default function FinancePage() {
   const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
@@ -144,7 +139,6 @@ export default function FinancePage() {
   const [selectedPaymentPlan, setSelectedPaymentPlan] = useState<PaymentPlan | null>(null);
   const [selectedDateRange, setSelectedDateRange] = useState('this_month');
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterCategory, setFilterCategory] = useState('all');
   const [filterType, setFilterType] = useState('all');
 
   // Form states
@@ -171,7 +165,7 @@ export default function FinancePage() {
     notes: ''
   });
 
-  const [students, setStudents] = useState<any[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
 
   const [budgetForm, setBudgetForm] = useState({
     type: 'income' as 'income' | 'expense',
@@ -296,7 +290,7 @@ export default function FinancePage() {
         const studentsData = studentsSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
-        }));
+        })) as Student[];
         setStudents(studentsData);
       } catch (error) {
         console.error('Öğrenciler yüklenirken hata:', error);
@@ -496,7 +490,7 @@ export default function FinancePage() {
             ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id as typeof activeTab)}
                 className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
                   activeTab === tab.id
                     ? 'border-green-500 text-green-600'
@@ -728,8 +722,8 @@ export default function FinancePage() {
                         transaction.type === 'income' ? 'bg-green-100' : 'bg-red-100'
                       }`}>
                         {transaction.type === 'income' ? 
-                          <TrendingUp className={`h-5 w-5 ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`} /> :
-                          <TrendingDown className={`h-5 w-5 ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`} />
+                          <TrendingUp className="h-5 w-5 text-green-600" /> :
+                          <TrendingDown className="h-5 w-5 text-red-600" />
                         }
                       </div>
                       <div>
@@ -1138,7 +1132,7 @@ export default function FinancePage() {
                           )}
                           {isWarning && !isOver && (
                             <div className="mt-2 text-xs text-yellow-600 font-medium">
-                              Bütçenin %80'i kullanıldı
+                              Bütçenin %80&apos;i kullanıldı
                             </div>
                           )}
                         </div>
@@ -1689,9 +1683,14 @@ export default function FinancePage() {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                   >
                     <option value="">Alt kategori seçin (opsiyonel)</option>
-                    {(transactionForm.type === 'income' ? incomeCategories : expenseCategories)[transactionForm.category as keyof typeof incomeCategories]?.subcategories.map((sub: string) => (
-                      <option key={sub} value={sub}>{sub}</option>
-                    ))}
+                    {(() => {
+                      const categories = transactionForm.type === 'income' ? incomeCategories : expenseCategories;
+                      const category = categories[transactionForm.category as keyof typeof categories] as any;
+                      if (!category || !category.subcategories) return null;
+                      return category.subcategories.map((sub: string) => (
+                        <option key={sub} value={sub}>{sub}</option>
+                      ));
+                    })()}
                   </select>
                 </div>
               )}
@@ -1742,7 +1741,7 @@ export default function FinancePage() {
                     <button
                       key={method.value}
                       type="button"
-                      onClick={() => setTransactionForm({ ...transactionForm, paymentMethod: method.value as any })}
+                      onClick={() => setTransactionForm({ ...transactionForm, paymentMethod: method.value as FinancialTransaction['paymentMethod'] })}
                       className={`p-3 rounded-lg border-2 text-center transition-all ${
                         transactionForm.paymentMethod === method.value
                           ? 'border-green-500 bg-green-50 text-green-700'
@@ -1951,7 +1950,11 @@ export default function FinancePage() {
                       <p className={`text-2xl font-bold ${
                         budgetForm.type === 'income' ? 'text-green-900' : 'text-red-900'
                       }`}>
-                        {(budgetForm.type === 'income' ? incomeCategories : expenseCategories)[budgetForm.category as keyof typeof incomeCategories]?.name}
+                        {(() => {
+                          const categories = budgetForm.type === 'income' ? incomeCategories : expenseCategories;
+                          const category = categories[budgetForm.category as keyof typeof categories] as any;
+                          return category?.name || '';
+                        })()}
                       </p>
                       <p className={`text-sm ${
                         budgetForm.type === 'income' ? 'text-green-700' : 'text-red-700'
@@ -2086,7 +2089,7 @@ export default function FinancePage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Ödeme Periyodu</label>
                   <select
                     value={paymentPlanForm.paymentPeriod}
-                    onChange={(e) => setPaymentPlanForm({ ...paymentPlanForm, paymentPeriod: e.target.value as any })}
+                    onChange={(e) => setPaymentPlanForm({ ...paymentPlanForm, paymentPeriod: e.target.value as PaymentPlan['paymentPeriod'] })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   >
@@ -2109,7 +2112,7 @@ export default function FinancePage() {
                     <button
                       key={type.value}
                       type="button"
-                      onClick={() => setPaymentPlanForm({ ...paymentPlanForm, planType: type.value as any })}
+                      onClick={() => setPaymentPlanForm({ ...paymentPlanForm, planType: type.value as PaymentPlan['planType'] })}
                       className={`p-4 rounded-xl border-2 text-center transition-all ${
                         paymentPlanForm.planType === type.value
                           ? 'border-blue-500 bg-blue-50 text-blue-700'

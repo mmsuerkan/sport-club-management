@@ -59,6 +59,7 @@ interface Training {
   recurringCount?: number;
   recurringType?: 'weeks' | 'months';
   excludedDates?: string[];
+  parentId?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
@@ -169,7 +170,7 @@ export default function TrainingsPage() {
     while (currentDate <= endDate) {
       const dayOfWeek = currentDate.getDay();
       
-      if (recurringDayNumbers.includes(dayOfWeek)) {
+      if (recurringDayNumbers.includes(dayOfWeek as 0 | 1 | 2 | 3 | 4 | 5 | 6)) {
         const instanceDate = currentDate.toISOString().split('T')[0];
         
         // Eğer bu tarih excludedDates listesinde varsa, instance oluşturma
@@ -296,7 +297,7 @@ export default function TrainingsPage() {
         });
         
         // Eğer bu bir recurring instance'dan türetilmişse, o instance'ı exclude et
-        if (editingTraining && 'parentId' in editingTraining) {
+        if (editingTraining && editingTraining.parentId) {
           const parentTraining = trainings.find(t => t.id === editingTraining.parentId);
           if (parentTraining) {
             const excludedDates = parentTraining.excludedDates || [];
@@ -328,7 +329,7 @@ export default function TrainingsPage() {
           const parentId = trainingToDelete.parentId;
           const parentTraining = trainings.find(t => t.id === parentId);
           
-          if (parentTraining) {
+          if (parentTraining && parentId) {
             const excludedDates = [...(parentTraining.excludedDates || [])];
             const dateToExclude = trainingToDelete.date;
             excludedDates.push(dateToExclude);
@@ -340,7 +341,7 @@ export default function TrainingsPage() {
           }
         } catch (error) {
           console.error('Error excluding training instance:', error);
-          alert('Antrenman silinirken hata oluştu: ' + error.message);
+          alert('Antrenman silinirken hata oluştu: ' + (error as Error).message);
         }
       }
     } else {
@@ -371,7 +372,7 @@ export default function TrainingsPage() {
         await deleteDoc(doc(db, 'trainings', trainingToDelete.id));
       } catch (error) {
         console.error('Error deleting training:', error);
-        alert('Antrenman silinirken hata oluştu: ' + error.message);
+        alert('Antrenman silinirken hata oluştu: ' + (error as Error).message);
       }
     }
   };
@@ -392,7 +393,6 @@ export default function TrainingsPage() {
         ...training,
         id: '', // Yeni ID oluşturacak
         parentId: undefined,
-        instanceDate: undefined,
         isRecurring: false,
         recurringDays: [],
         recurringEndDate: ''
