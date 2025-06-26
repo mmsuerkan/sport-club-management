@@ -709,7 +709,15 @@ export default function ReportsPage() {
         status: 'failed'
       });
     }
-  };
+  } catch (error) {
+    console.error('PDF rapor oluşturma hatası:', error);
+    
+    // Hata durumunda rapor durumunu güncelle
+    await updateDoc(doc(db, 'reports', reportId), {
+      status: 'failed'
+    });
+  }
+};
 
   // Excel rapor oluşturma
   const generateExcelReport = async (template: ReportTemplate, parameters: any, reportId: string) => {

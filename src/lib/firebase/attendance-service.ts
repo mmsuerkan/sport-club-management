@@ -333,6 +333,111 @@ class AttendanceService {
       throw error;
     }
   }
+
+  // Create attendance session from training
+  async createAttendanceSessionFromTraining(training: any): Promise<string> {
+    try {
+      const sessionId = `${training.id}_${training.date}`;
+      
+      // Check if session already exists
+      const existingSession = await getDoc(doc(db, 'attendanceSessions', sessionId));
+      if (existingSession.exists()) {
+        return sessionId; // Session already exists
+      }
+
+      const session: AttendanceSession = {
+        id: sessionId,
+        trainingId: training.id,
+        trainingName: training.name,
+        branchId: training.branchId,
+        branchName: training.branchName || '',
+        groupId: training.groupId,
+        groupName: training.groupName || '',
+        date: new Date(training.date),
+        trainerId: training.trainerId,
+        trainerName: training.trainerName || '',
+        totalStudents: 0, // Will be updated when attendance is taken
+        presentCount: 0,
+        absentCount: 0,
+        lateCount: 0,
+        excusedCount: 0,
+        isCompleted: false,
+        notes: ''
+      };
+
+      await setDoc(doc(db, 'attendanceSessions', sessionId), {
+        ...session,
+        date: Timestamp.fromDate(session.date)
+      });
+
+      return sessionId;
+    } catch (error) {
+      console.error('Error creating attendance session from training:', error);
+      throw error;
+    }
+  }
+
+  // Get pending attendance sessions
+  async getPendingAttendanceSessions(date?: Date): Promise<AttendanceSession[]> {
+    try {
+      let q;
+      if (date) {
+        // Get sessions for specific date
+        const startOfDay = new Date(date);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(date);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        q = query(
+          collection(db, 'attendanceSessions'),
+          where('isCompleted', '==', false),
+          where('date', '>=', Timestamp.fromDate(startOfDay)),
+          where('date', '<=', Timestamp.fromDate(endOfDay)),
+          orderBy('date', 'asc')
+        );
+      } else {
+        // Get all pending sessions
+        q = query(
+          collection(db, 'attendanceSessions'),
+          where('isCompleted', '==', false),
+          orderBy('date', 'asc')
+        );
+      }
+
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        date: doc.data().date?.toDate() || new Date()
+      })) as AttendanceSession[];
+    } catch (error) {
+      console.error('Error fetching pending attendance sessions:', error);
+      throw error;
+    }
+  }
+
+  // Get attendance session by training ID and date
+  async getAttendanceSessionByTraining(trainingId: string, date: string): Promise<AttendanceSession | null> {
+    try {
+      const sessionId = `${trainingId}_${date}`;
+      const sessionDoc = await getDoc(doc(db, 'attendanceSessions', sessionId));
+      
+      if (!sessionDoc.exists()) {
+        return null;
+      }
+
+      const data = sessionDoc.data();
+      return {
+        id: sessionDoc.id,
+        ...data,
+        date: data.date?.toDate() || new Date(),
+        completedAt: data.completedAt?.toDate()
+      } as AttendanceSession;
+    } catch (error) {
+      console.error('Error fetching attendance session by training:', error);
+      return null;
+    }
+  }
 }
 
 export const attendanceService = new AttendanceService();

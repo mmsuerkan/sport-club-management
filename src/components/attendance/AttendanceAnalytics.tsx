@@ -60,6 +60,17 @@ export default function AttendanceAnalytics({ branchId, groupId, trainerId }: At
       
     } catch (error) {
       console.error('Analiz verileri yüklenirken hata:', error);
+      // Set empty data on error
+      setStats({
+        totalSessions: 0,
+        totalStudents: 0,
+        averageAttendance: 0,
+        presentTotal: 0,
+        absentTotal: 0,
+        lateTotal: 0,
+        excusedTotal: 0
+      });
+      setAttendanceTrend([]);
     } finally {
       setLoading(false);
     }
@@ -133,25 +144,35 @@ export default function AttendanceAnalytics({ branchId, groupId, trainerId }: At
 
   // Simple line chart component
   const SimpleTrendChart = ({ data }: { data: any[] }) => {
-    const maxValue = Math.max(...data.map(d => d.value));
+    if (data.length === 0) {
+      return (
+        <div className="relative h-[200px] bg-gray-50 rounded-lg p-4 flex items-center justify-center">
+          <p className="text-gray-500 text-sm">Henüz veri bulunmuyor</p>
+        </div>
+      );
+    }
+
+    const maxValue = Math.max(...data.map(d => d.value), 1); // Minimum 1 to avoid division by zero
     const chartHeight = 200;
     
     return (
       <div className="relative h-[200px] bg-gray-50 rounded-lg p-4">
         <div className="absolute inset-0 p-4">
           <svg width="100%" height="100%" viewBox="0 0 400 200" preserveAspectRatio="none">
-            <polyline
-              fill="none"
-              stroke="#22c55e"
-              strokeWidth="2"
-              points={data.map((item, index) => {
-                const x = (index / (data.length - 1)) * 400;
-                const y = 200 - (item.value / maxValue) * 180;
-                return `${x},${y}`;
-              }).join(' ')}
-            />
+            {data.length > 1 && (
+              <polyline
+                fill="none"
+                stroke="#22c55e"
+                strokeWidth="2"
+                points={data.map((item, index) => {
+                  const x = data.length > 1 ? (index / (data.length - 1)) * 400 : 200;
+                  const y = 200 - (item.value / maxValue) * 180;
+                  return `${x},${y}`;
+                }).join(' ')}
+              />
+            )}
             {data.map((item, index) => {
-              const x = (index / (data.length - 1)) * 400;
+              const x = data.length > 1 ? (index / (data.length - 1)) * 400 : 200;
               const y = 200 - (item.value / maxValue) * 180;
               return (
                 <circle

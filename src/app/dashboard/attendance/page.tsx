@@ -19,7 +19,8 @@ import {
   BarChart2,
   Download,
   Upload,
-  QrCode
+  QrCode,
+  AlertCircle
 } from 'lucide-react';
 import { 
   collection, 
@@ -33,6 +34,8 @@ import {
   Timestamp
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
+import { createListener } from '@/lib/firebase/listener-utils';
+import { attendanceService } from '@/lib/firebase/attendance-service';
 import dynamic from 'next/dynamic';
 import * as XLSX from 'xlsx';
 
@@ -140,29 +143,92 @@ export default function AttendancePage() {
   const [viewMode, setViewMode] = useState<'list' | 'analytics'>('list');
   const [showQRModal, setShowQRModal] = useState(false);
   const [selectedSessionForQR, setSelectedSessionForQR] = useState<AttendanceSession | null>(null);
+  const [showOnlyPending, setShowOnlyPending] = useState(false);
 
   useEffect(() => {
-    // Global error handler
-    const handleError = (event: ErrorEvent) => {
-      console.error('Global error caught:', event.error);
-      console.error('Error message:', event.message);
-      console.error('Error filename:', event.filename);
-      console.error('Error line:', event.lineno);
-    };
+    // Firebase listeners
+    const unsubscribeBranches = createListener(
+      collection(db, 'branches'),
+      (snapshot) => {
+        const branchesData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        } as Branch));
+        setBranches(branchesData);
+      }
+    );
 
-    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      console.error('Unhandled promise rejection:', event.reason);
-      event.preventDefault(); // Prevent the default error handling
-    };
+    const unsubscribeGroups = createListener(
+      collection(db, 'groups'),
+      (snapshot) => {
+        const groupsData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        } as Group));
+        setGroups(groupsData);
+      }
+    );
 
-    window.addEventListener('error', handleError);
-    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+    const unsubscribeStudents = createListener(
+      collection(db, 'students'),
+      (snapshot) => {
+        const studentsData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        } as Student));
+        setStudents(studentsData);
+      }
+    );
+
+    const unsubscribeTrainings = createListener(
+      query(collection(db, 'trainings'), orderBy('date', 'desc')),
+      (snapshot) => {
+        const trainingsData = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            date: data.date instanceof Timestamp ? data.date.toDate() : new Date(data.date),
+            startTime: data.startTime,
+            endTime: data.endTime
+          } as Training;
+        });
+        setTrainings(trainingsData);
+        
+        // Create attendance sessions for trainings that don't have one
+        trainingsData.forEach(training => {
+          if (training.status === 'scheduled') {
+            attendanceService.createAttendanceSessionFromTraining(training);
+          }
+        });
+      }
+    );
+
+    const unsubscribeAttendanceSessions = createListener(
+      query(collection(db, 'attendanceSessions'), orderBy('date', 'desc')),
+      (snapshot) => {
+        const sessionsData = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            date: data.date?.toDate() || new Date(),
+            completedAt: data.completedAt?.toDate()
+          } as AttendanceSession;
+        });
+        setAttendanceSessions(sessionsData);
+        setLoading(false);
+      }
+    );
 
     fetchData();
 
     return () => {
-      window.removeEventListener('error', handleError);
-      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+      unsubscribeBranches();
+      unsubscribeGroups();
+      unsubscribeStudents();
+      unsubscribeTrainings();
+      unsubscribeAttendanceSessions();
     };
   }, []);
 
@@ -175,206 +241,6 @@ export default function AttendancePage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      
-      // Mock data - Firebase olmadan test için
-      setBranches([
-        { id: 'branch1', name: 'Merkez Şube' },
-        { id: 'branch2', name: 'Kadıköy Şube' },
-        { id: 'branch3', name: 'Beşiktaş Şube' }
-      ]);
-
-      setGroups([
-        { 
-          id: 'group1', 
-          name: 'U-12 Futbol', 
-          branchId: 'branch1', 
-          branchName: 'Merkez Şube',
-          time: '16:00-17:30'
-        },
-        { 
-          id: 'group2', 
-          name: 'U-14 Basketbol', 
-          branchId: 'branch1', 
-          branchName: 'Merkez Şube',
-          time: '17:30-19:00'
-        },
-        { 
-          id: 'group3', 
-          name: 'U-16 Voleybol', 
-          branchId: 'branch2', 
-          branchName: 'Kadıköy Şube',
-          time: '15:00-16:30'
-        }
-      ]);
-
-      setStudents([
-        {
-          id: 'student1',
-          fullName: 'Ali Özkan',
-          phone: '0535 111 2233',
-          branchId: 'branch1',
-          branchName: 'Merkez Şube',
-          groupId: 'group1',
-          groupName: 'U-12 Futbol'
-        },
-        {
-          id: 'student2',
-          fullName: 'Ayşe Korkmaz',
-          phone: '0536 222 3344',
-          branchId: 'branch1',
-          branchName: 'Merkez Şube',
-          groupId: 'group1',
-          groupName: 'U-12 Futbol'
-        },
-        {
-          id: 'student3',
-          fullName: 'Burak Yıldız',
-          phone: '0537 333 4455',
-          branchId: 'branch1',
-          branchName: 'Merkez Şube',
-          groupId: 'group1',
-          groupName: 'U-12 Futbol'
-        },
-        {
-          id: 'student4',
-          fullName: 'Ceren Aydın',
-          phone: '0538 444 5566',
-          branchId: 'branch1',
-          branchName: 'Merkez Şube',
-          groupId: 'group2',
-          groupName: 'U-14 Basketbol'
-        },
-        {
-          id: 'student5',
-          fullName: 'Deniz Şahin',
-          phone: '0539 555 6677',
-          branchId: 'branch2',
-          branchName: 'Kadıköy Şube',
-          groupId: 'group3',
-          groupName: 'U-16 Voleybol'
-        }
-      ]);
-
-      // Bugün ve dün için antrenmanlar
-      const today = new Date();
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-
-      setTrainings([
-        {
-          id: 'training1',
-          name: 'Futbol Antrenmanı',
-          branchId: 'branch1',
-          branchName: 'Merkez Şube',
-          groupId: 'group1',
-          groupName: 'U-12 Futbol',
-          date: today,
-          trainerId: 'trainer1',
-          trainerName: 'Ahmet Yılmaz',
-          duration: '90'
-        },
-        {
-          id: 'training2',
-          name: 'Basketbol Antrenmanı',
-          branchId: 'branch1',
-          branchName: 'Merkez Şube',
-          groupId: 'group2',
-          groupName: 'U-14 Basketbol',
-          date: today,
-          trainerId: 'trainer2',
-          trainerName: 'Elif Demir',
-          duration: '90'
-        },
-        {
-          id: 'training3',
-          name: 'Futbol Antrenmanı (Dün)',
-          branchId: 'branch1',
-          branchName: 'Merkez Şube',
-          groupId: 'group1',
-          groupName: 'U-12 Futbol',
-          date: yesterday,
-          trainerId: 'trainer1',
-          trainerName: 'Ahmet Yılmaz',
-          duration: '90'
-        }
-      ]);
-
-      // Dünkü antrenman için yoklama oturumu (tamamlanmış)
-      setAttendanceSessions([
-        {
-          id: 'session1',
-          trainingId: 'training3',
-          trainingName: 'Futbol Antrenmanı (Dün)',
-          branchId: 'branch1',
-          branchName: 'Merkez Şube',
-          groupId: 'group1',
-          groupName: 'U-12 Futbol',
-          date: yesterday,
-          trainerId: 'trainer1',
-          trainerName: 'Ahmet Yılmaz',
-          totalStudents: 3,
-          presentCount: 2,
-          absentCount: 1,
-          lateCount: 0,
-          excusedCount: 0,
-          isCompleted: true,
-          completedAt: yesterday,
-          notes: ''
-        }
-      ]);
-
-      // Mock attendance records for the completed session
-      setAttendanceRecords([
-        {
-          id: 'record1',
-          trainingId: 'training3',
-          trainingName: 'Futbol Antrenmanı (Dün)',
-          studentId: 'student1',
-          studentName: 'Ali Özkan',
-          branchId: 'branch1',
-          branchName: 'Merkez Şube',
-          groupId: 'group1',
-          groupName: 'U-12 Futbol',
-          date: yesterday,
-          status: 'present',
-          notes: '',
-          recordedBy: 'Ahmet Yılmaz',
-          recordedAt: yesterday
-        },
-        {
-          id: 'record2',
-          trainingId: 'training3',
-          trainingName: 'Futbol Antrenmanı (Dün)',
-          studentId: 'student2',
-          studentName: 'Ayşe Korkmaz',
-          branchId: 'branch1',
-          branchName: 'Merkez Şube',
-          groupId: 'group1',
-          groupName: 'U-12 Futbol',
-          date: yesterday,
-          status: 'present',
-          notes: '',
-          recordedBy: 'Ahmet Yılmaz',
-          recordedAt: yesterday
-        },
-        {
-          id: 'record3',
-          trainingId: 'training3',
-          trainingName: 'Futbol Antrenmanı (Dün)',
-          studentId: 'student3',
-          studentName: 'Burak Yıldız',
-          branchId: 'branch1',
-          branchName: 'Merkez Şube',
-          groupId: 'group1',
-          groupName: 'U-12 Futbol',
-          date: yesterday,
-          status: 'absent',
-          notes: 'Hasta olduğu için gelemedi',
-          recordedBy: 'Ahmet Yılmaz',
-          recordedAt: yesterday
-        }
-      ]);
-      
     } catch (error) {
       console.error('Veri yükleme hatası:', error);
     } finally {
@@ -383,7 +249,24 @@ export default function AttendancePage() {
   };
 
   const fetchAttendanceSessions = async () => {
-    // Mock için boş - data zaten yüklendi
+    try {
+      const filters: any = {};
+      if (selectedBranch) filters.branchId = selectedBranch;
+      if (selectedGroup) filters.groupId = selectedGroup;
+      
+      const startOfDay = new Date(selectedDate);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(selectedDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      
+      filters.startDate = startOfDay;
+      filters.endDate = endOfDay;
+
+      const sessions = await attendanceService.getAttendanceSessions(filters);
+      setAttendanceSessions(sessions);
+    } catch (error) {
+      console.error('Error fetching attendance sessions:', error);
+    }
   };
 
   const startAttendance = (training: Training) => {
@@ -560,7 +443,17 @@ export default function AttendancePage() {
       training.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       training.trainerName.toLowerCase().includes(searchTerm.toLowerCase());
     
-    return matchesBranch && matchesGroup && matchesDate && matchesSearch;
+    // Check if only pending attendances should be shown
+    let matchesPending = true;
+    if (showOnlyPending) {
+      const session = attendanceSessions.find(s => 
+        s.trainingId === training.id && 
+        s.date.toDateString() === new Date(selectedDate).toDateString()
+      );
+      matchesPending = !session || !session.isCompleted;
+    }
+    
+    return matchesBranch && matchesGroup && matchesDate && matchesSearch && matchesPending;
   });
 
   const filteredGroups = groups.filter(group => 
@@ -649,7 +542,7 @@ export default function AttendancePage() {
         <>
           {/* Filters */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Şube
@@ -715,6 +608,24 @@ export default function AttendancePage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Filtre
+            </label>
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="showOnlyPending"
+                checked={showOnlyPending}
+                onChange={(e) => setShowOnlyPending(e.target.checked)}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="showOnlyPending" className="ml-2 text-sm text-gray-700">
+                Sadece bekleyenleri göster
+              </label>
             </div>
           </div>
         </div>
@@ -793,20 +704,49 @@ export default function AttendancePage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {session ? (
-                          <div className="space-y-1">
-                            <div className="flex items-center text-sm">
-                              <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                              <span className="text-green-600 font-medium">Tamamlandı</span>
+                          session.isCompleted ? (
+                            <div className="space-y-1">
+                              <div className="flex items-center text-sm">
+                                <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                                <span className="text-green-600 font-medium">Tamamlandı</span>
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {session.presentCount}/{session.totalStudents} katıldı
+                              </div>
                             </div>
-                            <div className="text-xs text-gray-500">
-                              {session.presentCount}/{session.totalStudents} katıldı
+                          ) : (
+                            <div className="space-y-1">
+                              <div className="flex items-center text-sm">
+                                <Clock className="h-4 w-4 text-yellow-500 mr-2" />
+                                <span className="text-yellow-600 font-medium">Devam Ediyor</span>
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                Yoklama alınıyor...
+                              </div>
                             </div>
-                          </div>
+                          )
                         ) : (
-                          <div className="flex items-center text-sm">
-                            <XCircle className="h-4 w-4 text-gray-400 mr-2" />
-                            <span className="text-gray-500">Beklemede</span>
-                          </div>
+                          (() => {
+                            const trainingDate = new Date(training.date);
+                            const now = new Date();
+                            const isPast = trainingDate < now;
+                            
+                            return (
+                              <div className="flex items-center text-sm">
+                                {isPast ? (
+                                  <>
+                                    <AlertCircle className="h-4 w-4 text-red-500 mr-2" />
+                                    <span className="text-red-600 font-medium">Yoklama Alınmadı!</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Clock className="h-4 w-4 text-gray-400 mr-2" />
+                                    <span className="text-gray-500">Beklemede</span>
+                                  </>
+                                )}
+                              </div>
+                            );
+                          })()
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
