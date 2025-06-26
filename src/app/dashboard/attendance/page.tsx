@@ -15,7 +15,11 @@ import {
   Dumbbell,
   Eye,
   UserCheck,
-  UserX
+  UserX,
+  BarChart2,
+  Download,
+  Upload,
+  QrCode
 } from 'lucide-react';
 import { 
   collection, 
@@ -29,6 +33,13 @@ import {
   Timestamp
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
+import dynamic from 'next/dynamic';
+import * as XLSX from 'xlsx';
+
+const AttendanceAnalytics = dynamic(
+  () => import('@/components/attendance/AttendanceAnalytics'),
+  { ssr: false }
+);
 
 interface Branch {
   id: string;
@@ -126,6 +137,9 @@ export default function AttendancePage() {
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'analytics'>('list');
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [selectedSessionForQR, setSelectedSessionForQR] = useState<AttendanceSession | null>(null);
 
   useEffect(() => {
     // Global error handler
@@ -436,6 +450,49 @@ export default function AttendancePage() {
     setShowDetailModal(true);
   };
 
+  const exportSessionToExcel = (session: AttendanceSession, records: AttendanceRecord[]) => {
+    const wb = XLSX.utils.book_new();
+    
+    // Oturum Bilgileri
+    const sessionInfo = [
+      ['Yoklama Raporu'],
+      [''],
+      ['Antrenman:', session.trainingName],
+      ['Şube:', session.branchName],
+      ['Grup:', session.groupName],
+      ['Tarih:', session.date.toLocaleDateString('tr-TR')],
+      ['Antrenör:', session.trainerName],
+      [''],
+      ['Özet:'],
+      ['Toplam Öğrenci:', session.totalStudents],
+      ['Katılan:', session.presentCount],
+      ['Katılmayan:', session.absentCount],
+      ['Geç Gelen:', session.lateCount],
+      ['Mazeretli:', session.excusedCount],
+      ['Katılım Oranı:', `%${((session.presentCount / session.totalStudents) * 100).toFixed(1)}`]
+    ];
+    
+    const ws1 = XLSX.utils.aoa_to_sheet(sessionInfo);
+    XLSX.utils.book_append_sheet(wb, ws1, 'Özet');
+    
+    // Detaylı Liste
+    const headers = ['Öğrenci Adı', 'Durum', 'Not', 'Kaydeden', 'Kayıt Zamanı'];
+    const rows = records.map(record => [
+      record.studentName,
+      getStatusText(record.status),
+      record.notes || '-',
+      record.recordedBy,
+      record.recordedAt.toLocaleString('tr-TR')
+    ]);
+    
+    const ws2 = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    XLSX.utils.book_append_sheet(wb, ws2, 'Detaylı Liste');
+    
+    // Excel dosyasını indir
+    const fileName = `yoklama_${session.groupName}_${session.date.toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+  };
+
   const saveAttendance = async () => {
     if (!selectedTraining) return;
     
@@ -557,11 +614,42 @@ export default function AttendancePage() {
           <h1 className="text-3xl font-bold text-gray-900">Yoklama Takip</h1>
           <p className="text-gray-600 mt-2">Antrenman katılım durumlarını takip edin</p>
         </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setViewMode('list')}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              viewMode === 'list'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            <ClipboardCheck className="h-4 w-4 inline mr-2" />
+            Liste
+          </button>
+          <button
+            onClick={() => setViewMode('analytics')}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              viewMode === 'analytics'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            <BarChart2 className="h-4 w-4 inline mr-2" />
+            Analizler
+          </button>
+        </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {viewMode === 'analytics' ? (
+        <AttendanceAnalytics 
+          branchId={selectedBranch}
+          groupId={selectedGroup}
+        />
+      ) : (
+        <>
+          {/* Filters */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Şube
@@ -842,8 +930,42 @@ export default function AttendancePage() {
             
             <div className="p-6 border-t border-gray-200 bg-gray-50">
               <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-600">
-                  Toplam {Object.keys(currentAttendance).length} öğrenci
+                <div className="flex items-center gap-3">
+                  <div className="text-sm text-gray-600">
+                    Toplam {Object.keys(currentAttendance).length} öğrenci
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        const updatedAttendance = { ...currentAttendance };
+                        Object.keys(updatedAttendance).forEach(studentId => {
+                          updatedAttendance[studentId] = {
+                            ...updatedAttendance[studentId],
+                            status: 'present'
+                          };
+                        });
+                        setCurrentAttendance(updatedAttendance);
+                      }}
+                      className="text-xs px-3 py-1 bg-green-100 hover:bg-green-200 text-green-700 rounded-md transition-colors"
+                    >
+                      Tümü Katıldı
+                    </button>
+                    <button
+                      onClick={() => {
+                        const updatedAttendance = { ...currentAttendance };
+                        Object.keys(updatedAttendance).forEach(studentId => {
+                          updatedAttendance[studentId] = {
+                            ...updatedAttendance[studentId],
+                            status: 'absent'
+                          };
+                        });
+                        setCurrentAttendance(updatedAttendance);
+                      }}
+                      className="text-xs px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded-md transition-colors"
+                    >
+                      Tümü Katılmadı
+                    </button>
+                  </div>
                 </div>
                 <div className="flex gap-3">
                   <button
@@ -961,17 +1083,28 @@ export default function AttendancePage() {
                 <div className="text-sm text-gray-600">
                   Toplam {selectedSession.totalStudents} öğrenci
                 </div>
-                <button
-                  onClick={() => setShowDetailModal(false)}
-                  className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
-                >
-                  Kapat
-                </button>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => exportSessionToExcel(selectedSession, sessionDetails)}
+                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center gap-2"
+                  >
+                    <Download size={16} />
+                    Excel İndir
+                  </button>
+                  <button
+                    onClick={() => setShowDetailModal(false)}
+                    className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+                  >
+                    Kapat
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>,
         document.body
+      )}
+        </>
       )}
     </div>
   );
