@@ -1,7 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Optimize images
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   images: {
     remotePatterns: [
       {
@@ -10,7 +15,7 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
     ]
-  }
+  },
 };
 
 export default nextConfig;

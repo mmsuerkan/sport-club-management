@@ -6,8 +6,6 @@ import {
   User,
   Mail,
   Phone,
-  MapPin,
-  Calendar,
   Edit,
   Camera,
   Shield,
@@ -15,16 +13,11 @@ import {
   Globe,
   Lock,
   Activity,
-  Award,
   Clock,
-  Settings,
   Save,
-  X,
   Eye,
   EyeOff,
-  Upload,
   Trash2,
-  CheckCircle,
   Plus,
   ChevronRight
 } from 'lucide-react';
@@ -89,7 +82,6 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [activeTab, setActiveTab] = useState<'profile' | 'activity' | 'settings'>('profile');
@@ -252,7 +244,7 @@ export default function ProfilePage() {
     }
   };
 
-  const handleRemovePhoto = async () => {
+  const _handleRemovePhoto = async () => {
     if (!auth.currentUser || !user?.photoURL) return;
     
     try {
@@ -341,7 +333,7 @@ export default function ProfilePage() {
       
       alert('Şifreniz başarıyla güncellendi');
       
-    } catch (error: any) {
+    } catch (error) {
       console.error('Şifre güncellenirken hata:', error);
       if (error.code === 'auth/wrong-password') {
         alert('Mevcut şifre yanlış');

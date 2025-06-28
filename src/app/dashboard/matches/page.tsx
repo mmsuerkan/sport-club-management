@@ -1400,7 +1400,7 @@ export default function MatchesPage() {
                   <div className="space-y-2">
                     {selectedMatch.events
                       .sort((a, b) => a.minute - b.minute)
-                      .map((event, index) => (
+                      .map((event) => (
                         <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                           <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center font-bold text-gray-700">
                             {event.minute}&apos;
@@ -1973,7 +1973,7 @@ export default function MatchesPage() {
                   <div className="space-y-3">
                     {matchEvents
                       .sort((a, b) => a.minute - b.minute)
-                      .map((event, index) => (
+                      .map((event) => (
                         <div key={event.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
                           <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center font-bold text-gray-700">
                             {event.minute}&apos;

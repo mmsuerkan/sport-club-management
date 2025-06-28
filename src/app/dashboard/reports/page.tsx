@@ -10,10 +10,6 @@ import {
   TrendingUp,
   Users,
   DollarSign,
-  Activity,
-  BarChart3,
-  PieChart,
-  LineChart,
   FileSpreadsheet,
   FilePlus,
   Search,
@@ -24,20 +20,7 @@ import {
   Sparkles,
   FileDown,
   RefreshCw,
-  Settings,
-  Share2,
-  Printer,
-  Mail,
-  Archive,
   Trash2,
-  FolderOpen,
-  FileCheck,
-  CalendarDays,
-  Receipt,
-  Trophy,
-  Target,
-  BookOpen,
-  ChartBar,
   X
 } from 'lucide-react';
 import { db } from '@/lib/firebase/config';
@@ -47,11 +30,9 @@ import {
   query,
   orderBy,
   Timestamp,
-  onSnapshot,
   doc,
   updateDoc,
   deleteDoc,
-  where,
   getDocs
 } from 'firebase/firestore';
 import { createListener } from '@/lib/firebase/listener-utils';
@@ -82,7 +63,7 @@ interface Report {
   fileUrl?: string;
   storagePath?: string;
   size?: number;
-  parameters?: any;
+  parameters?: Record<string, string | string[]>;
   description?: string;
   fileName?: string;
 }
@@ -345,7 +326,7 @@ export default function ReportsPage() {
   };
 
   // PDF rapor oluşturma
-  const generatePDFReport = async (template: ReportTemplate, parameters: any, reportId: string) => {
+  const generatePDFReport = async (template: ReportTemplate, parameters: Record<string, string | string[]>, reportId: string) => {
     try {
       const pdf = new jsPDF();
       

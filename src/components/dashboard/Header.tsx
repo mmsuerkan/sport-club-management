@@ -11,7 +11,7 @@ interface HeaderProps {
 
 export default function Header({ onMenuToggle }: HeaderProps) {
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const { user, userData, logOut } = useAuth();
+  const { user, logOut } = useAuth();
 
   const handleLogout = async () => {
     try {

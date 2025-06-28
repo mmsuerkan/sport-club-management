@@ -82,7 +82,7 @@ export default function StudentsPage() {
       setFilteredGroups([]);
       setFormData(prev => ({ ...prev, groupId: '' }));
     }
-  }, [formData.branchId, groups]);
+  }, [formData.branchId, groups, formData.groupId]);
 
   // Update student names when branches or groups change
   useEffect(() => {
@@ -479,7 +479,7 @@ export default function StudentsPage() {
             <GraduationCap className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-2 text-sm font-medium text-gray-900">Öğrenci bulunamadı</h3>
             <p className="mt-1 text-sm text-gray-500">
-              İlk öğrenciyi eklemek için "Yeni Öğrenci" butonuna tıklayın.
+              İlk öğrenciyi eklemek için &quot;Yeni Öğrenci&quot; butonuna tıklayın.
             </p>
           </div>
         ) : (

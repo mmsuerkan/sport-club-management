@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Save, Settings as SettingsIcon, Bell, Shield, User, Palette, Globe, Database } from 'lucide-react';
+import { Save, Settings as SettingsIcon, Bell, Shield, Palette, Database } from 'lucide-react';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { useAuth } from '@/contexts/AuthContext';
@@ -86,9 +86,9 @@ export default function SettingsPage() {
 
   useEffect(() => {
     fetchSettings();
-  }, []);
+  }, [fetchSettings]);
 
-  const fetchSettings = async () => {
+  const fetchSettings = useCallback(async () => {
     try {
       setLoading(true);
       const docRef = doc(db, 'settings', 'app-settings');
@@ -111,7 +111,7 @@ export default function SettingsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const handleSave = async () => {
     try {
@@ -151,7 +151,7 @@ export default function SettingsPage() {
     }
   };
 
-  const updateSettings = (section: keyof Settings, field: string, value: any) => {
+  const updateSettings = (section: keyof Settings, field: string, value: string | boolean | number) => {
     setSettings(prev => ({
       ...prev,
       [section]: {

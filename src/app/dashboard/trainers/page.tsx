@@ -76,7 +76,7 @@ export default function TrainersPage() {
       setFilteredGroups([]);
       setFormData(prev => ({ ...prev, groupId: '' }));
     }
-  }, [formData.branchId, groups]);
+  }, [formData.branchId, groups, formData.groupId]);
 
   // Update trainer names when branches or groups change
   useEffect(() => {
@@ -425,7 +425,7 @@ export default function TrainersPage() {
             <Users className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-2 text-sm font-medium text-gray-900">Antrenör bulunamadı</h3>
             <p className="mt-1 text-sm text-gray-500">
-              İlk antrenörü eklemek için "Yeni Antrenör" butonuna tıklayın.
+              İlk antrenörü eklemek için &quot;Yeni Antrenör&quot; butonuna tıklayın.
             </p>
           </div>
         ) : (

@@ -122,7 +122,6 @@ interface Student {
   email?: string;
   branchName?: string;
   groupName?: string;
-  [key: string]: any;
 }
 
 export default function FinancePage() {
@@ -2489,7 +2488,17 @@ export default function FinancePage() {
     e.preventDefault();
     
     try {
-      const transactionData: any = {
+      const transactionData: Partial<FinancialTransaction> & {
+        type: 'income' | 'expense';
+        category: string;
+        amount: number;
+        description: string;
+        date: string;
+        paymentMethod: string;
+        status: 'completed';
+        createdAt: Timestamp;
+        updatedAt: Timestamp;
+      } = {
         type: transactionForm.type,
         category: transactionForm.category,
         amount: parseFloat(transactionForm.amount),
@@ -2568,7 +2577,17 @@ export default function FinancePage() {
         });
       }
       
-      const paymentPlanData: any = {
+      const paymentPlanData: Partial<PaymentPlan> & {
+        studentId: string;
+        studentName: string;
+        startDate: string;
+        endDate: string;
+        monthlyAmount: number;
+        status: 'active';
+        paymentDay: number;
+        createdAt: Timestamp;
+        updatedAt: Timestamp;
+      } = {
         studentId: paymentPlanForm.studentId,
         studentName: paymentPlanForm.studentName,
         totalAmount,
@@ -2611,7 +2630,16 @@ export default function FinancePage() {
     e.preventDefault();
     
     try {
-      const budgetData: any = {
+      const budgetData: {
+        category: string;
+        subcategory?: string;
+        amount: number;
+        period: string;
+        type: 'income' | 'expense';
+        createdAt: Timestamp;
+        updatedAt: Timestamp;
+        status: 'active';
+      } = {
         type: budgetForm.type,
         category: budgetForm.category,
         budgetedAmount: parseFloat(budgetForm.amount),

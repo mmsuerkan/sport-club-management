@@ -9,7 +9,6 @@ import {
   MapPin, 
   User, 
   Search,
-  Filter,
   ChevronLeft,
   ChevronRight,
   Plus,
@@ -31,8 +30,7 @@ import {
   deleteDoc, 
   query,
   orderBy,
-  Timestamp,
-  getDocs
+  Timestamp
 } from 'firebase/firestore';
 import { createListener } from '@/lib/firebase/listener-utils';
 
@@ -148,8 +146,7 @@ export default function TrainingsPage() {
       endDate.setDate(endDate.getDate() + (multiplier * 7)); // Hafta cinsinden hesapla
     }
     
-    const dayNames = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
-    
+      
     // Tekrarlanan günlerin numara karşılıkları
     const recurringDayNumbers = baseTraining.recurringDays.map(day => {
       switch(day) {
@@ -164,14 +161,14 @@ export default function TrainingsPage() {
       }
     }).filter(n => n !== -1);
 
-    let currentDate = new Date(startDate);
-    currentDate.setDate(currentDate.getDate() + 1); // Bir sonraki günden başla
+    const iterDate = new Date(startDate);
+    iterDate.setDate(iterDate.getDate() + 1); // Bir sonraki günden başla
     
-    while (currentDate <= endDate) {
-      const dayOfWeek = currentDate.getDay();
+    while (iterDate <= endDate) {
+      const dayOfWeek = iterDate.getDay();
       
       if (recurringDayNumbers.includes(dayOfWeek as 0 | 1 | 2 | 3 | 4 | 5 | 6)) {
-        const instanceDate = currentDate.toISOString().split('T')[0];
+        const instanceDate = iterDate.toISOString().split('T')[0];
         
         // Eğer bu tarih excludedDates listesinde varsa, instance oluşturma
         if (!baseTraining.excludedDates?.includes(instanceDate)) {
@@ -186,7 +183,7 @@ export default function TrainingsPage() {
         }
       }
       
-      currentDate.setDate(currentDate.getDate() + 1);
+      iterDate.setDate(iterDate.getDate() + 1);
     }
     
     return instances;
@@ -1109,7 +1106,7 @@ export default function TrainingsPage() {
                             </select>
                           </div>
                           <p className="text-xs text-gray-500 mt-1">
-                            Örn: "8 Hafta" = 8 hafta boyunca tekrarla
+                            Örn: &quot;8 Hafta&quot; = 8 hafta boyunca tekrarla
                           </p>
                         </div>
                         

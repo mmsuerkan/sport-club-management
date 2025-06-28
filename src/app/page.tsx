@@ -16,9 +16,7 @@ import {
   FiSmartphone,
   FiBarChart,
   FiClock,
-  FiDollarSign,
-  FiStar,
-  FiHeart
+  FiStar
 } from "react-icons/fi";
 
 export default function Home() {
@@ -282,7 +280,7 @@ export default function Home() {
                 <FiStar className="text-yellow-400 fill-current" />
               </div>
               <p className="text-gray-300 mb-4">
-                "SportClub Pro sayesinde üye takibi ve aidat yönetimi çok kolaylaştı. Artık sporculara daha fazla zaman ayırabiliyorum."
+                &quot;SportClub Pro sayesinde üye takibi ve aidat yönetimi çok kolaylaştı. Artık sporculara daha fazla zaman ayırabiliyorum.&quot;
               </p>
               <div className="flex items-center">
                 <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full mr-3"></div>
@@ -302,7 +300,7 @@ export default function Home() {
                 <FiStar className="text-yellow-400 fill-current" />
               </div>
               <p className="text-gray-300 mb-4">
-                "Finansal raporlama özellikleri harika. Gelir-gider takibi yapmak hiç bu kadar kolay olmamıştı."
+                &quot;Finansal raporlama özellikleri harika. Gelir-gider takibi yapmak hiç bu kadar kolay olmamıştı.&quot;
               </p>
               <div className="flex items-center">
                 <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mr-3"></div>
@@ -322,7 +320,7 @@ export default function Home() {
                 <FiStar className="text-yellow-400 fill-current" />
               </div>
               <p className="text-gray-300 mb-4">
-                "Mobil uygulama sayesinde sahada bile üye kaydı yapabiliyorum. Müthiş bir kolaylık!"
+                &quot;Mobil uygulama sayesinde sahada bile üye kaydı yapabiliyorum. Müthiş bir kolaylık!&quot;
               </p>
               <div className="flex items-center">
                 <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full mr-3"></div>

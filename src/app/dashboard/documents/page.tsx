@@ -83,7 +83,14 @@ export default function DocumentsPage() {
       
       if (editingDocument) {
         // Güncelleme
-        const updateData: any = {
+        const updateData: {
+          name: string;
+          description: string;
+          updatedAt: Date;
+          fileUrl?: string;
+          fileName?: string;
+          fileSize?: number;
+        } = {
           name: formData.name.trim(),
           description: formData.description.trim(),
           updatedAt: new Date()

@@ -1,4 +1,4 @@
-import { onSnapshot, Query, DocumentReference, Unsubscribe } from 'firebase/firestore';
+import { onSnapshot, Query, DocumentReference, Unsubscribe, QuerySnapshot, DocumentSnapshot, DocumentData } from 'firebase/firestore';
 
 /**
  * Creates a Firestore listener with proper error handling
@@ -9,7 +9,7 @@ export function createListener<T>(
   onData: (data: T) => void,
   options?: {
     onError?: (error: Error) => void;
-    transform?: (snapshot: any) => T;
+    transform?: (snapshot: QuerySnapshot<DocumentData> | DocumentSnapshot<DocumentData>) => T;
   }
 ): Unsubscribe {
   return onSnapshot(
@@ -21,7 +21,7 @@ export function createListener<T>(
           onData(data);
         } else {
           // Default behavior for QuerySnapshot
-          onData(snapshot as any);
+          onData(snapshot as T);
         }
       } catch (error) {
         console.error('Error processing snapshot:', error);

@@ -5,11 +5,9 @@ import {
   getDoc,
   setDoc, 
   updateDoc, 
-  deleteDoc,
   query, 
   where, 
   orderBy, 
-  limit,
   Timestamp,
   writeBatch
 } from 'firebase/firestore';
@@ -183,11 +181,11 @@ class AttendanceService {
       const updateData = { ...updates };
       
       if (updates.date) {
-        updateData.date = Timestamp.fromDate(updates.date) as any;
+        updateData.date = Timestamp.fromDate(updates.date);
       }
       
       if (updates.recordedAt) {
-        updateData.recordedAt = Timestamp.fromDate(updates.recordedAt) as any;
+        updateData.recordedAt = Timestamp.fromDate(updates.recordedAt);
       }
       
       await updateDoc(recordRef, updateData);
@@ -335,7 +333,17 @@ class AttendanceService {
   }
 
   // Create attendance session from training
-  async createAttendanceSessionFromTraining(training: any): Promise<string> {
+  async createAttendanceSessionFromTraining(training: {
+    id: string;
+    name: string;
+    branchId: string;
+    branchName?: string;
+    groupId: string;
+    groupName?: string;
+    trainerId: string;
+    trainerName?: string;
+    date: Date;
+  }): Promise<string> {
     try {
       const sessionId = `${training.id}_${training.date}`;
       

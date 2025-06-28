@@ -6,7 +6,6 @@ import {
   Home,
   Users,
   Calendar,
-  Trophy,
   DollarSign,
   Settings,
   BarChart,

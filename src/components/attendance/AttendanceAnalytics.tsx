@@ -218,7 +218,7 @@ export default function AttendanceAnalytics({ branchId, groupId, trainerId }: At
           className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
         >
           <FileSpreadsheet size={18} />
-          Excel'e Aktar
+          Excel&apos;e Aktar
         </button>
       </div>
 
@@ -393,7 +393,7 @@ export default function AttendanceAnalytics({ branchId, groupId, trainerId }: At
             <div>
               <h4 className="font-medium text-yellow-900">Düşük Katılım Uyarısı</h4>
               <p className="text-sm text-yellow-800 mt-1">
-                Ortalama katılım oranı %70'in altında. Öğrencilerin devam durumunu yakından takip etmeniz önerilir.
+                Ortalama katılım oranı %70&apos;in altında. Öğrencilerin devam durumunu yakından takip etmeniz önerilir.
               </p>
             </div>
           </div>
