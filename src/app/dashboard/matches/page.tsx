@@ -221,6 +221,19 @@ export default function MatchesPage() {
     return () => unsubscribe();
   }, []);
 
+  const addActivityLog = async (type: string, description: string, user?: string) => {
+    try {
+      await addDoc(collection(db, 'activity_logs'), {
+        type,
+        description,
+        user,
+        timestamp: Timestamp.now()
+      });
+    } catch (error) {
+      console.error('Aktivite log eklenirken hata:', error);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -270,11 +283,25 @@ export default function MatchesPage() {
 
       if (editingMatch) {
         await updateDoc(doc(db, 'matches', editingMatch.id), matchData);
+        
+        // Aktivite log'u ekle
+        await addActivityLog(
+          'match',
+          'Maç bilgileri güncellendi',
+          `${formData.homeTeam} vs ${formData.awayTeam}`
+        );
       } else {
         await addDoc(collection(db, 'matches'), {
           ...matchData,
           createdAt: Timestamp.now()
         });
+        
+        // Aktivite log'u ekle
+        await addActivityLog(
+          'match',
+          'Yeni maç programlandı',
+          `${formData.homeTeam} vs ${formData.awayTeam}`
+        );
       }
 
       setShowModal(false);

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Plus, Edit2, Trash2, GraduationCap, Phone, Mail, MapPin, Building, Clock } from 'lucide-react';
-import { collection, getDocs, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, deleteDoc, updateDoc, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 
 interface Branch {
@@ -144,6 +144,19 @@ export default function StudentsPage() {
     }
   };
 
+  const addActivityLog = async (type: string, description: string, user?: string) => {
+    try {
+      await addDoc(collection(db, 'activity_logs'), {
+        type,
+        description,
+        user,
+        timestamp: new Date()
+      });
+    } catch (error) {
+      console.error('Aktivite log eklenirken hata:', error);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.fullName.trim() || !formData.phone.trim() || !formData.branchId || !formData.groupId) return;
@@ -174,6 +187,13 @@ export default function StudentsPage() {
           ...studentData,
           updatedAt: new Date()
         });
+        
+        // Aktivite log'u ekle
+        await addActivityLog(
+          'member',
+          'Öğrenci bilgileri güncellendi',
+          formData.fullName.trim()
+        );
       } else {
         // Yeni ekleme
         const newStudentRef = doc(collection(db, 'students'));
@@ -181,6 +201,13 @@ export default function StudentsPage() {
           ...studentData,
           createdAt: new Date()
         });
+        
+        // Aktivite log'u ekle
+        await addActivityLog(
+          'member',
+          'Yeni öğrenci kaydı',
+          formData.fullName.trim()
+        );
       }
       
       resetForm();

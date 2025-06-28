@@ -3,7 +3,7 @@
 import { Users, Calendar, Trophy, TrendingUp, Activity, DollarSign, Trash2, RefreshCw } from 'lucide-react';
 import StatCard from '@/components/dashboard/StatCard';
 import { useState, useEffect } from 'react';
-import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, limit, onSnapshot, addDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 
 interface DashboardStats {
@@ -35,8 +35,18 @@ export default function DashboardPage() {
     fetchDashboardData();
   }, []);
 
-  const clearActivities = () => {
-    setActivities([]);
+  const clearActivities = async () => {
+    try {
+      // Firebase'deki activity_logs collection'ındaki tüm logları sil
+      const logsSnapshot = await getDocs(collection(db, 'activity_logs'));
+      const deletePromises = logsSnapshot.docs.map(doc => deleteDoc(doc.ref));
+      await Promise.all(deletePromises);
+      setActivities([]);
+    } catch (error) {
+      console.error('Aktiviteler silinirken hata:', error);
+      // Frontend'te temizle hata durumunda
+      setActivities([]);
+    }
   };
 
   const refreshActivities = () => {
@@ -70,32 +80,28 @@ export default function DashboardPage() {
         upcomingTournaments
       });
       
-      // Son gerçek aktiviteler - en son eklenen öğrenciler
-      let recentStudentsSnapshot;
+      // Activity logs'ları Firebase'den çek
+      let activityLogsSnapshot;
       try {
-        recentStudentsSnapshot = await getDocs(
-          query(collection(db, 'students'), orderBy('createdAt', 'desc'), limit(2))
+        activityLogsSnapshot = await getDocs(
+          query(collection(db, 'activity_logs'), orderBy('timestamp', 'desc'), limit(5))
         );
       } catch (orderError) {
-        // Eğer createdAt alanı yoksa normal sorgu yap
-        recentStudentsSnapshot = await getDocs(
-          query(collection(db, 'students'), limit(2))
+        // Eğer timestamp alanı yoksa normal sorgu yap
+        activityLogsSnapshot = await getDocs(
+          query(collection(db, 'activity_logs'), limit(5))
         );
       }
       
       const recentActivities: Activity[] = [];
-      recentStudentsSnapshot.forEach((doc) => {
-        const student = doc.data();
-        const firstName = student.firstName || student.name || 'Bilinmeyen';
-        const lastName = student.lastName || '';
-        const fullName = lastName ? `${firstName} ${lastName}` : firstName;
-        
+      activityLogsSnapshot.forEach((doc) => {
+        const log = doc.data();
         recentActivities.push({
           id: doc.id,
-          type: 'member',
-          description: 'Yeni öğrenci kaydı',
-          timestamp: student.createdAt?.toDate() || new Date(),
-          user: fullName
+          type: log.type || 'info',
+          description: log.description || 'Bilinmeyen aktivite',
+          timestamp: log.timestamp?.toDate() || new Date(),
+          user: log.user || undefined
         });
       });
       

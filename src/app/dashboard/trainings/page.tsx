@@ -259,6 +259,19 @@ export default function TrainingsPage() {
     };
   }, []);
 
+  const addActivityLog = async (type: string, description: string, user?: string) => {
+    try {
+      await addDoc(collection(db, 'activity_logs'), {
+        type,
+        description,
+        user,
+        timestamp: Timestamp.now()
+      });
+    } catch (error) {
+      console.error('Aktivite log eklenirken hata:', error);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -300,12 +313,26 @@ export default function TrainingsPage() {
       if (editingTraining && editingTraining.id) {
         // Mevcut antrenmanı güncelle
         await updateDoc(doc(db, 'trainings', editingTraining.id), trainingData);
+        
+        // Aktivite log'u ekle
+        await addActivityLog(
+          'training',
+          'Antrenman planı güncellendi',
+          `${formData.name} - ${selectedGroup?.name || ''}`
+        );
       } else {
         // Yeni antrenman ekle (recurring instance düzenlemeden de buraya gelir)
         await addDoc(collection(db, 'trainings'), {
           ...trainingData,
           createdAt: Timestamp.now()
         });
+        
+        // Aktivite log'u ekle
+        await addActivityLog(
+          'training',
+          'Yeni antrenman planlandı',
+          `${formData.name} - ${selectedGroup?.name || ''}`
+        );
         
         // Eğer bu bir recurring instance'dan türetilmişse, o instance'ı exclude et
         if (editingTraining && editingTraining.parentId) {
