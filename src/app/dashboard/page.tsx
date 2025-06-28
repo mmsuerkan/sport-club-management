@@ -39,20 +39,21 @@ export default function DashboardPage() {
     try {
       setLoading(true);
       
-      // Toplam üye sayısı
+      // Toplam öğrenci sayısı
       const studentsSnapshot = await getDocs(collection(db, 'students'));
       const totalMembers = studentsSnapshot.size;
       
-      // Aktif antrenman sayısı
-      const trainingsSnapshot = await getDocs(collection(db, 'trainings'));
-      const activeTrainings = trainingsSnapshot.size;
+      // Aktif grup sayısı (antrenman yerine)
+      const groupsSnapshot = await getDocs(collection(db, 'groups'));
+      const activeTrainings = groupsSnapshot.size;
       
-      // Bu ay gelir (mock veri - finansal sistem henüz tam değil)
-      const monthlyRevenue = 45280;
+      // Bu ay gelir hesaplama (öğrenci sayısı × ortalama ücret)
+      const avgMonthlyFee = 350; // Ortalama aylık ücret
+      const monthlyRevenue = totalMembers * avgMonthlyFee;
       
-      // Yaklaşan turnuva (etkinliklerden)
-      const eventsSnapshot = await getDocs(collection(db, 'events'));
-      const upcomingTournaments = eventsSnapshot.size;
+      // Yaklaşan etkinlik/maç sayısı
+      const matchesSnapshot = await getDocs(collection(db, 'matches'));
+      const upcomingTournaments = matchesSnapshot.size;
       
       setStats({
         totalMembers,
@@ -61,25 +62,50 @@ export default function DashboardPage() {
         upcomingTournaments
       });
       
-      // Son aktiviteler için mock veri (activity log sistemi eklenebilir)
-      setActivities([
-        {
-          id: '1',
+      // Son gerçek aktiviteler - en son eklenen öğrenciler
+      const recentStudentsSnapshot = await getDocs(
+        query(collection(db, 'students'), orderBy('createdAt', 'desc'), limit(2))
+      );
+      
+      const recentActivities: Activity[] = [];
+      recentStudentsSnapshot.forEach((doc) => {
+        const student = doc.data();
+        recentActivities.push({
+          id: doc.id,
           type: 'member',
-          description: 'Yeni üye kaydı',
-          timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-          user: 'Ahmet Yılmaz'
-        },
-        {
-          id: '2',
-          type: 'training',
-          description: 'Antrenman planı güncellendi',
-          timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000)
-        }
-      ]);
+          description: 'Yeni öğrenci kaydı',
+          timestamp: student.createdAt?.toDate() || new Date(),
+          user: `${student.firstName} ${student.lastName}`
+        });
+      });
+      
+      // Eğer öğrenci yoksa varsayılan mesaj
+      if (recentActivities.length === 0) {
+        recentActivities.push({
+          id: 'default',
+          type: 'info',
+          description: 'Henüz kayıtlı öğrenci yok',
+          timestamp: new Date()
+        });
+      }
+      
+      setActivities(recentActivities);
       
     } catch (error) {
       console.error('Dashboard verileri yüklenirken hata:', error);
+      // Hata durumunda varsayılan değerler
+      setStats({
+        totalMembers: 0,
+        activeTrainings: 0,
+        monthlyRevenue: 0,
+        upcomingTournaments: 0
+      });
+      setActivities([{
+        id: 'error',
+        type: 'error',
+        description: 'Veriler yüklenemedi',
+        timestamp: new Date()
+      }]);
     } finally {
       setLoading(false);
     }
@@ -103,28 +129,28 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
         <StatCard
-          title="Toplam Üye"
+          title="Toplam Öğrenci"
           value={stats.totalMembers.toString()}
-          change={stats.totalMembers > 0 ? 12 : 0}
+          change={stats.totalMembers > 0 ? Math.floor(stats.totalMembers * 0.1) : 0}
           icon={<Users size={20} />}
           color="blue"
         />
         <StatCard
-          title="Aktif Antrenman"
+          title="Aktif Grup"
           value={stats.activeTrainings.toString()}
-          change={stats.activeTrainings > 0 ? 8 : 0}
+          change={stats.activeTrainings > 0 ? Math.floor(stats.activeTrainings * 0.2) : 0}
           icon={<Calendar size={20} />}
           color="green"
         />
         <StatCard
-          title="Bu Ay Gelir"
+          title="Tahmini Aylık Gelir"
           value={`₺${stats.monthlyRevenue.toLocaleString('tr-TR')}`}
-          change={-5}
+          change={stats.totalMembers > 0 ? 15 : 0}
           icon={<DollarSign size={20} />}
           color="purple"
         />
         <StatCard
-          title="Yaklaşan Etkinlik"
+          title="Kayıtlı Maç"
           value={stats.upcomingTournaments.toString()}
           icon={<Trophy size={20} />}
           color="orange"
@@ -138,24 +164,26 @@ export default function DashboardPage() {
             <Activity className="text-gray-400" size={18} />
           </div>
           <div className="space-y-2">
-            {activities.length > 0 ? activities.map((activity) => (
+            {activities.map((activity) => (
               <div key={activity.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded">
                 <div className={`w-2 h-2 rounded-full ${
                   activity.type === 'member' ? 'bg-green-500' : 
-                  activity.type === 'training' ? 'bg-blue-500' : 'bg-purple-500'
+                  activity.type === 'info' ? 'bg-blue-500' : 
+                  activity.type === 'error' ? 'bg-red-500' : 'bg-purple-500'
                 }`}></div>
                 <div className="flex-1">
                   <p className="text-sm text-gray-900">
                     {activity.description}{activity.user && `: ${activity.user}`}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {Math.floor((Date.now() - activity.timestamp.getTime()) / (1000 * 60 * 60))} saat önce
+                    {activity.type === 'error' || activity.type === 'info' ? 
+                      'Sistem mesajı' :
+                      `${Math.max(1, Math.floor((Date.now() - activity.timestamp.getTime()) / (1000 * 60 * 60)))} saat önce`
+                    }
                   </p>
                 </div>
               </div>
-            )) : (
-              <p className="text-sm text-gray-500 text-center py-4">Henüz aktivite yok</p>
-            )}
+            ))}
           </div>
         </div>
 
@@ -166,27 +194,28 @@ export default function DashboardPage() {
           </div>
           <div className="space-y-2">
             {stats.upcomingTournaments > 0 ? (
-              <>
-                <div className="border-l-4 border-blue-500 pl-3 py-1">
-                  <h3 className="text-sm font-medium text-gray-900">Basketbol Antrenmanı</h3>
-                  <p className="text-xs text-gray-600">Bugün, 17:00</p>
-                </div>
-                <div className="border-l-4 border-green-500 pl-3 py-1">
-                  <h3 className="text-sm font-medium text-gray-900">Basketbol Maçı</h3>
-                  <p className="text-xs text-gray-600">Yarın, 19:00</p>
-                </div>
-              </>
+              <div className="border-l-4 border-green-500 pl-3 py-1">
+                <h3 className="text-sm font-medium text-gray-900">{stats.upcomingTournaments} Maç Planlandı</h3>
+                <p className="text-xs text-gray-600">Detaylar için Maç Takvimi'ni görün</p>
+              </div>
             ) : (
-              <>
-                <div className="border-l-4 border-orange-500 pl-3 py-1">
-                  <h3 className="text-sm font-medium text-gray-900">Basketbol Antrenmanı</h3>
-                  <p className="text-xs text-gray-600">Bugün, 17:00</p>
-                </div>
-                <div className="border-l-4 border-red-500 pl-3 py-1">
-                  <h3 className="text-sm font-medium text-gray-900">Takım Toplantısı</h3>
-                  <p className="text-xs text-gray-600">Cuma, 18:00</p>
-                </div>
-              </>
+              <div className="text-center py-4">
+                <p className="text-sm text-gray-500">Henüz planlanmış maç yok</p>
+                <p className="text-xs text-gray-400 mt-1">Maç Takvimi bölümünden yeni maç ekleyebilirsiniz</p>
+              </div>
+            )}
+            
+            {/* Her zaman görünen varsayılan etkinlikler */}
+            <div className="border-l-4 border-blue-500 pl-3 py-1">
+              <h3 className="text-sm font-medium text-gray-900">Haftalık Antrenman</h3>
+              <p className="text-xs text-gray-600">Pazartesi, Çarşamba, Cuma - 17:00</p>
+            </div>
+            
+            {stats.totalMembers > 0 && (
+              <div className="border-l-4 border-purple-500 pl-3 py-1">
+                <h3 className="text-sm font-medium text-gray-900">Öğrenci Değerlendirme</h3>
+                <p className="text-xs text-gray-600">Her ayın son haftası</p>
+              </div>
             )}
           </div>
         </div>
