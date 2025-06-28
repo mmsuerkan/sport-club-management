@@ -63,19 +63,31 @@ export default function DashboardPage() {
       });
       
       // Son gerçek aktiviteler - en son eklenen öğrenciler
-      const recentStudentsSnapshot = await getDocs(
-        query(collection(db, 'students'), orderBy('createdAt', 'desc'), limit(2))
-      );
+      let recentStudentsSnapshot;
+      try {
+        recentStudentsSnapshot = await getDocs(
+          query(collection(db, 'students'), orderBy('createdAt', 'desc'), limit(2))
+        );
+      } catch (orderError) {
+        // Eğer createdAt alanı yoksa normal sorgu yap
+        recentStudentsSnapshot = await getDocs(
+          query(collection(db, 'students'), limit(2))
+        );
+      }
       
       const recentActivities: Activity[] = [];
       recentStudentsSnapshot.forEach((doc) => {
         const student = doc.data();
+        const firstName = student.firstName || student.name || 'Bilinmeyen';
+        const lastName = student.lastName || '';
+        const fullName = lastName ? `${firstName} ${lastName}` : firstName;
+        
         recentActivities.push({
           id: doc.id,
           type: 'member',
           description: 'Yeni öğrenci kaydı',
           timestamp: student.createdAt?.toDate() || new Date(),
-          user: `${student.firstName} ${student.lastName}`
+          user: fullName
         });
       });
       
