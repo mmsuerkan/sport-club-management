@@ -84,11 +84,12 @@ export default function SettingsPage() {
   const [showResetModal, setShowResetModal] = useState(false);
   const { user } = useAuth();
 
-  useEffect(() => {
-    fetchSettings();
-  }, [fetchSettings]);
-
   const fetchSettings = useCallback(async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+    
     try {
       setLoading(true);
       const docRef = doc(db, 'settings', 'app-settings');
@@ -106,12 +107,22 @@ export default function SettingsPage() {
         });
         setSettings({ ...defaultSettings, id: 'app-settings' });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Ayarlar yüklenirken hata:', error);
+      // Firebase auth hatası kontrolü
+      if (error?.code === 'permission-denied') {
+        alert('Bu sayfaya erişim yetkiniz yok.');
+      } else {
+        alert('Ayarlar yüklenirken bir hata oluştu. Lütfen sayfayı yenileyin.');
+      }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
+
+  useEffect(() => {
+    fetchSettings();
+  }, [fetchSettings]);
 
   const handleSave = async () => {
     try {
