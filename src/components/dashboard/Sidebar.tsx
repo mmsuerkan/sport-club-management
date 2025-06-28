@@ -95,7 +95,7 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <div className="w-[280px] bg-white border-r border-gray-200 h-screen overflow-y-auto">
+    <div className="w-[280px] bg-white border-r border-gray-200 h-screen">
       <div className="p-5 border-b border-gray-200">
         <h1 className="text-2xl font-bold text-gray-900">Sports Club</h1>
         <p className="text-sm text-gray-500 mt-1">Yönetim Paneli</p>

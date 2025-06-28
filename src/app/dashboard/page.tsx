@@ -5,13 +5,13 @@ import StatCard from '@/components/dashboard/StatCard';
 
 export default function DashboardPage() {
   return (
-    <div>
-      <div className="mb-8">
+    <div className="h-full flex flex-col">
+      <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-gray-600 mt-2">Spor klübü yönetim paneline hoş geldiniz</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard
           title="Toplam Üye"
           value="248"
@@ -41,7 +41,7 @@ export default function DashboardPage() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1">
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-semibold text-gray-900">Son Aktiviteler</h2>
@@ -97,15 +97,6 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="mt-6 bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-gray-900">Performans Özeti</h2>
-          <TrendingUp className="text-gray-400" size={20} />
-        </div>
-        <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-          <p className="text-gray-500">Grafik alanı - Yakında eklenecek</p>
-        </div>
-      </div>
     </div>
   );
 }
