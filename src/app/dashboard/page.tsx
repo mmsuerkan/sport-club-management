@@ -6,12 +6,12 @@ import StatCard from '@/components/dashboard/StatCard';
 export default function DashboardPage() {
   return (
     <div className="h-full flex flex-col">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600 mt-2">Spor klübü yönetim paneline hoş geldiniz</p>
+      <div className="mb-4">
+        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+        <p className="text-gray-600 text-sm mt-1">Spor klübü yönetim paneline hoş geldiniz</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
         <StatCard
           title="Toplam Üye"
           value="248"
@@ -41,57 +41,43 @@ export default function DashboardPage() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1">
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-gray-900">Son Aktiviteler</h2>
-            <Activity className="text-gray-400" size={20} />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-semibold text-gray-900">Son Aktiviteler</h2>
+            <Activity className="text-gray-400" size={18} />
           </div>
-          <div className="space-y-4">
-            <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+          <div className="space-y-2">
+            <div className="flex items-center gap-3 p-2 bg-gray-50 rounded">
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">Yeni üye kaydı: Ahmet Yılmaz</p>
+                <p className="text-sm text-gray-900">Yeni üye: Ahmet Yılmaz</p>
                 <p className="text-xs text-gray-500">2 saat önce</p>
               </div>
             </div>
-            <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+            <div className="flex items-center gap-3 p-2 bg-gray-50 rounded">
               <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">Antrenman planı güncellendi</p>
+                <p className="text-sm text-gray-900">Plan güncellendi</p>
                 <p className="text-xs text-gray-500">5 saat önce</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
-              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">Ödeme alındı: ₺2,500</p>
-                <p className="text-xs text-gray-500">1 gün önce</p>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-gray-900">Yaklaşan Etkinlikler</h2>
-            <Calendar className="text-gray-400" size={20} />
+        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-semibold text-gray-900">Yaklaşan Etkinlikler</h2>
+            <Calendar className="text-gray-400" size={18} />
           </div>
-          <div className="space-y-4">
-            <div className="border-l-4 border-blue-500 pl-4 py-2">
-              <h3 className="font-medium text-gray-900">Yüzme Antrenmanı</h3>
-              <p className="text-sm text-gray-600">Bugün, 15:00 - 17:00</p>
-              <p className="text-xs text-gray-500 mt-1">12 katılımcı</p>
+          <div className="space-y-2">
+            <div className="border-l-4 border-blue-500 pl-3 py-1">
+              <h3 className="text-sm font-medium text-gray-900">Yüzme Antrenmanı</h3>
+              <p className="text-xs text-gray-600">Bugün, 15:00</p>
             </div>
-            <div className="border-l-4 border-green-500 pl-4 py-2">
-              <h3 className="font-medium text-gray-900">Basketbol Turnuvası</h3>
-              <p className="text-sm text-gray-600">Yarın, 10:00</p>
-              <p className="text-xs text-gray-500 mt-1">8 takım</p>
-            </div>
-            <div className="border-l-4 border-purple-500 pl-4 py-2">
-              <h3 className="font-medium text-gray-900">Fitness Değerlendirme</h3>
-              <p className="text-sm text-gray-600">Cuma, 14:00 - 18:00</p>
-              <p className="text-xs text-gray-500 mt-1">25 üye</p>
+            <div className="border-l-4 border-green-500 pl-3 py-1">
+              <h3 className="text-sm font-medium text-gray-900">Basketbol Turnuvası</h3>
+              <p className="text-xs text-gray-600">Yarın, 10:00</p>
             </div>
           </div>
         </div>
