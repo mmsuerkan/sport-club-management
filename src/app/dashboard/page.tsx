@@ -1,6 +1,6 @@
 'use client';
 
-import { Users, Calendar, Trophy, TrendingUp, Activity, DollarSign } from 'lucide-react';
+import { Users, Calendar, Trophy, TrendingUp, Activity, DollarSign, Trash2, RefreshCw } from 'lucide-react';
 import StatCard from '@/components/dashboard/StatCard';
 import { useState, useEffect } from 'react';
 import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
@@ -34,6 +34,14 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchDashboardData();
   }, []);
+
+  const clearActivities = () => {
+    setActivities([]);
+  };
+
+  const refreshActivities = () => {
+    fetchDashboardData();
+  };
 
   const fetchDashboardData = async () => {
     try {
@@ -91,16 +99,6 @@ export default function DashboardPage() {
         });
       });
       
-      // Eğer öğrenci yoksa varsayılan mesaj
-      if (recentActivities.length === 0) {
-        recentActivities.push({
-          id: 'default',
-          type: 'info',
-          description: 'Henüz kayıtlı öğrenci yok',
-          timestamp: new Date()
-        });
-      }
-      
       setActivities(recentActivities);
       
     } catch (error) {
@@ -112,12 +110,7 @@ export default function DashboardPage() {
         monthlyRevenue: 0,
         upcomingTournaments: 0
       });
-      setActivities([{
-        id: 'error',
-        type: 'error',
-        description: 'Veriler yüklenemedi',
-        timestamp: new Date()
-      }]);
+      setActivities([]);
     } finally {
       setLoading(false);
     }
@@ -173,29 +166,47 @@ export default function DashboardPage() {
         <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-base font-semibold text-gray-900">Son Aktiviteler</h2>
-            <Activity className="text-gray-400" size={18} />
+            <div className="flex items-center gap-2">
+              <button
+                onClick={refreshActivities}
+                className="p-1 hover:bg-gray-100 rounded transition-colors"
+                title="Yenile"
+              >
+                <RefreshCw size={16} className="text-gray-500" />
+              </button>
+              <button
+                onClick={clearActivities}
+                className="p-1 hover:bg-gray-100 rounded transition-colors"
+                title="Temizle"
+              >
+                <Trash2 size={16} className="text-gray-500" />
+              </button>
+              <Activity className="text-gray-400" size={18} />
+            </div>
           </div>
           <div className="space-y-2">
-            {activities.map((activity) => (
+            {activities.length > 0 ? activities.map((activity) => (
               <div key={activity.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded">
                 <div className={`w-2 h-2 rounded-full ${
                   activity.type === 'member' ? 'bg-green-500' : 
-                  activity.type === 'info' ? 'bg-blue-500' : 
-                  activity.type === 'error' ? 'bg-red-500' : 'bg-purple-500'
+                  activity.type === 'training' ? 'bg-blue-500' : 
+                  activity.type === 'system' ? 'bg-purple-500' : 'bg-orange-500'
                 }`}></div>
                 <div className="flex-1">
                   <p className="text-sm text-gray-900">
                     {activity.description}{activity.user && `: ${activity.user}`}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {activity.type === 'error' || activity.type === 'info' ? 
-                      'Sistem mesajı' :
-                      `${Math.max(1, Math.floor((Date.now() - activity.timestamp.getTime()) / (1000 * 60 * 60)))} saat önce`
-                    }
+                    {Math.max(1, Math.floor((Date.now() - activity.timestamp.getTime()) / (1000 * 60 * 60)))} saat önce
                   </p>
                 </div>
               </div>
-            ))}
+            )) : (
+              <div className="text-center py-6">
+                <p className="text-sm text-gray-500">Aktivite bulunmuyor</p>
+                <p className="text-xs text-gray-400 mt-1">Öğrenci eklendiğinde burada görünecek</p>
+              </div>
+            )}
           </div>
         </div>
 
