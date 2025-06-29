@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import { User } from 'firebase/auth';
 import { onAuthChange, getUserData, signIn as firebaseSignIn, logOut as firebaseLogOut, UserData } from '@/lib/firebase/auth';
 import { useRouter } from 'next/navigation';
+import { authLogger } from '@/lib/utils/logger';
 
 interface AuthContextType {
   user: User | null;
@@ -35,7 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       return token;
     } catch (error) {
-      console.error('Failed to refresh token:', error);
+      authLogger.error('Failed to refresh token:', error);
       throw error;
     }
   };
@@ -58,7 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         await updateAuthCookies(user);
       } catch (error: any) {
-        console.error('Token refresh failed:', error);
+        authLogger.warn('Token refresh failed:', error);
         // Only logout on critical auth errors, not network errors
         if (error?.code === 'auth/invalid-user-token' || 
             error?.code === 'auth/user-token-expired' ||
@@ -73,14 +74,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    console.log('🔐 AuthContext: Setting up auth listener');
+    authLogger.debug('Setting up auth listener');
     
     const unsubscribe = onAuthChange(async (user) => {
-      console.log('🔄 Auth state changed:', user ? `User: ${user.email}` : 'No user');
+      authLogger.debug('Auth state changed:', user ? `User: ${user.email}` : 'No user');
       setUser(user);
       
       if (user) {
-        console.log('✅ User authenticated, setting up tokens...');
+        authLogger.debug('User authenticated, setting up tokens...');
         try {
           // Update cookies and setup refresh
           await updateAuthCookies(user);
@@ -88,16 +89,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           
           const data = await getUserData(user.uid);
           setUserData(data);
-          console.log('✅ User data loaded successfully');
+          authLogger.success('User data loaded successfully');
         } catch (error: any) {
-          console.error('❌ Error fetching user data:', error);
+          authLogger.error('Error fetching user data:', error);
           // Only logout if it's a critical auth error, not a data fetch error
           if (error?.code === 'auth/invalid-user-token' || error?.code === 'auth/user-token-expired') {
             await logOut();
           }
         }
       } else {
-        console.log('❌ No user, clearing auth state...');
+        authLogger.debug('No user, clearing auth state...');
         // Clear cookies, user data and intervals when user is null
         clearAuthCookies();
         if (tokenRefreshInterval) {
@@ -107,7 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUserData(null);
       }
       
-      console.log('🏁 Auth loading complete');
+      authLogger.debug('Auth loading complete');
       setLoading(false);
     });
 
@@ -157,7 +158,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Navigate to login page
       router.push('/login');
     } catch (error) {
-      console.error('Logout error:', error);
+      authLogger.error('Logout error:', error);
       
       // Even if logout fails, clear everything and redirect
       clearAuthCookies();
