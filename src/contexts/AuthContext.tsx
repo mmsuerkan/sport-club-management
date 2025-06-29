@@ -73,10 +73,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    console.log('🔐 AuthContext: Setting up auth listener');
+    
     const unsubscribe = onAuthChange(async (user) => {
+      console.log('🔄 Auth state changed:', user ? `User: ${user.email}` : 'No user');
       setUser(user);
       
       if (user) {
+        console.log('✅ User authenticated, setting up tokens...');
         try {
           // Update cookies and setup refresh
           await updateAuthCookies(user);
@@ -84,14 +88,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           
           const data = await getUserData(user.uid);
           setUserData(data);
+          console.log('✅ User data loaded successfully');
         } catch (error: any) {
-          console.error('Error fetching user data:', error);
+          console.error('❌ Error fetching user data:', error);
           // Only logout if it's a critical auth error, not a data fetch error
           if (error?.code === 'auth/invalid-user-token' || error?.code === 'auth/user-token-expired') {
             await logOut();
           }
         }
       } else {
+        console.log('❌ No user, clearing auth state...');
         // Clear cookies, user data and intervals when user is null
         clearAuthCookies();
         if (tokenRefreshInterval) {
@@ -101,6 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUserData(null);
       }
       
+      console.log('🏁 Auth loading complete');
       setLoading(false);
     });
 

@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { signIn, resetPassword } from '@/lib/firebase/auth';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 import { Loader2, Mail, Lock, Eye, EyeOff, Activity, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
@@ -12,6 +14,8 @@ interface LoginForm {
 }
 
 export default function LoginPage() {
+  const { signIn: authSignIn, user } = useAuth();
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -23,7 +27,13 @@ export default function LoginPage() {
   
   useEffect(() => {
     setIsVisible(true);
-  }, []);
+    
+    // If user is already logged in, redirect to dashboard
+    if (user) {
+      console.log('User already logged in, redirecting...');
+      router.push('/dashboard');
+    }
+  }, [user, router]);
   
   const {
     register,
@@ -36,31 +46,16 @@ export default function LoginPage() {
     setError(null);
     
     try {
-      console.log('Attempting login with:', data.email);
+      console.log('🔑 Attempting login with AuthContext:', data.email);
       
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: data.email,
-          password: data.password,
-        }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Login failed');
-      }
-
-      console.log('Login successful:', result);
+      // Use AuthContext signIn instead of API
+      await authSignIn(data.email, data.password);
       
-      // Redirect to dashboard - cookies are set server-side
-      window.location.href = '/dashboard';
+      console.log('✅ Login successful, AuthContext will handle redirect');
+      
+      // AuthContext will handle the redirect automatically when user state changes
     } catch (error) {
-      console.error('Login error details:', error);
+      console.error('❌ Login error details:', error);
       const errorMessage = error instanceof Error ? error.message : 'E-posta veya şifre hatalı';
       setError(`Giriş hatası: ${errorMessage}`);
     } finally {
