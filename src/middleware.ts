@@ -1,15 +1,25 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { adminAuth } from './lib/firebase/admin';
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const publicPaths = ['/login', '/'];
   const isPublicPath = publicPaths.includes(request.nextUrl.pathname);
   
   const token = request.cookies.get('auth-token')?.value;
-  const authState = request.cookies.get('auth-state')?.value;
   
-  // Check if user is actually authenticated (has both token and auth state)
-  const isAuthenticated = !!(token && authState === 'authenticated');
+  let isAuthenticated = false;
+  
+  if (token) {
+    try {
+      // Verify the token with Firebase Admin
+      await adminAuth.verifyIdToken(token);
+      isAuthenticated = true;
+    } catch (error) {
+      console.error('Token verification failed:', error);
+      isAuthenticated = false;
+    }
+  }
   
   // For protected routes
   if (!isPublicPath && !isAuthenticated) {

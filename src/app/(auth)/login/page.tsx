@@ -37,27 +37,28 @@ export default function LoginPage() {
     
     try {
       console.log('Attempting login with:', data.email);
-      const user = await signIn(data.email, data.password, rememberMe);
       
-      console.log('SignIn response:', user);
-      
-      if (!user) {
-        throw new Error('Login failed - no user returned');
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: data.email,
+          password: data.password,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Login failed');
       }
+
+      console.log('Login successful:', result);
       
-      console.log('User object type:', typeof user, user);
-      
-      // Set auth cookie for middleware
-      const token = await user.getIdToken();
-      document.cookie = `auth-token=${token}; path=/; max-age=3600; SameSite=Lax`;
-      
-      console.log('Login successful, token:', token.substring(0, 50) + '...');
-      console.log('Cookie set, checking cookies:', document.cookie);
-      
-      // Force page reload to trigger middleware
-      setTimeout(() => {
-        window.location.href = '/dashboard';
-      }, 500);
+      // Redirect to dashboard - cookies are set server-side
+      window.location.href = '/dashboard';
     } catch (error) {
       console.error('Login error details:', error);
       const errorMessage = error instanceof Error ? error.message : 'E-posta veya şifre hatalı';

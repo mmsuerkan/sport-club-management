@@ -28,6 +28,12 @@ Bu spor kulübü yönetim sistemi projesi için sürekli dikkat edilmesi gereken
 - Error message'ları Türkçe
 - Accessibility standartlarına uy
 
+## Dil ve İletişim Notları
+- Türkçe konuş benimle her zaman
+
+## Proje Geliştirme Notları
+- projeyi taratırken gemini cli dan destek al context lengthi çok yüksek
+
 ## İyileştirme Fazları
 
 ### 🔥 PHASE 1: Acil Düzeltmeler (1-2 Hafta)
