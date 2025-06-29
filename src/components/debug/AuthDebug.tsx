@@ -7,8 +7,13 @@ export default function AuthDebug() {
   const { user, loading } = useAuth();
   const [tokenStatus, setTokenStatus] = useState<string>('checking...');
   const [lastRefresh, setLastRefresh] = useState<string>('never');
+  const [cookieStatus, setCookieStatus] = useState<string>('unknown');
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    // Set client flag after hydration
+    setIsClient(true);
+    
     // Check token status every 10 seconds
     const interval = setInterval(async () => {
       if (user) {
@@ -22,13 +27,24 @@ export default function AuthDebug() {
       } else {
         setTokenStatus('no user');
       }
+      
+      // Update cookie status
+      setCookieStatus(document.cookie.includes('auth-token') ? '✓' : '✗');
     }, 10000);
+
+    // Initial check
+    setCookieStatus(document.cookie.includes('auth-token') ? '✓' : '✗');
 
     return () => clearInterval(interval);
   }, [user]);
 
   // Only show in development
   if (process.env.NODE_ENV === 'production') {
+    return null;
+  }
+
+  // Prevent hydration mismatch by not rendering until client is ready
+  if (!isClient) {
     return null;
   }
 
@@ -39,9 +55,7 @@ export default function AuthDebug() {
       <div>Loading: {loading.toString()}</div>
       <div>Token: {tokenStatus}</div>
       <div>Last Check: {lastRefresh}</div>
-      <div>Cookies: {typeof document !== 'undefined' ? 
-        (document.cookie.includes('auth-token') ? '✓' : '✗') : 'unknown'}
-      </div>
+      <div>Cookies: {cookieStatus}</div>
     </div>
   );
 }
