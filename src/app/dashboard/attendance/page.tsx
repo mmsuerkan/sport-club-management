@@ -147,91 +147,120 @@ export default function AttendancePage() {
   const [showOnlyPending, setShowOnlyPending] = useState(false);
 
   useEffect(() => {
-    // Firebase listeners
-    const unsubscribeBranches = createListener(
-      collection(db, 'branches'),
-      (snapshot) => {
-        const branchesData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        } as Branch));
-        setBranches(branchesData);
-      }
-    );
-
-    const unsubscribeGroups = createListener(
-      collection(db, 'groups'),
-      (snapshot) => {
-        const groupsData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        } as Group));
-        setGroups(groupsData);
-      }
-    );
-
-    const unsubscribeStudents = createListener(
-      collection(db, 'students'),
-      (snapshot) => {
-        const studentsData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        } as Student));
-        setStudents(studentsData);
-      }
-    );
-
-    const unsubscribeTrainings = createListener(
-      query(collection(db, 'trainings'), orderBy('date', 'desc')),
-      (snapshot) => {
-        const trainingsData = snapshot.docs.map(doc => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            ...data,
-            date: data.date instanceof Timestamp ? data.date.toDate() : new Date(data.date),
-            startTime: data.startTime,
-            endTime: data.endTime
-          } as Training;
-        });
-        setTrainings(trainingsData);
-        
-        // Create attendance sessions for trainings that don't have one
-        trainingsData.forEach(training => {
-          if (training.status === 'scheduled') {
-            attendanceService.createAttendanceSessionFromTraining(training);
+    let isSubscribed = true; // Prevent state updates after unmount
+    
+    // Firebase listeners with error handling
+    const setupListeners = async () => {
+      try {
+        const unsubscribeBranches = createListener(
+          collection(db, 'branches'),
+          (snapshot) => {
+            if (!isSubscribed) return;
+            const branchesData = snapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            } as Branch));
+            setBranches(branchesData);
           }
-        });
-      }
-    );
+        );
 
-    const unsubscribeAttendanceSessions = createListener(
-      query(collection(db, 'attendanceSessions'), orderBy('date', 'desc')),
-      (snapshot) => {
-        const sessionsData = snapshot.docs.map(doc => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            ...data,
-            date: data.date?.toDate() || new Date(),
-            completedAt: data.completedAt?.toDate()
-          } as AttendanceSession;
-        });
-        setAttendanceSessions(sessionsData);
-        setLoading(false);
-      }
-    );
+        const unsubscribeGroups = createListener(
+          collection(db, 'groups'),
+          (snapshot) => {
+            if (!isSubscribed) return;
+            const groupsData = snapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            } as Group));
+            setGroups(groupsData);
+          }
+        );
 
-    fetchData();
+        const unsubscribeStudents = createListener(
+          collection(db, 'students'),
+          (snapshot) => {
+            if (!isSubscribed) return;
+            const studentsData = snapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            } as Student));
+            setStudents(studentsData);
+          }
+        );
+
+        const unsubscribeTrainings = createListener(
+          query(collection(db, 'trainings'), orderBy('date', 'desc')),
+          (snapshot) => {
+            if (!isSubscribed) return;
+            const trainingsData = snapshot.docs.map(doc => {
+              const data = doc.data();
+              return {
+                id: doc.id,
+                ...data,
+                date: data.date instanceof Timestamp ? data.date.toDate() : new Date(data.date),
+                startTime: data.startTime,
+                endTime: data.endTime
+              } as Training;
+            });
+            setTrainings(trainingsData);
+            
+            // Create attendance sessions for trainings that don't have one
+            trainingsData.forEach(training => {
+              if (training.status === 'scheduled') {
+                attendanceService.createAttendanceSessionFromTraining(training);
+              }
+            });
+          }
+        );
+
+        const unsubscribeAttendanceSessions = createListener(
+          query(collection(db, 'attendanceSessions'), orderBy('date', 'desc')),
+          (snapshot) => {
+            if (!isSubscribed) return;
+            const sessionsData = snapshot.docs.map(doc => {
+              const data = doc.data();
+              return {
+                id: doc.id,
+                ...data,
+                date: data.date?.toDate() || new Date(),
+                completedAt: data.completedAt?.toDate()
+              } as AttendanceSession;
+            });
+            setAttendanceSessions(sessionsData);
+            if (isSubscribed) {
+              setLoading(false);
+            }
+          }
+        );
+
+        fetchData();
+
+        return () => {
+          unsubscribeBranches();
+          unsubscribeGroups();
+          unsubscribeStudents();
+          unsubscribeTrainings();
+          unsubscribeAttendanceSessions();
+        };
+      } catch (error) {
+        console.error('Error setting up listeners:', error);
+        if (isSubscribed) {
+          setLoading(false);
+        }
+      }
+    };
+
+    const cleanupPromise = setupListeners();
 
     return () => {
-      unsubscribeBranches();
-      unsubscribeGroups();
-      unsubscribeStudents();
-      unsubscribeTrainings();
-      unsubscribeAttendanceSessions();
+      isSubscribed = false;
+      cleanupPromise.then(cleanup => {
+        if (cleanup) {
+          cleanup();
+        }
+      });
     };
-  }, []);
+  }, []); // Empty dependency array - no dependencies needed
 
   useEffect(() => {
     if (selectedBranch || selectedGroup || selectedDate) {

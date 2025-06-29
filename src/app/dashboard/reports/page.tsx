@@ -870,12 +870,27 @@ export default function ReportsPage() {
   const downloadReport = (report: Report) => {
     if (!report.fileUrl) return;
     
-    const link = document.createElement('a');
-    link.href = report.fileUrl;
-    link.download = `${report.name}_${new Date().toISOString().split('T')[0]}.${report.format}`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Use safer download approach with proper cleanup
+    try {
+      const link = document.createElement('a');
+      link.href = report.fileUrl;
+      link.download = `${report.name}_${new Date().toISOString().split('T')[0]}.${report.format}`;
+      link.style.display = 'none'; // Hide the element
+      
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup with timeout to ensure click is processed
+      setTimeout(() => {
+        if (link.parentNode) {
+          document.body.removeChild(link);
+        }
+      }, 100);
+    } catch (error) {
+      console.error('Download failed:', error);
+      // Fallback to window.open for download
+      window.open(report.fileUrl, '_blank');
+    }
   };
 
   // Rapor görüntüleme

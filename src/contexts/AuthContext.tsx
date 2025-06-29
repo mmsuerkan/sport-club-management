@@ -25,8 +25,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Token refresh interval
   const [tokenRefreshInterval, setTokenRefreshInterval] = useState<NodeJS.Timeout | null>(null);
 
-  // Function to update auth cookies
-  const updateAuthCookies = async (user: User) => {
+  // Function to update auth cookies with retry mechanism
+  const updateAuthCookies = async (user: User, retryCount = 0) => {
     try {
       const token = await user.getIdToken(true); // force refresh
       
@@ -34,9 +34,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       document.cookie = `auth-token=${token}; path=/; max-age=3600; SameSite=Lax; Secure=${process.env.NODE_ENV === 'production'}`;
       document.cookie = `auth-state=authenticated; path=/; max-age=3600; SameSite=Lax; Secure=${process.env.NODE_ENV === 'production'}`;
       
+      authLogger.debug('Auth cookies updated successfully');
       return token;
-    } catch (error) {
+    } catch (error: any) {
       authLogger.error('Failed to refresh token:', error);
+      
+      // Retry once for network errors
+      if (retryCount === 0 && error?.code !== 'auth/invalid-user-token') {
+        authLogger.debug('Retrying token refresh...');
+        return updateAuthCookies(user, 1);
+      }
+      
       throw error;
     }
   };
@@ -112,13 +120,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     });
 
+    // Cleanup function to prevent memory leaks
     return () => {
+      authLogger.debug('Cleaning up auth listeners');
       unsubscribe();
+      // Use current tokenRefreshInterval value, not state
       if (tokenRefreshInterval) {
         clearInterval(tokenRefreshInterval);
       }
     };
-  }, []); // ❌ CRITICAL FIX: Remove tokenRefreshInterval from dependencies to prevent infinite loop
+  }, []); // Empty dependency array - no dependencies needed
 
   const signIn = async (email: string, password: string) => {
     try {
