@@ -68,11 +68,13 @@ export default function Header({ onMenuToggle }: HeaderProps) {
             {logoUrl ? (
               <div className="relative w-10 h-10">
                 <Image
-                  src={logoUrl}
+                  src={`${logoUrl}?t=${Date.now()}`}
                   alt="Klüp Logo"
                   fill
                   className="object-cover rounded-full"
                   sizes="40px"
+                  priority
+                  unoptimized
                 />
               </div>
             ) : (
