@@ -2,6 +2,39 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ['firebase-admin'],
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          // XSS Protection
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block'
+          },
+          // CSRF Protection
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY'
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff'
+          },
+          // Content Security Policy
+          {
+            key: 'Content-Security-Policy',
+            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://firebasestorage.googleapis.com; connect-src 'self' https://*.googleapis.com https://*.firebase.io https://*.firebaseapp.com;"
+          },
+          // Referrer Policy
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin'
+          }
+        ]
+      }
+    ];
+  },
   webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
     // Fix WebAssembly support
     config.experiments = {
