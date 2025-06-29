@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { collection, getDocs, query, where, orderBy, limit, onSnapshot, addDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { useAuth } from '@/contexts/AuthContext';
+import { dashboardLogger } from '@/lib/utils/logger';
 
 interface DashboardStats {
   totalMembers: number;
@@ -25,8 +26,8 @@ interface Activity {
 export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth();
   
-  console.log('🏠 Dashboard component render');
-  console.log('Auth state - User:', user?.email || 'null', 'Loading:', authLoading);
+  dashboardLogger.debug('Dashboard component render');
+  dashboardLogger.debug('Auth state - User:', user?.email || 'null', 'Loading:', authLoading);
   
   const [stats, setStats] = useState<DashboardStats>({
     totalMembers: 0,
@@ -38,17 +39,17 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('🔍 Dashboard useEffect triggered');
-    console.log('User:', user?.email || 'null');
-    console.log('AuthLoading:', authLoading);
-    console.log('Should fetch data:', user && !authLoading);
+    dashboardLogger.debug('Dashboard useEffect triggered');
+    dashboardLogger.debug('User:', user?.email || 'null');
+    dashboardLogger.debug('AuthLoading:', authLoading);
+    dashboardLogger.debug('Should fetch data:', user && !authLoading);
     
     // Only fetch data when user is authenticated
     if (user && !authLoading) {
-      console.log('✅ Conditions met, calling fetchDashboardData');
+      dashboardLogger.debug('Conditions met, calling fetchDashboardData');
       fetchDashboardData();
     } else {
-      console.log('❌ Conditions not met for data fetching');
+      dashboardLogger.debug('Conditions not met for data fetching');
     }
   }, [user, authLoading]);
 
@@ -60,7 +61,7 @@ export default function DashboardPage() {
       await Promise.all(deletePromises);
       setActivities([]);
     } catch (error) {
-      console.error('Aktiviteler silinirken hata:', error);
+      dashboardLogger.error('Aktiviteler silinirken hata:', error);
       // Frontend'te temizle hata durumunda
       setActivities([]);
     }
@@ -72,20 +73,20 @@ export default function DashboardPage() {
 
   const fetchDashboardData = async () => {
     try {
-      console.log('🔄 Fetching dashboard data...');
+      dashboardLogger.debug('Fetching dashboard data...');
       setLoading(true);
       
       // Toplam öğrenci sayısı
-      console.log('📚 Fetching students...');
+      dashboardLogger.debug('Fetching students...');
       const studentsSnapshot = await getDocs(collection(db, 'students'));
       const totalMembers = studentsSnapshot.size;
-      console.log('✅ Students loaded:', totalMembers);
+      dashboardLogger.success('Students loaded:', totalMembers);
       
       // Aktif grup sayısı (antrenman yerine)
-      console.log('👥 Fetching groups...');
+      dashboardLogger.debug('Fetching groups...');
       const groupsSnapshot = await getDocs(collection(db, 'groups'));
       const activeTrainings = groupsSnapshot.size;
-      console.log('✅ Groups loaded:', activeTrainings);
+      dashboardLogger.success('Groups loaded:', activeTrainings);
       
       // Bu ay gelir hesaplama (öğrenci sayısı × ortalama ücret)
       const avgMonthlyFee = 350; // Ortalama aylık ücret
@@ -122,7 +123,7 @@ export default function DashboardPage() {
       setActivities(recentActivities);
       
     } catch (error) {
-      console.error('Dashboard verileri yüklenirken hata:', error);
+      dashboardLogger.error('Dashboard verileri yüklenirken hata:', error);
       // Hata durumunda varsayılan değerler
       setStats({
         totalMembers: 0,
