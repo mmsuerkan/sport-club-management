@@ -5,6 +5,7 @@ import StatCard from '@/components/dashboard/StatCard';
 import { useState, useEffect } from 'react';
 import { collection, getDocs, query, where, orderBy, limit, onSnapshot, addDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface DashboardStats {
   totalMembers: number;
@@ -22,6 +23,7 @@ interface Activity {
 }
 
 export default function DashboardPage() {
+  const { user, loading: authLoading } = useAuth();
   const [stats, setStats] = useState<DashboardStats>({
     totalMembers: 0,
     activeTrainings: 0,
@@ -32,8 +34,11 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
+    // Only fetch data when user is authenticated
+    if (user && !authLoading) {
+      fetchDashboardData();
+    }
+  }, [user, authLoading]);
 
   const clearActivities = async () => {
     try {
@@ -127,6 +132,29 @@ export default function DashboardPage() {
       <div className="h-full flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         <p className="ml-3 text-gray-600">Veriler yükleniyor...</p>
+      </div>
+    );
+  }
+
+  // Show loading while auth is loading
+  if (authLoading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+          <p className="text-gray-600">Yükleniyor...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login message if no user
+  if (!user) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600">Lütfen giriş yapın.</p>
+        </div>
       </div>
     );
   }
