@@ -57,9 +57,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const interval = setInterval(async () => {
       try {
         await updateAuthCookies(user);
-      } catch (error) {
-        console.error('Token refresh failed, logging out:', error);
-        await logOut();
+      } catch (error: any) {
+        console.error('Token refresh failed:', error);
+        // Only logout on critical auth errors, not network errors
+        if (error?.code === 'auth/invalid-user-token' || 
+            error?.code === 'auth/user-token-expired' ||
+            error?.code === 'auth/user-disabled') {
+          await logOut();
+        }
+        // For other errors (network, etc.), just log and try again next time
       }
     }, 50 * 60 * 1000); // 50 minutes
 
@@ -78,10 +84,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           
           const data = await getUserData(user.uid);
           setUserData(data);
-        } catch (error) {
+        } catch (error: any) {
           console.error('Error fetching user data:', error);
-          // If there's an error getting user data or token, logout
-          await logOut();
+          // Only logout if it's a critical auth error, not a data fetch error
+          if (error?.code === 'auth/invalid-user-token' || error?.code === 'auth/user-token-expired') {
+            await logOut();
+          }
         }
       } else {
         // Clear cookies, user data and intervals when user is null
@@ -102,7 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         clearInterval(tokenRefreshInterval);
       }
     };
-  }, [tokenRefreshInterval]);
+  }, []); // ❌ CRITICAL FIX: Remove tokenRefreshInterval from dependencies to prevent infinite loop
 
   const signIn = async (email: string, password: string) => {
     try {

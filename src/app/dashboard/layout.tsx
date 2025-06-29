@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Sidebar from '@/components/dashboard/Sidebar';
 import Header from '@/components/dashboard/Header';
+import AuthDebug from '@/components/debug/AuthDebug';
 
 export default function DashboardLayout({
   children,
@@ -26,6 +27,8 @@ export default function DashboardLayout({
           </div>
         </main>
       </div>
+      
+      <AuthDebug />
     </div>
   );
 }
