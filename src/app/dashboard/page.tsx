@@ -60,15 +60,20 @@ export default function DashboardPage() {
 
   const fetchDashboardData = async () => {
     try {
+      console.log('🔄 Fetching dashboard data...');
       setLoading(true);
       
       // Toplam öğrenci sayısı
+      console.log('📚 Fetching students...');
       const studentsSnapshot = await getDocs(collection(db, 'students'));
       const totalMembers = studentsSnapshot.size;
+      console.log('✅ Students loaded:', totalMembers);
       
       // Aktif grup sayısı (antrenman yerine)
+      console.log('👥 Fetching groups...');
       const groupsSnapshot = await getDocs(collection(db, 'groups'));
       const activeTrainings = groupsSnapshot.size;
+      console.log('✅ Groups loaded:', activeTrainings);
       
       // Bu ay gelir hesaplama (öğrenci sayısı × ortalama ücret)
       const avgMonthlyFee = 350; // Ortalama aylık ücret
@@ -85,18 +90,10 @@ export default function DashboardPage() {
         upcomingTournaments
       });
       
-      // Activity logs'ları Firebase'den çek
-      let activityLogsSnapshot;
-      try {
-        activityLogsSnapshot = await getDocs(
-          query(collection(db, 'activity_logs'), orderBy('timestamp', 'desc'), limit(5))
-        );
-      } catch (orderError) {
-        // Eğer timestamp alanı yoksa normal sorgu yap
-        activityLogsSnapshot = await getDocs(
-          query(collection(db, 'activity_logs'), limit(5))
-        );
-      }
+      // Activity logs'ları Firebase'den çek (orderBy kaldırıldı - index sorunu için)
+      const activityLogsSnapshot = await getDocs(
+        query(collection(db, 'activity_logs'), limit(5))
+      );
       
       const recentActivities: Activity[] = [];
       activityLogsSnapshot.forEach((doc) => {
