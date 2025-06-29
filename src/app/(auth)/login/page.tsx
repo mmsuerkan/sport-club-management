@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Loader2, Mail, Lock, Eye, EyeOff, Activity, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import { authLogger } from '@/lib/utils/logger';
 
 interface LoginForm {
   email: string;
@@ -30,7 +31,7 @@ export default function LoginPage() {
     
     // If user is already logged in, redirect to dashboard
     if (user) {
-      console.log('User already logged in, redirecting...');
+      authLogger.debug('User already logged in, redirecting...');
       router.push('/dashboard');
     }
   }, [user, router]);
@@ -46,17 +47,17 @@ export default function LoginPage() {
     setError(null);
     
     try {
-      console.log('🔑 Attempting login with AuthContext:', data.email);
+      authLogger.debug('Attempting login with AuthContext:', data.email);
       
       // Use AuthContext signIn instead of API
       await authSignIn(data.email, data.password);
       
-      console.log('✅ Login successful, redirecting to dashboard');
+      authLogger.success('Login successful, redirecting to dashboard');
       
       // Redirect to dashboard after successful login
       router.push('/dashboard');
     } catch (error) {
-      console.error('❌ Login error details:', error);
+      authLogger.error('Login error details:', error);
       const errorMessage = error instanceof Error ? error.message : 'E-posta veya şifre hatalı';
       setError(`Giriş hatası: ${errorMessage}`);
     } finally {
