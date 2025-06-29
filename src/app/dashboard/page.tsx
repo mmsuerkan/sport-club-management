@@ -24,6 +24,10 @@ interface Activity {
 
 export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth();
+  
+  console.log('🏠 Dashboard component render');
+  console.log('Auth state - User:', user?.email || 'null', 'Loading:', authLoading);
+  
   const [stats, setStats] = useState<DashboardStats>({
     totalMembers: 0,
     activeTrainings: 0,
@@ -34,9 +38,17 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('🔍 Dashboard useEffect triggered');
+    console.log('User:', user?.email || 'null');
+    console.log('AuthLoading:', authLoading);
+    console.log('Should fetch data:', user && !authLoading);
+    
     // Only fetch data when user is authenticated
     if (user && !authLoading) {
+      console.log('✅ Conditions met, calling fetchDashboardData');
       fetchDashboardData();
+    } else {
+      console.log('❌ Conditions not met for data fetching');
     }
   }, [user, authLoading]);
 
