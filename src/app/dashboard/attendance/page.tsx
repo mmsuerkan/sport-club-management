@@ -78,6 +78,7 @@ interface Training {
   trainerId: string;
   trainerName?: string;
   duration?: string;
+  status?: string;
 }
 
 interface AttendanceRecord {
@@ -441,7 +442,7 @@ export default function AttendancePage() {
     const matchesDate = training.date.toDateString() === new Date(selectedDate).toDateString();
     const matchesSearch = !searchTerm || 
       training.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      training.trainerName.toLowerCase().includes(searchTerm.toLowerCase());
+      (training.trainerName && training.trainerName.toLowerCase().includes(searchTerm.toLowerCase()));
     
     // Check if only pending attendances should be shown
     let matchesPending = true;

@@ -89,7 +89,7 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<ReportTemplate | null>(null);
-  const [reportParameters, setReportParameters] = useState<any>({});
+  const [reportParameters, setReportParameters] = useState<Record<string, string | string[]>>({});
   const [generatingReport, setGeneratingReport] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<Report['type'] | 'all'>('all');

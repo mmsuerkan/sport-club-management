@@ -52,6 +52,13 @@ import {
 } from 'firebase/firestore';
 import { createListener } from '@/lib/firebase/listener-utils';
 
+// Category interface
+interface CategoryData {
+  name: string;
+  icon: JSX.Element;
+  subcategories: string[];
+}
+
 // Finansal Veri Tipleri
 interface FinancialTransaction {
   id: string;
@@ -1684,7 +1691,7 @@ export default function FinancePage() {
                     <option value="">Alt kategori seçin (opsiyonel)</option>
                     {(() => {
                       const categories = transactionForm.type === 'income' ? incomeCategories : expenseCategories;
-                      const category = categories[transactionForm.category as keyof typeof categories] as any;
+                      const category = categories[transactionForm.category as keyof typeof categories] as CategoryData;
                       if (!category || !category.subcategories) return null;
                       return category.subcategories.map((sub: string) => (
                         <option key={sub} value={sub}>{sub}</option>
@@ -1951,7 +1958,7 @@ export default function FinancePage() {
                       }`}>
                         {(() => {
                           const categories = budgetForm.type === 'income' ? incomeCategories : expenseCategories;
-                          const category = categories[budgetForm.category as keyof typeof categories] as any;
+                          const category = categories[budgetForm.category as keyof typeof categories] as CategoryData;
                           return category?.name || '';
                         })()}
                       </p>
