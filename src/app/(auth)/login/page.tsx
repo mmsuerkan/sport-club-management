@@ -51,9 +51,10 @@ export default function LoginPage() {
       // Use AuthContext signIn instead of API
       await authSignIn(data.email, data.password);
       
-      console.log('✅ Login successful, AuthContext will handle redirect');
+      console.log('✅ Login successful, redirecting to dashboard');
       
-      // AuthContext will handle the redirect automatically when user state changes
+      // Redirect to dashboard after successful login
+      router.push('/dashboard');
     } catch (error) {
       console.error('❌ Login error details:', error);
       const errorMessage = error instanceof Error ? error.message : 'E-posta veya şifre hatalı';
