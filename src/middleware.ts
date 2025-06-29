@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { adminAuth } from './lib/firebase/admin';
 
 export async function middleware(request: NextRequest) {
   const publicPaths = ['/login', '/'];
@@ -12,9 +11,15 @@ export async function middleware(request: NextRequest) {
   
   if (token) {
     try {
-      // Verify the token with Firebase Admin
-      await adminAuth.verifyIdToken(token);
-      isAuthenticated = true;
+      // Call API route for proper token verification
+      const verifyResponse = await fetch(new URL('/api/auth/verify', request.url), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      });
+      
+      const result = await verifyResponse.json();
+      isAuthenticated = result.valid;
     } catch (error) {
       console.error('Token verification failed:', error);
       isAuthenticated = false;
