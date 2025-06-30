@@ -12,8 +12,7 @@ import {
   Search,
   Plus,
   Edit,
-  Trash2,
-  MoreVertical
+  Trash2
 } from 'lucide-react';
 import TransactionForm from './TransactionForm';
 
@@ -34,20 +33,11 @@ export default function TransactionList() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editTransaction, setEditTransaction] = useState<Transaction | null>(null);
-  const [showDropdown, setShowDropdown] = useState<string | null>(null);
 
   useEffect(() => {
     fetchTransactions();
   }, []);
 
-  useEffect(() => {
-    const handleClickOutside = () => {
-      setShowDropdown(null);
-    };
-
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, []);
 
   const fetchTransactions = async () => {
     try {
@@ -85,7 +75,6 @@ export default function TransactionList() {
   const handleEdit = (transaction: Transaction) => {
     setEditTransaction(transaction);
     setShowForm(true);
-    setShowDropdown(null);
   };
 
   const handleDelete = async (transactionId: string) => {
@@ -96,7 +85,6 @@ export default function TransactionList() {
     try {
       await deleteDoc(doc(db, 'transactions', transactionId));
       fetchTransactions();
-      setShowDropdown(null);
     } catch (error) {
       console.error('Transaction delete error:', error);
       alert('İşlem silinirken bir hata oluştu');
@@ -243,32 +231,21 @@ export default function TransactionList() {
                     </span>
                   </div>
                   
-                  <div className="relative">
+                  <div className="flex items-center gap-2">
                     <button
-                      onClick={() => setShowDropdown(showDropdown === transaction.id ? null : transaction.id)}
-                      className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                      onClick={() => handleEdit(transaction)}
+                      className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                      title="Düzenle"
                     >
-                      <MoreVertical size={16} />
+                      <Edit size={16} />
                     </button>
-                    
-                    {showDropdown === transaction.id && (
-                      <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[120px]">
-                        <button
-                          onClick={() => handleEdit(transaction)}
-                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                        >
-                          <Edit size={14} />
-                          Düzenle
-                        </button>
-                        <button
-                          onClick={() => handleDelete(transaction.id)}
-                          className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
-                        >
-                          <Trash2 size={14} />
-                          Sil
-                        </button>
-                      </div>
-                    )}
+                    <button
+                      onClick={() => handleDelete(transaction.id)}
+                      className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Sil"
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </div>
                 </div>
               </div>
