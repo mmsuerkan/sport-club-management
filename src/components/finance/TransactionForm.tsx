@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { collection, addDoc, doc, updateDoc, getDocs, query, where, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { X, DollarSign, Calendar, Tag, FileText, Users, GraduationCap } from 'lucide-react';
+import { BudgetService } from '@/lib/firebase/budget-service';
 
 interface Transaction {
   id: string;
@@ -39,8 +40,25 @@ interface TransactionFormProps {
   editTransaction?: Transaction | null;
 }
 
-const categories = [
-  'Üyelik Aidatı'
+const incomeCategories = [
+  'Üyelik Aidatı',
+  'Sponsorluk',
+  'Bağış',
+  'Etkinlik Geliri',
+  'Diğer Gelir'
+];
+
+const expenseCategories = [
+  'Antrenör Ücretleri',
+  'Ekipman',
+  'Tesis Bakım',
+  'Utilities',
+  'Marketing',
+  'Turnuva/Organizasyon',
+  'Sağlık/Sigorta',
+  'Ulaşım',
+  'Beslenme',
+  'Diğer'
 ];
 
 export default function TransactionForm({ isOpen, onClose, onSuccess, editTransaction }: TransactionFormProps) {
@@ -48,7 +66,7 @@ export default function TransactionForm({ isOpen, onClose, onSuccess, editTransa
   const [formData, setFormData] = useState({
     type: 'income' as 'income' | 'expense',
     amount: '',
-    category: 'Üyelik Aidatı',
+    category: '',
     description: '',
     date: new Date().toISOString().split('T')[0],
     groupId: '',
@@ -79,7 +97,7 @@ export default function TransactionForm({ isOpen, onClose, onSuccess, editTransa
       setFormData({
         type: 'income',
         amount: '',
-        category: 'Üyelik Aidatı',
+        category: '',
         description: '',
         date: new Date().toISOString().split('T')[0],
         groupId: '',
@@ -177,6 +195,11 @@ export default function TransactionForm({ isOpen, onClose, onSuccess, editTransa
         });
       }
 
+      // If it's an expense, update the corresponding budget
+      if (formData.type === 'expense' && !editTransaction) {
+        await updateBudgetForExpense(formData.category, parseFloat(formData.amount), new Date(formData.date));
+      }
+
       onSuccess();
       onClose();
     } catch (error) {
@@ -184,6 +207,53 @@ export default function TransactionForm({ isOpen, onClose, onSuccess, editTransa
       alert('İşlem kaydedilirken bir hata oluştu');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const updateBudgetForExpense = async (category: string, amount: number, transactionDate: Date) => {
+    try {
+      // Get all budgets
+      const budgets = await BudgetService.getBudgets();
+      
+      // Find all matching budgets by category and date range
+      const matchingBudgets = budgets.filter(budget => 
+        budget.category === category &&
+        budget.status !== 'completed' && // Don't update completed budgets
+        transactionDate >= budget.startDate &&
+        transactionDate <= budget.endDate
+      );
+
+      if (matchingBudgets.length === 0) {
+        console.warn(`No active budget found for category: ${category} on date: ${transactionDate}`);
+        return;
+      }
+
+      if (matchingBudgets.length > 1) {
+        console.warn(`Multiple budgets found for category: ${category}. Updating the most recent one.`);
+        // Sort by creation date to get the most recent budget
+        matchingBudgets.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      }
+
+      // Update the first (most recent) matching budget
+      const budgetToUpdate = matchingBudgets[0];
+      if (budgetToUpdate && budgetToUpdate.id) {
+        // Update the budget's spent amount
+        const newSpentAmount = budgetToUpdate.spentAmount + amount;
+        const newStatus = newSpentAmount > budgetToUpdate.plannedAmount ? 'exceeded' : 'active';
+        
+        await BudgetService.updateBudget(budgetToUpdate.id, {
+          spentAmount: newSpentAmount,
+          status: newStatus
+        });
+
+        // Alert if budget is exceeded
+        if (newStatus === 'exceeded') {
+          alert(`Dikkat! ${category} kategorisinde bütçe aşıldı!\nPlanlanan: ${budgetToUpdate.plannedAmount.toLocaleString('tr-TR')} ₺\nHarcanan: ${newSpentAmount.toLocaleString('tr-TR')} ₺`);
+        }
+      }
+    } catch (error) {
+      console.error('Error updating budget for expense:', error);
+      // Don't throw - let transaction save even if budget update fails
     }
   };
 
@@ -259,19 +329,26 @@ export default function TransactionForm({ isOpen, onClose, onSuccess, editTransa
             </div>
           </div>
 
-          {/* Category (Hidden - Fixed Value) */}
+          {/* Category */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Kategori
             </label>
             <div className="relative">
               <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                value="Üyelik Aidatı"
-                readOnly
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
-              />
+              <select
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                required
+              >
+                <option value="">Kategori seçin</option>
+                {(formData.type === 'income' ? incomeCategories : expenseCategories).map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 

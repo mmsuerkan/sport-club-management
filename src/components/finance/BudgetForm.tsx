@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Calendar, DollarSign, Tag, FileText } from 'lucide-react';
 import { BudgetService, Budget } from '@/lib/firebase/budget-service';
 
@@ -22,6 +22,8 @@ export default function BudgetForm({ isOpen, onClose, onSuccess, budget, mode }:
     description: budget?.description || '',
     tags: budget?.tags?.join(', ') || ''
   });
+
+  const [useCustomDates, setUseCustomDates] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -75,6 +77,36 @@ export default function BudgetForm({ isOpen, onClose, onSuccess, budget, mode }:
       };
 
       if (mode === 'create') {
+        // Check for overlapping budgets
+        const existingBudgets = await BudgetService.getBudgets();
+        const overlappingBudget = existingBudgets.find(existing => 
+          existing.category === budgetData.category &&
+          existing.status !== 'completed' &&
+          (
+            // New budget starts during existing budget period
+            (budgetData.startDate >= existing.startDate && budgetData.startDate <= existing.endDate) ||
+            // New budget ends during existing budget period
+            (budgetData.endDate >= existing.startDate && budgetData.endDate <= existing.endDate) ||
+            // New budget completely contains existing budget
+            (budgetData.startDate <= existing.startDate && budgetData.endDate >= existing.endDate)
+          )
+        );
+
+        if (overlappingBudget) {
+          const confirm = window.confirm(
+            `Dikkat! ${budgetData.category} kategorisinde \u00e7akışan bir bütçe var:\n\n` +
+            `Mevcut Bütçe: ${overlappingBudget.startDate.toLocaleDateString('tr-TR')} - ${overlappingBudget.endDate.toLocaleDateString('tr-TR')}\n` +
+            `Planlanan: ${overlappingBudget.plannedAmount.toLocaleString('tr-TR')} ₺\n` +
+            `Harcanan: ${overlappingBudget.spentAmount.toLocaleString('tr-TR')} ₺\n\n` +
+            `Yine de devam etmek istiyor musunuz?`
+          );
+
+          if (!confirm) {
+            setLoading(false);
+            return;
+          }
+        }
+
         await BudgetService.createBudget(budgetData);
       } else if (mode === 'edit' && budget?.id) {
         await BudgetService.updateBudget(budget.id, budgetData);
@@ -89,6 +121,50 @@ export default function BudgetForm({ isOpen, onClose, onSuccess, budget, mode }:
       setLoading(false);
     }
   };
+
+  // Calculate dates based on period
+  const calculateDatesFromPeriod = (period: string) => {
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth();
+    let startDate: Date;
+    let endDate: Date;
+
+    switch (period) {
+      case 'monthly':
+        // Current month
+        startDate = new Date(currentYear, currentMonth, 1);
+        endDate = new Date(currentYear, currentMonth + 1, 0); // Last day of month
+        break;
+      case 'quarterly':
+        // Current quarter
+        const currentQuarter = Math.floor(currentMonth / 3);
+        startDate = new Date(currentYear, currentQuarter * 3, 1);
+        endDate = new Date(currentYear, (currentQuarter + 1) * 3, 0);
+        break;
+      case 'yearly':
+        // Current year
+        startDate = new Date(currentYear, 0, 1);
+        endDate = new Date(currentYear, 11, 31);
+        break;
+      default:
+        startDate = today;
+        endDate = today;
+    }
+
+    return {
+      startDate: startDate.toISOString().split('T')[0],
+      endDate: endDate.toISOString().split('T')[0]
+    };
+  };
+
+  // Update dates when period changes (only if not using custom dates)
+  useEffect(() => {
+    if (!useCustomDates && !budget) {
+      const dates = calculateDatesFromPeriod(formData.period);
+      setFormData(prev => ({ ...prev, ...dates }));
+    }
+  }, [formData.period, useCustomDates, budget]);
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -185,6 +261,7 @@ export default function BudgetForm({ isOpen, onClose, onSuccess, budget, mode }:
               value={formData.period}
               onChange={(e) => handleInputChange('period', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              disabled={useCustomDates}
             >
               <option value="monthly">Aylık</option>
               <option value="quarterly">Üç Aylık</option>
@@ -192,7 +269,21 @@ export default function BudgetForm({ isOpen, onClose, onSuccess, budget, mode }:
             </select>
           </div>
 
-          {/* Date Range */}
+          {/* Custom Date Toggle */}
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="customDates"
+              checked={useCustomDates}
+              onChange={(e) => setUseCustomDates(e.target.checked)}
+              className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+            />
+            <label htmlFor="customDates" className="ml-2 block text-sm text-gray-700">
+              Özel tarih aralığı kullan
+            </label>
+          </div>
+
+          {/* Date Range - Show calculated dates or allow editing */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -204,7 +295,8 @@ export default function BudgetForm({ isOpen, onClose, onSuccess, budget, mode }:
                 onChange={(e) => handleInputChange('startDate', e.target.value)}
                 className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
                   errors.startDate ? 'border-red-500' : 'border-gray-300'
-                }`}
+                } ${!useCustomDates ? 'bg-gray-50' : ''}`}
+                readOnly={!useCustomDates}
               />
               {errors.startDate && (
                 <p className="text-red-500 text-sm mt-1">{errors.startDate}</p>
@@ -220,13 +312,19 @@ export default function BudgetForm({ isOpen, onClose, onSuccess, budget, mode }:
                 onChange={(e) => handleInputChange('endDate', e.target.value)}
                 className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
                   errors.endDate ? 'border-red-500' : 'border-gray-300'
-                }`}
+                } ${!useCustomDates ? 'bg-gray-50' : ''}`}
+                readOnly={!useCustomDates}
               />
               {errors.endDate && (
                 <p className="text-red-500 text-sm mt-1">{errors.endDate}</p>
               )}
             </div>
           </div>
+          {!useCustomDates && (
+            <p className="text-sm text-gray-500 -mt-2">
+              Tarihler seçilen döneme göre otomatik hesaplanır
+            </p>
+          )}
 
           {/* Description */}
           <div>
