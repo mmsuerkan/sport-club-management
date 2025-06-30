@@ -18,7 +18,6 @@ export default function FinancePage() {
     { id: 'transactions', name: 'İşlemler', icon: DollarSign },
     { id: 'budgets', name: 'Bütçe', icon: PieChart },
     { id: 'payments', name: 'Ödemeler', icon: CreditCard },
-    { id: 'reports', name: 'Raporlar', icon: FileText },
   ];
 
   return (
