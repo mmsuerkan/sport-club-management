@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { X, Calendar, DollarSign, Tag, FileText } from 'lucide-react';
-import { BudgetService, Budget } from '@/lib/firebase/budget-service';
+import { BudgetService, Budget } from '@/lib/firebase/budget-service-simple';
 
 interface BudgetFormProps {
   isOpen: boolean;
