@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, addDoc, doc, updateDoc, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, getDocs, query, where, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import { X, DollarSign, Calendar, Tag, FileText } from 'lucide-react';
+import { X, DollarSign, Calendar, Tag, FileText, Users, GraduationCap } from 'lucide-react';
 
 interface Transaction {
   id: string;
@@ -13,6 +13,23 @@ interface Transaction {
   description: string;
   date: Date;
   createdAt: Date;
+  groupId?: string;
+  groupName?: string;
+  studentId?: string;
+  studentName?: string;
+}
+
+interface Group {
+  id: string;
+  name: string;
+  branchName: string;
+}
+
+interface Student {
+  id: string;
+  fullName: string;
+  groupId: string;
+  groupName: string;
 }
 
 interface TransactionFormProps {
@@ -23,15 +40,7 @@ interface TransactionFormProps {
 }
 
 const categories = [
-  'Üyelik Aidatı',
-  'Antrenman Ücreti',
-  'Turnuva Katılımı',
-  'Ekipman',
-  'Tesis Kirası',
-  'Personel Maaşı',
-  'Elektrik/Su',
-  'Temizlik',
-  'Diğer'
+  'Üyelik Aidatı'
 ];
 
 export default function TransactionForm({ isOpen, onClose, onSuccess, editTransaction }: TransactionFormProps) {
@@ -39,35 +48,101 @@ export default function TransactionForm({ isOpen, onClose, onSuccess, editTransa
   const [formData, setFormData] = useState({
     type: 'income' as 'income' | 'expense',
     amount: '',
-    category: '',
+    category: 'Üyelik Aidatı',
     description: '',
-    date: new Date().toISOString().split('T')[0]
+    date: new Date().toISOString().split('T')[0],
+    groupId: '',
+    studentId: ''
   });
 
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
+
   useEffect(() => {
+    if (isOpen) {
+      fetchGroups();
+      fetchStudents();
+    }
+
     if (editTransaction) {
       setFormData({
         type: editTransaction.type,
         amount: editTransaction.amount.toString(),
         category: editTransaction.category,
         description: editTransaction.description,
-        date: editTransaction.date.toISOString().split('T')[0]
+        date: editTransaction.date.toISOString().split('T')[0],
+        groupId: editTransaction.groupId || '',
+        studentId: editTransaction.studentId || ''
       });
     } else {
       setFormData({
         type: 'income',
         amount: '',
-        category: '',
+        category: 'Üyelik Aidatı',
         description: '',
-        date: new Date().toISOString().split('T')[0]
+        date: new Date().toISOString().split('T')[0],
+        groupId: '',
+        studentId: ''
       });
     }
   }, [editTransaction, isOpen]);
 
+  useEffect(() => {
+    if (formData.groupId) {
+      const filtered = students.filter(student => student.groupId === formData.groupId);
+      setFilteredStudents(filtered);
+      // Reset student selection if current student not in filtered list
+      if (formData.studentId && !filtered.find(s => s.id === formData.studentId)) {
+        setFormData(prev => ({ ...prev, studentId: '' }));
+      }
+    } else {
+      setFilteredStudents([]);
+      setFormData(prev => ({ ...prev, studentId: '' }));
+    }
+  }, [formData.groupId, students]);
+
+  const fetchGroups = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, 'groups'));
+      const groupsData: Group[] = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        groupsData.push({
+          id: doc.id,
+          name: data.name,
+          branchName: data.branchName
+        });
+      });
+      setGroups(groupsData);
+    } catch (error) {
+      console.error('Groups fetch error:', error);
+    }
+  };
+
+  const fetchStudents = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, 'students'));
+      const studentsData: Student[] = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        studentsData.push({
+          id: doc.id,
+          fullName: data.fullName,
+          groupId: data.groupId,
+          groupName: data.groupName
+        });
+      });
+      setStudents(studentsData);
+    } catch (error) {
+      console.error('Students fetch error:', error);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.amount || !formData.category || !formData.description) {
+    if (!formData.amount || !formData.category || !formData.description || !formData.groupId || !formData.studentId) {
       alert('Lütfen tüm alanları doldurun');
       return;
     }
@@ -75,26 +150,30 @@ export default function TransactionForm({ isOpen, onClose, onSuccess, editTransa
     try {
       setLoading(true);
       
+      const selectedGroup = groups.find(g => g.id === formData.groupId);
+      const selectedStudent = filteredStudents.find(s => s.id === formData.studentId);
+
+      const transactionData = {
+        type: formData.type,
+        amount: parseFloat(formData.amount),
+        category: formData.category,
+        description: formData.description,
+        date: Timestamp.fromDate(new Date(formData.date)),
+        groupId: formData.groupId,
+        groupName: selectedGroup?.name || '',
+        studentId: formData.studentId,
+        studentName: selectedStudent?.fullName || '',
+        updatedAt: Timestamp.now()
+      };
+      
       if (editTransaction) {
         // Update existing transaction
-        await updateDoc(doc(db, 'transactions', editTransaction.id), {
-          type: formData.type,
-          amount: parseFloat(formData.amount),
-          category: formData.category,
-          description: formData.description,
-          date: Timestamp.fromDate(new Date(formData.date)),
-          updatedAt: Timestamp.now()
-        });
+        await updateDoc(doc(db, 'transactions', editTransaction.id), transactionData);
       } else {
         // Create new transaction
         await addDoc(collection(db, 'transactions'), {
-          type: formData.type,
-          amount: parseFloat(formData.amount),
-          category: formData.category,
-          description: formData.description,
-          date: Timestamp.fromDate(new Date(formData.date)),
-          createdAt: Timestamp.now(),
-          updatedAt: Timestamp.now()
+          ...transactionData,
+          createdAt: Timestamp.now()
         });
       }
 
@@ -180,23 +259,65 @@ export default function TransactionForm({ isOpen, onClose, onSuccess, editTransa
             </div>
           </div>
 
-          {/* Category */}
+          {/* Category (Hidden - Fixed Value) */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Kategori
             </label>
             <div className="relative">
               <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                value="Üyelik Aidatı"
+                readOnly
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+              />
+            </div>
+          </div>
+
+          {/* Group Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Grup
+            </label>
+            <div className="relative">
+              <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <select
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                value={formData.groupId}
+                onChange={(e) => setFormData({ ...formData, groupId: e.target.value })}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 required
               >
-                <option value="">Kategori seçin</option>
-                {categories.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
+                <option value="">Grup seçin</option>
+                {groups.map((group) => (
+                  <option key={group.id} value={group.id}>
+                    {group.name} ({group.branchName})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Student Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Öğrenci
+            </label>
+            <div className="relative">
+              <GraduationCap className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <select
+                value={formData.studentId}
+                onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                required
+                disabled={!formData.groupId}
+              >
+                <option value="">
+                  {formData.groupId ? 'Öğrenci seçin' : 'Önce grup seçin'}
+                </option>
+                {filteredStudents.map((student) => (
+                  <option key={student.id} value={student.id}>
+                    {student.fullName}
                   </option>
                 ))}
               </select>

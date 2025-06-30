@@ -24,6 +24,10 @@ interface Transaction {
   description: string;
   date: Date;
   createdAt: Date;
+  groupId?: string;
+  groupName?: string;
+  studentId?: string;
+  studentName?: string;
 }
 
 export default function TransactionList() {
@@ -60,7 +64,11 @@ export default function TransactionList() {
           category: data.category,
           description: data.description,
           date: data.date instanceof Timestamp ? data.date.toDate() : new Date(data.date),
-          createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(data.createdAt)
+          createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(data.createdAt),
+          groupId: data.groupId,
+          groupName: data.groupName,
+          studentId: data.studentId,
+          studentName: data.studentName
         });
       });
       
@@ -214,6 +222,12 @@ export default function TransactionList() {
                     <h4 className="font-medium text-gray-900">{transaction.description}</h4>
                     <div className="flex items-center gap-4 text-sm text-gray-500">
                       <span>{transaction.category}</span>
+                      {transaction.groupName && (
+                        <span>• {transaction.groupName}</span>
+                      )}
+                      {transaction.studentName && (
+                        <span>• {transaction.studentName}</span>
+                      )}
                       <div className="flex items-center gap-1">
                         <Calendar size={14} />
                         {formatDate(transaction.date)}
