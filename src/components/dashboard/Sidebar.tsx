@@ -7,9 +7,6 @@ import {
   Users,
   Calendar,
   DollarSign,
-  Settings,
-  BarChart,
-  FileText,
   Activity,
   Building,
   UsersIcon,
@@ -73,21 +70,6 @@ const menuItems = [
     title: 'Finansal',
     icon: DollarSign,
     href: '/dashboard/finance'
-  },
-  {
-    title: 'Raporlar',
-    icon: BarChart,
-    href: '/dashboard/reports'
-  },
-  {
-    title: 'Belgeler',
-    icon: FileText,
-    href: '/dashboard/documents'
-  },
-  {
-    title: 'Ayarlar',
-    icon: Settings,
-    href: '/dashboard/settings'
   }
 ];
 
