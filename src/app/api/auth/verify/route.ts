@@ -30,7 +30,6 @@ export async function POST(request: NextRequest) {
       expiresAt: decodedToken.exp,
     });
   } catch (error) {
-    console.error('Token verification error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

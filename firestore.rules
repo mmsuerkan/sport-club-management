@@ -1,0 +1,218 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =======================
+    // HELPER FUNCTIONS
+    // =======================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isValidUser() {
+      return isAuthenticated() &&
+             exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function hasRole(role) {
+      return isValidUser() && getUserData().role == role;
+    }
+
+    function hasAnyRole(roles) {
+      return isValidUser() && getUserData().role in roles;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function belongsToUserClub(resource) {
+      return isValidUser() && 
+             resource.data.clubId == getUserData().clubId;
+    }
+
+    // =======================
+    // USER DOCUMENTS
+    // =======================
+    
+    // Users can read their own document, only certain fields can be updated
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if false; // Users are created server-side only
+      allow update: if isOwner(userId) && 
+                      request.resource.data.role == resource.data.role && // Can't change own role
+                      request.resource.data.clubId == resource.data.clubId; // Can't change club
+      allow delete: if false; // Users cannot be deleted through client
+    }
+
+    // =======================
+    // STUDENTS
+    // =======================
+    
+    match /students/{studentId} {
+      allow read: if isValidUser() && belongsToUserClub(resource);
+      allow create: if isValidUser() && 
+                      request.resource.data.clubId == getUserData().clubId;
+      allow update: if isValidUser() && 
+                      belongsToUserClub(resource) &&
+                      request.resource.data.clubId == resource.data.clubId; // Can't move to another club
+      allow delete: if isValidUser() && belongsToUserClub(resource);
+    }
+
+    // =======================
+    // TRAINERS
+    // =======================
+    
+    match /trainers/{trainerId} {
+      allow read: if isValidUser() && belongsToUserClub(resource);
+      allow create: if isValidUser() && 
+                      request.resource.data.clubId == getUserData().clubId;
+      allow update: if isValidUser() && 
+                      belongsToUserClub(resource) &&
+                      request.resource.data.clubId == resource.data.clubId;
+      allow delete: if isValidUser() && belongsToUserClub(resource);
+    }
+
+    // =======================
+    // GROUPS
+    // =======================
+    
+    match /groups/{groupId} {
+      allow read: if isValidUser() && belongsToUserClub(resource);
+      allow create: if isValidUser() && 
+                      request.resource.data.clubId == getUserData().clubId;
+      allow update: if isValidUser() && 
+                      belongsToUserClub(resource) &&
+                      request.resource.data.clubId == resource.data.clubId;
+      allow delete: if isValidUser() && belongsToUserClub(resource);
+    }
+
+    // =======================
+    // BRANCHES
+    // =======================
+    
+    match /branches/{branchId} {
+      allow read: if isValidUser() && belongsToUserClub(resource);
+      allow create: if isValidUser() && 
+                      request.resource.data.clubId == getUserData().clubId;
+      allow update: if isValidUser() && 
+                      belongsToUserClub(resource) &&
+                      request.resource.data.clubId == resource.data.clubId;
+      allow delete: if isValidUser() && belongsToUserClub(resource);
+    }
+
+    // =======================
+    // ATTENDANCE
+    // =======================
+    
+    match /attendance/{attendanceId} {
+      allow read: if isValidUser() && belongsToUserClub(resource);
+      allow create: if isValidUser() && 
+                      request.resource.data.clubId == getUserData().clubId &&
+                      request.resource.data.createdBy == request.auth.uid;
+      allow update: if isValidUser() && 
+                      belongsToUserClub(resource) &&
+                      request.resource.data.clubId == resource.data.clubId;
+      allow delete: if false; // Attendance records should not be deleted
+    }
+
+    // =======================
+    // TRAININGS
+    // =======================
+    
+    match /trainings/{trainingId} {
+      allow read: if isValidUser() && belongsToUserClub(resource);
+      allow create: if isValidUser() && 
+                      request.resource.data.clubId == getUserData().clubId;
+      allow update: if isValidUser() && 
+                      belongsToUserClub(resource) &&
+                      request.resource.data.clubId == resource.data.clubId;
+      allow delete: if isValidUser() && belongsToUserClub(resource);
+    }
+
+    // =======================
+    // MATCHES
+    // =======================
+    
+    match /matches/{matchId} {
+      allow read: if isValidUser() && belongsToUserClub(resource);
+      allow create: if isValidUser() && 
+                      request.resource.data.clubId == getUserData().clubId;
+      allow update: if isValidUser() && 
+                      belongsToUserClub(resource) &&
+                      request.resource.data.clubId == resource.data.clubId;
+      allow delete: if isValidUser() && belongsToUserClub(resource);
+    }
+
+    // =======================
+    // PAYMENTS
+    // =======================
+    
+    match /payments/{paymentId} {
+      allow read: if isValidUser() && belongsToUserClub(resource);
+      allow create: if isValidUser() && 
+                      request.resource.data.clubId == getUserData().clubId &&
+                      request.resource.data.createdBy == request.auth.uid;
+      allow update: if isValidUser() && 
+                      belongsToUserClub(resource) &&
+                      request.resource.data.clubId == resource.data.clubId &&
+                      request.resource.data.createdBy == resource.data.createdBy; // Can't change creator
+      allow delete: if false; // Financial records should not be deleted
+    }
+
+    // =======================
+    // ACTIVITY LOGS
+    // =======================
+    
+    match /activity_logs/{logId} {
+      allow read: if isValidUser() && belongsToUserClub(resource);
+      allow create: if isValidUser() && 
+                      request.resource.data.clubId == getUserData().clubId &&
+                      request.resource.data.userId == request.auth.uid &&
+                      request.resource.data.timestamp == request.time; // Ensure timestamp is current
+      allow update: if false; // Logs are immutable
+      allow delete: if false; // Logs cannot be deleted
+    }
+
+    // =======================
+    // SETTINGS
+    // =======================
+    
+    match /settings/{settingId} {
+      allow read: if isValidUser();
+      allow write: if isValidUser() && hasAnyRole(['admin', 'manager']);
+    }
+
+    // =======================
+    // NOTIFICATIONS
+    // =======================
+    
+    match /notifications/{notificationId} {
+      allow read: if isValidUser() && 
+                    (resource.data.recipientId == request.auth.uid || 
+                     resource.data.clubId == getUserData().clubId);
+      allow create: if isValidUser() && 
+                      request.resource.data.clubId == getUserData().clubId;
+      allow update: if isValidUser() && 
+                      resource.data.recipientId == request.auth.uid &&
+                      // Only allow marking as read
+                      request.resource.data.keys().hasAll(['read']) &&
+                      request.resource.data.read == true;
+      allow delete: if false; // Notifications are managed by the system
+    }
+
+    // =======================
+    // CATCH-ALL DENY
+    // =======================
+    
+    // Deny access to any collection not explicitly defined above
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

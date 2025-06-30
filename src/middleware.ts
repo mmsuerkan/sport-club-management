@@ -39,7 +39,6 @@ async function verifyToken(token: string, request: NextRequest): Promise<boolean
     tokenCache.set(token, { valid: false, expiresAt: Date.now() + 5 * 60 * 1000 });
     return false;
   } catch (error) {
-    console.error('Token verification error:', error);
     // On error, deny access but don't cache
     return false;
   }

@@ -31,7 +31,6 @@ export async function verifyIdToken(token: string) {
     const decodedToken = await adminAuth.verifyIdToken(token);
     return decodedToken;
   } catch (error) {
-    console.error('Error verifying token:', error);
     return null;
   }
 }
@@ -42,7 +41,6 @@ export async function setCustomUserClaims(uid: string, claims: Record<string, an
     await adminAuth.setCustomUserClaims(uid, claims);
     return true;
   } catch (error) {
-    console.error('Error setting custom claims:', error);
     return false;
   }
 }
@@ -53,7 +51,6 @@ export async function getUserByEmail(email: string) {
     const user = await adminAuth.getUserByEmail(email);
     return user;
   } catch (error) {
-    console.error('Error getting user by email:', error);
     return null;
   }
 }
