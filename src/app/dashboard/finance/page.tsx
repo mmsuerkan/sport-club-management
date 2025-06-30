@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import TransactionList from '@/components/finance/TransactionList';
 import BudgetList from '@/components/finance/BudgetList';
+import FinanceOverview from '@/components/finance/FinanceOverview';
 
 export default function FinancePage() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -59,7 +60,9 @@ export default function FinancePage() {
 
       {/* Tab Content */}
       <div className="bg-white rounded-lg border border-gray-200 p-8">
-        {activeTab === 'transactions' ? (
+        {activeTab === 'overview' ? (
+          <FinanceOverview />
+        ) : activeTab === 'transactions' ? (
           <TransactionList />
         ) : activeTab === 'budgets' ? (
           <BudgetList />
