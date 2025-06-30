@@ -71,6 +71,26 @@ Bu spor kulübü yönetim sistemi projesi için sürekli dikkat edilmesi gereken
 - Bundle analiz yapılmalı (PHASE 2'de implement edilecek)
 - Dynamic import'lar kontrol edilmeli (PHASE 2'de yapılacak)
 
+## Çalışma Metodolojisi
+
+### Context Length Management
+- **Sorun:** Proje büyüdükçe context sınırı aşılabilir
+- **Çözüm:** İhtiyaç halinde Gemini'dan destek al
+- **Prensip:** Bu yaklaşımı her zaman kullan
+
+### Production Safety Protocol
+- **Kural:** Her commit/push sonrası production kontrolü ZORUNLU
+- **Süreç:** 
+  1. Commit & push yap
+  2. Production/staging ortamını test et
+  3. Confirm edildikten sonra devam et
+- **Risk Yönetimi:** Production'da sorun varsa hemen müdahale et
+
+### Task Management
+- **Todo sistemini sürekli güncelle**
+- **Her task tamamlandığında status'u değiştir**
+- **Öncelik sırasına göre çalış (high → medium → low)**
+
 ## Proje Yapısı
 - src/app/dashboard/ - Ana sayfa bileşenleri
 - src/components/ - Yeniden kullanılabilir bileşenler

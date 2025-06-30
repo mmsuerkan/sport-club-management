@@ -24,26 +24,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Token refresh interval
   const [tokenRefreshInterval, setTokenRefreshInterval] = useState<NodeJS.Timeout | null>(null);
 
-  // Function to update auth cookies
+  // Function to update auth cookies via secure API
   const updateAuthCookies = async (user: User) => {
     try {
       const token = await user.getIdToken(true); // force refresh
       
-      // Set auth cookies with proper state and 1 hour expiry
-      document.cookie = `auth-token=${token}; path=/; max-age=3600; SameSite=Lax; Secure=${process.env.NODE_ENV === 'production'}`;
-      document.cookie = `auth-state=authenticated; path=/; max-age=3600; SameSite=Lax; Secure=${process.env.NODE_ENV === 'production'}`;
-      
+      // Use secure cookie API to set cookies
+      const response = await fetch('/api/auth/cookies', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          token,
+          action: 'set'
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to set secure cookies');
+      }
+
       return token;
     } catch (error) {
-      console.error('Failed to refresh token:', error);
       throw error;
     }
   };
 
-  // Clear auth cookies
-  const clearAuthCookies = () => {
-    document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
-    document.cookie = 'auth-state=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
+  // Clear auth cookies via secure API
+  const clearAuthCookies = async () => {
+    try {
+      await fetch('/api/auth/cookies', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'clear'
+        }),
+      });
+    } catch (error) {
+      // Fallback to client-side clearing if API fails
+      document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=strict';
+      document.cookie = 'auth-state=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=strict';
+    }
   };
 
   // Setup token refresh interval
@@ -124,7 +148,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUserData(data);
     } catch (error) {
       // Clear any cookies on login failure
-      clearAuthCookies();
+      await clearAuthCookies();
       throw error;
     }
   };
@@ -142,7 +166,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       // Clear all auth cookies
-      clearAuthCookies();
+      await clearAuthCookies();
       
       // Then sign out from Firebase
       await firebaseLogOut();
