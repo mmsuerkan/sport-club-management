@@ -1,14 +1,25 @@
 'use client';
 
-import { useState } from 'react';
-import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { useState, useEffect } from 'react';
+import { collection, addDoc, doc, updateDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { X, DollarSign, Calendar, Tag, FileText } from 'lucide-react';
+
+interface Transaction {
+  id: string;
+  type: 'income' | 'expense';
+  amount: number;
+  category: string;
+  description: string;
+  date: Date;
+  createdAt: Date;
+}
 
 interface TransactionFormProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  editTransaction?: Transaction | null;
 }
 
 const categories = [
@@ -23,7 +34,7 @@ const categories = [
   'Diğer'
 ];
 
-export default function TransactionForm({ isOpen, onClose, onSuccess }: TransactionFormProps) {
+export default function TransactionForm({ isOpen, onClose, onSuccess, editTransaction }: TransactionFormProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     type: 'income' as 'income' | 'expense',
@@ -32,6 +43,26 @@ export default function TransactionForm({ isOpen, onClose, onSuccess }: Transact
     description: '',
     date: new Date().toISOString().split('T')[0]
   });
+
+  useEffect(() => {
+    if (editTransaction) {
+      setFormData({
+        type: editTransaction.type,
+        amount: editTransaction.amount.toString(),
+        category: editTransaction.category,
+        description: editTransaction.description,
+        date: editTransaction.date.toISOString().split('T')[0]
+      });
+    } else {
+      setFormData({
+        type: 'income',
+        amount: '',
+        category: '',
+        description: '',
+        date: new Date().toISOString().split('T')[0]
+      });
+    }
+  }, [editTransaction, isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,28 +75,33 @@ export default function TransactionForm({ isOpen, onClose, onSuccess }: Transact
     try {
       setLoading(true);
       
-      await addDoc(collection(db, 'transactions'), {
-        type: formData.type,
-        amount: parseFloat(formData.amount),
-        category: formData.category,
-        description: formData.description,
-        date: Timestamp.fromDate(new Date(formData.date)),
-        createdAt: Timestamp.now(),
-        updatedAt: Timestamp.now()
-      });
-
-      setFormData({
-        type: 'income',
-        amount: '',
-        category: '',
-        description: '',
-        date: new Date().toISOString().split('T')[0]
-      });
+      if (editTransaction) {
+        // Update existing transaction
+        await updateDoc(doc(db, 'transactions', editTransaction.id), {
+          type: formData.type,
+          amount: parseFloat(formData.amount),
+          category: formData.category,
+          description: formData.description,
+          date: Timestamp.fromDate(new Date(formData.date)),
+          updatedAt: Timestamp.now()
+        });
+      } else {
+        // Create new transaction
+        await addDoc(collection(db, 'transactions'), {
+          type: formData.type,
+          amount: parseFloat(formData.amount),
+          category: formData.category,
+          description: formData.description,
+          date: Timestamp.fromDate(new Date(formData.date)),
+          createdAt: Timestamp.now(),
+          updatedAt: Timestamp.now()
+        });
+      }
 
       onSuccess();
       onClose();
     } catch (error) {
-      console.error('Transaction create error:', error);
+      console.error('Transaction save error:', error);
       alert('İşlem kaydedilirken bir hata oluştu');
     } finally {
       setLoading(false);
@@ -79,7 +115,9 @@ export default function TransactionForm({ isOpen, onClose, onSuccess }: Transact
       <div className="bg-white rounded-lg max-w-md w-full">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Yeni İşlem Ekle</h2>
+          <h2 className="text-lg font-semibold text-gray-900">
+            {editTransaction ? 'İşlem Düzenle' : 'Yeni İşlem Ekle'}
+          </h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -216,7 +254,7 @@ export default function TransactionForm({ isOpen, onClose, onSuccess }: Transact
                 loading ? 'opacity-50 cursor-not-allowed' : ''
               }`}
             >
-              {loading ? 'Kaydediliyor...' : 'Kaydet'}
+              {loading ? 'Kaydediliyor...' : (editTransaction ? 'Güncelle' : 'Kaydet')}
             </button>
           </div>
         </form>

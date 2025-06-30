@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, query, orderBy, limit, getDocs, Timestamp } from 'firebase/firestore';
+import { collection, query, orderBy, limit, getDocs, doc, deleteDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { 
   DollarSign, 
@@ -10,7 +10,10 @@ import {
   Calendar,
   Filter,
   Search,
-  Plus
+  Plus,
+  Edit,
+  Trash2,
+  MoreVertical
 } from 'lucide-react';
 import TransactionForm from './TransactionForm';
 
@@ -30,9 +33,20 @@ export default function TransactionList() {
   const [filter, setFilter] = useState<'all' | 'income' | 'expense'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [editTransaction, setEditTransaction] = useState<Transaction | null>(null);
+  const [showDropdown, setShowDropdown] = useState<string | null>(null);
 
   useEffect(() => {
     fetchTransactions();
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setShowDropdown(null);
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
   const fetchTransactions = async () => {
@@ -66,6 +80,32 @@ export default function TransactionList() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleEdit = (transaction: Transaction) => {
+    setEditTransaction(transaction);
+    setShowForm(true);
+    setShowDropdown(null);
+  };
+
+  const handleDelete = async (transactionId: string) => {
+    if (!confirm('Bu işlemi silmek istediğinizden emin misiniz?')) {
+      return;
+    }
+
+    try {
+      await deleteDoc(doc(db, 'transactions', transactionId));
+      fetchTransactions();
+      setShowDropdown(null);
+    } catch (error) {
+      console.error('Transaction delete error:', error);
+      alert('İşlem silinirken bir hata oluştu');
+    }
+  };
+
+  const handleFormClose = () => {
+    setShowForm(false);
+    setEditTransaction(null);
   };
 
   const filteredTransactions = transactions.filter(transaction => {
@@ -169,7 +209,7 @@ export default function TransactionList() {
               className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
             >
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-1">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
                     transaction.type === 'income' 
                       ? 'bg-green-100 text-green-600'
@@ -182,7 +222,7 @@ export default function TransactionList() {
                     )}
                   </div>
                   
-                  <div>
+                  <div className="flex-1">
                     <h4 className="font-medium text-gray-900">{transaction.description}</h4>
                     <div className="flex items-center gap-4 text-sm text-gray-500">
                       <span>{transaction.category}</span>
@@ -194,12 +234,42 @@ export default function TransactionList() {
                   </div>
                 </div>
                 
-                <div className="text-right">
-                  <span className={`text-lg font-semibold ${
-                    transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
-                  </span>
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <span className={`text-lg font-semibold ${
+                      transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
+                    </span>
+                  </div>
+                  
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowDropdown(showDropdown === transaction.id ? null : transaction.id)}
+                      className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <MoreVertical size={16} />
+                    </button>
+                    
+                    {showDropdown === transaction.id && (
+                      <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[120px]">
+                        <button
+                          onClick={() => handleEdit(transaction)}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                        >
+                          <Edit size={14} />
+                          Düzenle
+                        </button>
+                        <button
+                          onClick={() => handleDelete(transaction.id)}
+                          className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                        >
+                          <Trash2 size={14} />
+                          Sil
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -210,8 +280,9 @@ export default function TransactionList() {
       {/* Transaction Form Modal */}
       <TransactionForm 
         isOpen={showForm}
-        onClose={() => setShowForm(false)}
+        onClose={handleFormClose}
         onSuccess={fetchTransactions}
+        editTransaction={editTransaction}
       />
     </div>
   );
