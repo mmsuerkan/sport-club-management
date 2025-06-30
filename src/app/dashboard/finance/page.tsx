@@ -51,6 +51,7 @@ import {
   getDocs
 } from 'firebase/firestore';
 import { createListener } from '@/lib/firebase/listener-utils';
+import { TransactionsTab } from '@/components/finance/TransactionsTab';
 
 // Finansal Veri Tipleri
 interface FinancialTransaction {
@@ -833,6 +834,11 @@ export default function FinancePage() {
 
       {/* Transactions Tab */}
       {activeTab === 'transactions' && (
+        <TransactionsTab />
+      )}
+
+      {/* Old Transactions Tab - Commented Out */}
+      {false && activeTab === 'transactions' && (
         <div className="space-y-6">
           
           {/* Filters */}
