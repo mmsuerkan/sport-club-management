@@ -9,6 +9,7 @@ import {
   CreditCard
 } from 'lucide-react';
 import TransactionList from '@/components/finance/TransactionList';
+import BudgetList from '@/components/finance/BudgetList';
 
 export default function FinancePage() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -62,6 +63,8 @@ export default function FinancePage() {
       <div className="bg-white rounded-lg border border-gray-200 p-8">
         {activeTab === 'transactions' ? (
           <TransactionList />
+        ) : activeTab === 'budgets' ? (
+          <BudgetList />
         ) : (
           <div className="text-center">
             <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
