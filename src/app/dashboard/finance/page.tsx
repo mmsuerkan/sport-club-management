@@ -8,6 +8,7 @@ import {
   PieChart,
   CreditCard
 } from 'lucide-react';
+import TransactionList from '@/components/finance/TransactionList';
 
 export default function FinancePage() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -59,22 +60,26 @@ export default function FinancePage() {
 
       {/* Tab Content */}
       <div className="bg-white rounded-lg border border-gray-200 p-8">
-        <div className="text-center">
-          <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-            <Users className="h-12 w-12 text-gray-400" />
+        {activeTab === 'transactions' ? (
+          <TransactionList />
+        ) : (
+          <div className="text-center">
+            <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+              <Users className="h-12 w-12 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              {tabs.find(tab => tab.id === activeTab)?.name} Modülü
+            </h3>
+            <p className="text-gray-500 max-w-md mx-auto">
+              Bu modül şu anda geliştirme aşamasında. Modüler yaklaşımla step-by-step implement edilecek.
+            </p>
+            <div className="mt-6">
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+                🚧 Geliştirme Aşamasında
+              </span>
+            </div>
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            {tabs.find(tab => tab.id === activeTab)?.name} Modülü
-          </h3>
-          <p className="text-gray-500 max-w-md mx-auto">
-            Bu modül şu anda geliştirme aşamasında. Modüler yaklaşımla step-by-step implement edilecek.
-          </p>
-          <div className="mt-6">
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
-              🚧 Geliştirme Aşamasında
-            </span>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
