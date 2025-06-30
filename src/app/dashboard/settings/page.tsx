@@ -9,13 +9,6 @@ import { useAuth } from '@/contexts/AuthContext';
 
 interface Settings {
   id?: string;
-  general: {
-    clubName: string;
-    clubDescription: string;
-    contactEmail: string;
-    contactPhone: string;
-    address: string;
-  };
   notifications: {
     emailNotifications: boolean;
     pushNotifications: boolean;
@@ -43,13 +36,6 @@ interface Settings {
 }
 
 const defaultSettings: Settings = {
-  general: {
-    clubName: '',
-    clubDescription: '',
-    contactEmail: '',
-    contactPhone: '',
-    address: ''
-  },
   notifications: {
     emailNotifications: true,
     pushNotifications: true,
@@ -78,7 +64,7 @@ const defaultSettings: Settings = {
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<Settings>(defaultSettings);
-  const [activeTab, setActiveTab] = useState('general');
+  const [activeTab, setActiveTab] = useState('notifications');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
@@ -173,7 +159,6 @@ export default function SettingsPage() {
   };
 
   const tabs = [
-    { id: 'general', name: 'Genel', icon: SettingsIcon },
     { id: 'notifications', name: 'Bildirimler', icon: Bell },
     { id: 'privacy', name: 'Gizlilik', icon: Shield },
     { id: 'appearance', name: 'Görünüm', icon: Palette },
@@ -250,74 +235,6 @@ export default function SettingsPage() {
 
           {/* Content */}
           <div className="flex-1 p-8">
-            {activeTab === 'general' && (
-              <div className="space-y-6">
-                <h2 className="text-xl font-semibold text-gray-900">Genel Ayarlar</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Klüp Adı
-                    </label>
-                    <input
-                      type="text"
-                      value={settings.general.clubName}
-                      onChange={(e) => updateSettings('general', 'clubName', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Klüp adını giriniz"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      İletişim E-postası
-                    </label>
-                    <input
-                      type="email"
-                      value={settings.general.contactEmail}
-                      onChange={(e) => updateSettings('general', 'contactEmail', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="email@example.com"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      İletişim Telefonu
-                    </label>
-                    <input
-                      type="tel"
-                      value={settings.general.contactPhone}
-                      onChange={(e) => updateSettings('general', 'contactPhone', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="+90 XXX XXX XX XX"
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Klüp Açıklaması
-                    </label>
-                    <textarea
-                      value={settings.general.clubDescription}
-                      onChange={(e) => updateSettings('general', 'clubDescription', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      rows={3}
-                      placeholder="Klüp hakkında kısa açıklama"
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Adres
-                    </label>
-                    <textarea
-                      value={settings.general.address}
-                      onChange={(e) => updateSettings('general', 'address', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      rows={2}
-                      placeholder="Klüp adresi"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
             {activeTab === 'notifications' && (
               <div className="space-y-6">
                 <h2 className="text-xl font-semibold text-gray-900">Bildirim Ayarları</h2>

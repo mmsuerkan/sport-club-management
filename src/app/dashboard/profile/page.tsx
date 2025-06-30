@@ -19,7 +19,8 @@ import {
   EyeOff,
   Trash2,
   Plus,
-  ChevronRight
+  ChevronRight,
+  Building
 } from 'lucide-react';
 import { auth, db, storage } from '@/lib/firebase/config';
 import { 
@@ -68,6 +69,14 @@ interface UserProfile {
   };
 }
 
+interface ClubInfo {
+  clubName: string;
+  clubDescription: string;
+  contactEmail: string;
+  contactPhone: string;
+  address: string;
+}
+
 interface ActivityItem {
   id: string;
   type: 'login' | 'update' | 'create' | 'delete';
@@ -78,13 +87,16 @@ interface ActivityItem {
 
 export default function ProfilePage() {
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [clubInfo, setClubInfo] = useState<ClubInfo | null>(null);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
+  const [clubEditMode, setClubEditMode] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
-  const [activeTab, setActiveTab] = useState<'profile' | 'activity' | 'settings'>('profile');
+  const [savingClubInfo, setSavingClubInfo] = useState(false);
+  const [activeTab, setActiveTab] = useState<'profile' | 'club' | 'activity' | 'settings'>('profile');
   
   const [formData, setFormData] = useState({
     displayName: '',
@@ -107,6 +119,14 @@ export default function ProfilePage() {
     }
   });
 
+  const [clubFormData, setClubFormData] = useState({
+    clubName: '',
+    clubDescription: '',
+    contactEmail: '',
+    contactPhone: '',
+    address: ''
+  });
+
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
@@ -123,6 +143,7 @@ export default function ProfilePage() {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         await fetchUserProfile(firebaseUser.uid);
+        await fetchClubInfo();
         await fetchActivities(firebaseUser.uid);
       } else {
         setLoading(false);
@@ -182,6 +203,27 @@ export default function ProfilePage() {
       console.error('Profil yüklenirken hata:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchClubInfo = async () => {
+    try {
+      const clubDoc = await getDoc(doc(db, 'settings', 'app-settings'));
+      
+      if (clubDoc.exists()) {
+        const data = clubDoc.data();
+        const clubData: ClubInfo = {
+          clubName: data.general?.clubName || '',
+          clubDescription: data.general?.clubDescription || '',
+          contactEmail: data.general?.contactEmail || '',
+          contactPhone: data.general?.contactPhone || '',
+          address: data.general?.address || ''
+        };
+        setClubInfo(clubData);
+        setClubFormData(clubData);
+      }
+    } catch (error) {
+      console.error('Klüp bilgileri yüklenirken hata:', error);
     }
   };
 
@@ -295,6 +337,51 @@ export default function ProfilePage() {
     }
   };
 
+  const handleClubInfoUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!auth.currentUser) return;
+    
+    try {
+      setSavingClubInfo(true);
+      
+      const settingsRef = doc(db, 'settings', 'app-settings');
+      const settingsDoc = await getDoc(settingsRef);
+      
+      if (settingsDoc.exists()) {
+        const currentData = settingsDoc.data();
+        await updateDoc(settingsRef, {
+          ...currentData,
+          general: {
+            ...currentData.general,
+            ...clubFormData
+          },
+          updatedAt: Timestamp.now(),
+          updatedBy: auth.currentUser.uid
+        });
+      } else {
+        await updateDoc(settingsRef, {
+          general: clubFormData,
+          updatedAt: Timestamp.now(),
+          updatedBy: auth.currentUser.uid
+        });
+      }
+      
+      setClubInfo(clubFormData);
+      setClubEditMode(false);
+      
+      // Log activity
+      await logActivity('update', 'Klüp bilgileri güncellendi');
+      
+      alert('Klüp bilgileri başarıyla güncellendi!');
+      
+    } catch (error) {
+      console.error('Klüp bilgileri güncellenirken hata:', error);
+      alert('Klüp bilgileri güncellenemedi');
+    } finally {
+      setSavingClubInfo(false);
+    }
+  };
+
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -347,13 +434,19 @@ export default function ProfilePage() {
     if (!auth.currentUser) return;
     
     try {
-      await addDoc(collection(db, 'activities'), {
+      const activityData: any = {
         userId: auth.currentUser.uid,
         type,
         description,
-        details,
         timestamp: Timestamp.now()
-      });
+      };
+      
+      // Sadece details tanımlıysa ekle
+      if (details) {
+        activityData.details = details;
+      }
+      
+      await addDoc(collection(db, 'activities'), activityData);
       
       // Refresh activities
       await fetchActivities(auth.currentUser.uid);
@@ -469,6 +562,16 @@ export default function ProfilePage() {
               }`}
             >
               Profil Bilgileri
+            </button>
+            <button
+              onClick={() => setActiveTab('club')}
+              className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'club'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Klüp Bilgileri
             </button>
             <button
               onClick={() => setActiveTab('activity')}
@@ -611,6 +714,131 @@ export default function ProfilePage() {
                 </div>
               )}
             </form>
+          )}
+
+          {/* Club Info Tab */}
+          {activeTab === 'club' && (
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                    <Building className="h-5 w-5" />
+                    Klüp Bilgileri
+                  </h2>
+                  <p className="text-gray-600 mt-1">Klüp adı ve iletişim bilgilerini yönetin</p>
+                </div>
+                <button
+                  onClick={() => setClubEditMode(!clubEditMode)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+                >
+                  <Edit className="h-4 w-4" />
+                  {clubEditMode ? 'İptal' : 'Düzenle'}
+                </button>
+              </div>
+
+              <form onSubmit={handleClubInfoUpdate} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Klüp Adı
+                    </label>
+                    <input
+                      type="text"
+                      value={clubFormData.clubName}
+                      onChange={(e) => setClubFormData({ ...clubFormData, clubName: e.target.value })}
+                      disabled={!clubEditMode}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50"
+                      placeholder="Klüp adını giriniz"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      İletişim E-postası
+                    </label>
+                    <input
+                      type="email"
+                      value={clubFormData.contactEmail}
+                      onChange={(e) => setClubFormData({ ...clubFormData, contactEmail: e.target.value })}
+                      disabled={!clubEditMode}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50"
+                      placeholder="email@example.com"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      İletişim Telefonu
+                    </label>
+                    <input
+                      type="tel"
+                      value={clubFormData.contactPhone}
+                      onChange={(e) => setClubFormData({ ...clubFormData, contactPhone: e.target.value })}
+                      disabled={!clubEditMode}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50"
+                      placeholder="+90 XXX XXX XX XX"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Klüp Açıklaması
+                    </label>
+                    <textarea
+                      value={clubFormData.clubDescription}
+                      onChange={(e) => setClubFormData({ ...clubFormData, clubDescription: e.target.value })}
+                      disabled={!clubEditMode}
+                      rows={3}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50"
+                      placeholder="Klüp hakkında kısa açıklama"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Adres
+                    </label>
+                    <textarea
+                      value={clubFormData.address}
+                      onChange={(e) => setClubFormData({ ...clubFormData, address: e.target.value })}
+                      disabled={!clubEditMode}
+                      rows={2}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50"
+                      placeholder="Klüp adresi"
+                    />
+                  </div>
+                </div>
+
+                {clubEditMode && (
+                  <div className="flex justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setClubEditMode(false);
+                        setClubFormData(clubInfo || {
+                          clubName: '',
+                          clubDescription: '',
+                          contactEmail: '',
+                          contactPhone: '',
+                          address: ''
+                        });
+                      }}
+                      className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      İptal
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={savingClubInfo}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50"
+                    >
+                      <Save className="h-4 w-4" />
+                      {savingClubInfo ? 'Kaydediliyor...' : 'Kaydet'}
+                    </button>
+                  </div>
+                )}
+              </form>
+            </div>
           )}
 
           {/* Activity Tab */}
