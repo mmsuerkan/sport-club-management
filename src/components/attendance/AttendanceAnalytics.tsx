@@ -14,7 +14,6 @@ import {
   Activity
 } from 'lucide-react';
 import { attendanceService, AttendanceStats } from '@/lib/firebase/attendance-service';
-import * as XLSX from 'xlsx';
 
 interface AttendanceAnalyticsProps {
   branchId?: string;
@@ -76,43 +75,49 @@ export default function AttendanceAnalytics({ branchId, groupId, trainerId }: At
     }
   };
 
-  const exportToExcel = () => {
+  const exportToCSV = () => {
     if (!stats || !attendanceTrend) return;
-
-    const wb = XLSX.utils.book_new();
     
-    // Genel İstatistikler
-    const statsData = [
-      ['Yoklama Raporu', new Date().toLocaleDateString('tr-TR')],
-      [''],
-      ['Genel İstatistikler'],
-      ['Toplam Oturum', stats.totalSessions],
-      ['Toplam Öğrenci', stats.totalStudents],
-      ['Ortalama Katılım', `%${stats.averageAttendance.toFixed(1)}`],
-      ['Toplam Katılan', stats.presentTotal],
-      ['Toplam Katılmayan', stats.absentTotal],
-      ['Toplam Geç Gelen', stats.lateTotal],
-      ['Toplam Mazeretli', stats.excusedTotal]
-    ];
-    
-    const ws1 = XLSX.utils.aoa_to_sheet(statsData);
-    XLSX.utils.book_append_sheet(wb, ws1, 'Genel İstatistikler');
-    
-    // Trend Verileri
-    const trendHeaders = ['Tarih', 'Katılan', 'Katılmayan', 'Toplam', 'Katılım Oranı'];
-    const trendRows = attendanceTrend.map(item => [
-      item.date,
-      item.present,
-      item.absent,
-      item.total,
-      `%${((item.present / item.total) * 100).toFixed(1)}`
-    ]);
-    
-    const ws2 = XLSX.utils.aoa_to_sheet([trendHeaders, ...trendRows]);
-    XLSX.utils.book_append_sheet(wb, ws2, 'Katılım Trendi');
-    
-    // Excel dosyasını indir
-    XLSX.writeFile(wb, `yoklama_raporu_${new Date().toISOString().split('T')[0]}.xlsx`);
+    try {
+      // CSV içeriği oluştur
+      const csvContent = [
+        `Yoklama Raporu - ${new Date().toLocaleDateString('tr-TR')}`,
+        '',
+        'Genel İstatistikler:',
+        `Toplam Oturum: ${stats.totalSessions}`,
+        `Toplam Öğrenci: ${stats.totalStudents}`,
+        `Ortalama Katılım: %${stats.averageAttendance.toFixed(1)}`,
+        `Toplam Katılan: ${stats.presentTotal}`,
+        `Toplam Katılmayan: ${stats.absentTotal}`,
+        `Toplam Geç Gelen: ${stats.lateTotal}`,
+        `Toplam Mazeretli: ${stats.excusedTotal}`,
+        '',
+        'Katılım Trendi:',
+        'Tarih,Katılan,Katılmayan,Toplam,Katılım Oranı',
+        ...attendanceTrend.map(item => 
+          `"${item.date}",${item.present},${item.absent},${item.total},"%${((item.present / item.total) * 100).toFixed(1)}"`
+        )
+      ].join('\n');
+      
+      // CSV dosyasını indir
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        const fileName = `yoklama_raporu_${new Date().toISOString().split('T')[0]}.csv`;
+        link.setAttribute('download', fileName);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+      
+      alert('CSV dosyası başarıyla indirildi!');
+    } catch (error) {
+      console.error('CSV export hatası:', error);
+      alert('CSV dosyası indirilemedi.');
+    }
   };
 
   // Simple bar chart component
@@ -214,11 +219,11 @@ export default function AttendanceAnalytics({ branchId, groupId, trainerId }: At
           <p className="text-gray-600 mt-1">Detaylı katılım istatistikleri ve trendler</p>
         </div>
         <button
-          onClick={exportToExcel}
+          onClick={exportToCSV}
           className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
         >
           <FileSpreadsheet size={18} />
-          Excel&apos;e Aktar
+          CSV&apos;e Aktar
         </button>
       </div>
 

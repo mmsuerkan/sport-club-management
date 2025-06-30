@@ -37,7 +37,6 @@ import { db } from '@/lib/firebase/config';
 import { createListener } from '@/lib/firebase/listener-utils';
 import { attendanceService } from '@/lib/firebase/attendance-service';
 import dynamic from 'next/dynamic';
-import * as XLSX from 'xlsx';
 
 const AttendanceAnalytics = dynamic(
   () => import('@/components/attendance/AttendanceAnalytics'),
@@ -333,47 +332,52 @@ export default function AttendancePage() {
     setShowDetailModal(true);
   };
 
-  const exportSessionToExcel = (session: AttendanceSession, records: AttendanceRecord[]) => {
-    const wb = XLSX.utils.book_new();
-    
-    // Oturum Bilgileri
-    const sessionInfo = [
-      ['Yoklama Raporu'],
-      [''],
-      ['Antrenman:', session.trainingName],
-      ['Şube:', session.branchName],
-      ['Grup:', session.groupName],
-      ['Tarih:', session.date.toLocaleDateString('tr-TR')],
-      ['Antrenör:', session.trainerName],
-      [''],
-      ['Özet:'],
-      ['Toplam Öğrenci:', session.totalStudents],
-      ['Katılan:', session.presentCount],
-      ['Katılmayan:', session.absentCount],
-      ['Geç Gelen:', session.lateCount],
-      ['Mazeretli:', session.excusedCount],
-      ['Katılım Oranı:', `%${((session.presentCount / session.totalStudents) * 100).toFixed(1)}`]
-    ];
-    
-    const ws1 = XLSX.utils.aoa_to_sheet(sessionInfo);
-    XLSX.utils.book_append_sheet(wb, ws1, 'Özet');
-    
-    // Detaylı Liste
-    const headers = ['Öğrenci Adı', 'Durum', 'Not', 'Kaydeden', 'Kayıt Zamanı'];
-    const rows = records.map(record => [
-      record.studentName,
-      getStatusText(record.status),
-      record.notes || '-',
-      record.recordedBy,
-      record.recordedAt.toLocaleString('tr-TR')
-    ]);
-    
-    const ws2 = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-    XLSX.utils.book_append_sheet(wb, ws2, 'Detaylı Liste');
-    
-    // Excel dosyasını indir
-    const fileName = `yoklama_${session.groupName}_${session.date.toISOString().split('T')[0]}.xlsx`;
-    XLSX.writeFile(wb, fileName);
+  const exportSessionToCSV = (session: AttendanceSession, records: AttendanceRecord[]) => {
+    try {
+      // CSV içeriği oluştur
+      const csvContent = [
+        'Yoklama Raporu',
+        '',
+        `Antrenman: ${session.trainingName}`,
+        `Şube: ${session.branchName}`,
+        `Grup: ${session.groupName}`,
+        `Tarih: ${session.date.toLocaleDateString('tr-TR')}`,
+        `Antrenör: ${session.trainerName}`,
+        '',
+        'Özet:',
+        `Toplam Öğrenci: ${session.totalStudents}`,
+        `Katılan: ${session.presentCount}`,
+        `Katılmayan: ${session.absentCount}`,
+        `Geç Gelen: ${session.lateCount}`,
+        `Mazeretli: ${session.excusedCount}`,
+        `Katılım Oranı: %${((session.presentCount / session.totalStudents) * 100).toFixed(1)}`,
+        '',
+        'Detaylı Liste:',
+        'Öğrenci Adı,Durum,Not,Kaydeden,Kayıt Zamanı',
+        ...records.map(record => 
+          `"${record.studentName}","${getStatusText(record.status)}","${record.notes || '-'}","${record.recordedBy}","${record.recordedAt.toLocaleString('tr-TR')}"`
+        )
+      ].join('\n');
+      
+      // CSV dosyasını indir
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        const fileName = `yoklama_${session.groupName}_${session.date.toISOString().split('T')[0]}.csv`;
+        link.setAttribute('download', fileName);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+      
+      alert('CSV dosyası başarıyla indirildi!');
+    } catch (error) {
+      console.error('CSV export hatası:', error);
+      alert('CSV dosyası indirilemedi.');
+    }
   };
 
   const saveAttendance = async () => {
@@ -1025,11 +1029,11 @@ export default function AttendancePage() {
                 </div>
                 <div className="flex gap-3">
                   <button
-                    onClick={() => exportSessionToExcel(selectedSession, sessionDetails)}
+                    onClick={() => exportSessionToCSV(selectedSession, sessionDetails)}
                     className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center gap-2"
                   >
                     <Download size={16} />
-                    Excel İndir
+                    CSV İndir
                   </button>
                   <button
                     onClick={() => setShowDetailModal(false)}
