@@ -7,8 +7,14 @@ export default function AuthDebug() {
   const { user, loading } = useAuth();
   const [tokenStatus, setTokenStatus] = useState<string>('checking...');
   const [lastRefresh, setLastRefresh] = useState<string>('never');
+  const [cookieStatus, setCookieStatus] = useState<string>('unknown');
 
   useEffect(() => {
+    // Check cookie status on mount
+    if (typeof document !== 'undefined') {
+      setCookieStatus(document.cookie.includes('auth-token') ? '✓' : '✗');
+    }
+
     // Check token status every 10 seconds
     const interval = setInterval(async () => {
       if (user) {
@@ -21,6 +27,11 @@ export default function AuthDebug() {
         }
       } else {
         setTokenStatus('no user');
+      }
+      
+      // Update cookie status
+      if (typeof document !== 'undefined') {
+        setCookieStatus(document.cookie.includes('auth-token') ? '✓' : '✗');
       }
     }, 10000);
 
@@ -39,9 +50,7 @@ export default function AuthDebug() {
       <div>Loading: {loading.toString()}</div>
       <div>Token: {tokenStatus}</div>
       <div>Last Check: {lastRefresh}</div>
-      <div>Cookies: {typeof document !== 'undefined' ? 
-        (document.cookie.includes('auth-token') ? '✓' : '✗') : 'unknown'}
-      </div>
+      <div>Cookies: {cookieStatus}</div>
     </div>
   );
 }
