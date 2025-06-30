@@ -9,8 +9,10 @@ import {
   TrendingDown, 
   Calendar,
   Filter,
-  Search
+  Search,
+  Plus
 } from 'lucide-react';
+import TransactionForm from './TransactionForm';
 
 interface Transaction {
   id: string;
@@ -27,6 +29,7 @@ export default function TransactionList() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'income' | 'expense'>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showForm, setShowForm] = useState(false);
 
   useEffect(() => {
     fetchTransactions();
@@ -99,6 +102,18 @@ export default function TransactionList() {
 
   return (
     <div className="space-y-6">
+      {/* Header with Add Button */}
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-semibold text-gray-900">İşlemler</h2>
+        <button
+          onClick={() => setShowForm(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+        >
+          <Plus size={20} />
+          Yeni İşlem Ekle
+        </button>
+      </div>
+
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
@@ -191,6 +206,13 @@ export default function TransactionList() {
           ))
         )}
       </div>
+
+      {/* Transaction Form Modal */}
+      <TransactionForm 
+        isOpen={showForm}
+        onClose={() => setShowForm(false)}
+        onSuccess={fetchTransactions}
+      />
     </div>
   );
 }
