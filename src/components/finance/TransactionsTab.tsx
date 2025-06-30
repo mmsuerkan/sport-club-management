@@ -122,6 +122,19 @@ export function TransactionsTab() {
     );
   }
 
+  // Debug: Check if user data is loading
+  if (loading && transactions.length === 0) {
+    return (
+      <div className="p-8 text-center">
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <p className="mt-2 text-gray-600">Finansal veriler yükleniyor...</p>
+        <p className="mt-1 text-xs text-gray-500">
+          Kullanıcı verisi kontrol ediliyor ve kategoriler hazırlanıyor
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}

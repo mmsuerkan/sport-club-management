@@ -50,7 +50,7 @@ export interface UseFinanceReturn {
 }
 
 export function useFinance(): UseFinanceReturn {
-  const { userData } = useAuth();
+  const { userData, loading: authLoading } = useAuth();
   const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
   const [categories, setCategories] = useState<FinancialCategory[]>([]);
   const [summary, setSummary] = useState<UseFinanceReturn['summary']>(null);
@@ -233,13 +233,22 @@ export function useFinance(): UseFinanceReturn {
 
   // Load initial data
   useEffect(() => {
+    if (authLoading) {
+      // Still loading auth, keep loading state true
+      return;
+    }
+    
     if (clubId) {
       Promise.all([
         loadTransactions(),
         loadCategories()
       ]);
+    } else {
+      // If no clubId and auth is not loading, set loading to false
+      setLoading(false);
+      setCategoriesLoading(false);
     }
-  }, [clubId, loadTransactions, loadCategories]);
+  }, [clubId, authLoading, loadTransactions, loadCategories]);
 
   return {
     // Data
@@ -248,8 +257,8 @@ export function useFinance(): UseFinanceReturn {
     summary,
     
     // Loading states
-    loading,
-    categoriesLoading,
+    loading: loading || authLoading,
+    categoriesLoading: categoriesLoading || authLoading,
     summaryLoading,
     
     // Error state
