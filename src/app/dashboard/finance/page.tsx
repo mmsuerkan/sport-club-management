@@ -5,8 +5,7 @@ import {
   DollarSign, 
   TrendingUp, 
   Users,
-  PieChart,
-  CreditCard
+  PieChart
 } from 'lucide-react';
 import TransactionList from '@/components/finance/TransactionList';
 import BudgetList from '@/components/finance/BudgetList';
@@ -18,7 +17,6 @@ export default function FinancePage() {
     { id: 'overview', name: 'Genel Bakış', icon: TrendingUp },
     { id: 'transactions', name: 'İşlemler', icon: DollarSign },
     { id: 'budgets', name: 'Bütçe', icon: PieChart },
-    { id: 'payments', name: 'Ödemeler', icon: CreditCard },
   ];
 
   return (
