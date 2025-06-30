@@ -6,7 +6,6 @@ import {
   TrendingUp, 
   Users,
   PieChart,
-  FileText,
   CreditCard
 } from 'lucide-react';
 
@@ -23,27 +22,15 @@ export default function FinancePage() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-              <DollarSign className="h-6 w-6 text-green-600" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Finansal Yönetim</h1>
-              <p className="text-gray-600">Gelir, gider ve bütçe yönetimi ile kapsamlı mali raporlama</p>
-            </div>
-          </div>
-        </div>
+      <div className="flex items-center">
         <div className="flex items-center gap-3">
-          <button className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2">
-            <FileText size={16} />
-            Rapor İndir
-          </button>
-          <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2">
-            <DollarSign size={16} />
-            İşlem Ekle
-          </button>
+          <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+            <DollarSign className="h-6 w-6 text-green-600" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Finansal Yönetim</h1>
+            <p className="text-gray-600">Gelir, gider ve bütçe yönetimi ile kapsamlı mali raporlama</p>
+          </div>
         </div>
       </div>
 
