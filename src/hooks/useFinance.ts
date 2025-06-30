@@ -74,16 +74,30 @@ export function useFinance(): UseFinanceReturn {
         
         // If no categories exist, create default ones
         if (result.categories.length === 0) {
-          const promises = defaultFinancialCategories.map(category =>
-            financeService.createCategory({ ...category, clubId })
-          );
-          await Promise.all(promises);
+          console.log('No categories found, creating default categories for clubId:', clubId);
           
-          // Reload categories after creating defaults
-          const newResult = await financeService.getCategories(clubId);
-          if (newResult.success) {
-            setCategories(newResult.categories);
+          try {
+            const promises = defaultFinancialCategories.map(category =>
+              financeService.createCategory({ ...category, clubId })
+            );
+            const createResults = await Promise.all(promises);
+            
+            console.log('Created categories results:', createResults);
+            
+            // Reload categories after creating defaults
+            const newResult = await financeService.getCategories(clubId);
+            if (newResult.success) {
+              console.log('Loaded categories after creation:', newResult.categories.length);
+              setCategories(newResult.categories);
+            } else {
+              console.error('Failed to reload categories:', newResult.error);
+            }
+          } catch (createError) {
+            console.error('Error creating default categories:', createError);
+            setError('Kategoriler oluşturulamadı: ' + (createError instanceof Error ? createError.message : 'Unknown error'));
           }
+        } else {
+          console.log('Found existing categories:', result.categories.length);
         }
       } else {
         setError(result.error || 'Failed to load categories');

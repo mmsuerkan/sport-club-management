@@ -223,6 +223,7 @@ export class FinanceService {
   // CATEGORIES CRUD
   async getCategories(clubId: string) {
     try {
+      console.log('Getting categories for clubId:', clubId);
       const q = query(
         collection(db, this.categoriesCollection),
         where('clubId', '==', clubId),
@@ -230,15 +231,23 @@ export class FinanceService {
         orderBy('name')
       );
       
+      console.log('Executing categories query...');
       const snapshot = await getDocs(q);
+      console.log('Categories query returned:', snapshot.docs.length, 'documents');
+      
+      const categories = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as FinancialCategory));
+      
+      console.log('Parsed categories:', categories);
+      
       return {
         success: true,
-        categories: snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        } as FinancialCategory))
+        categories
       };
     } catch (error) {
+      console.error('Error getting categories:', error);
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -249,14 +258,18 @@ export class FinanceService {
 
   async createCategory(category: Omit<FinancialCategory, 'id' | 'createdAt'>) {
     try {
+      console.log('Creating category:', category);
       const docData = {
         ...category,
         createdAt: Timestamp.now()
       };
       
+      console.log('Category data to save:', docData);
       const docRef = await addDoc(collection(db, this.categoriesCollection), docData);
+      console.log('Category created with ID:', docRef.id);
       return { success: true, id: docRef.id };
     } catch (error) {
+      console.error('Error creating category:', error);
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }

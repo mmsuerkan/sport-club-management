@@ -22,6 +22,7 @@ export function TransactionsTab() {
     transactions,
     categories,
     loading,
+    categoriesLoading,
     error,
     createTransaction,
     updateTransaction,
@@ -129,7 +130,10 @@ export function TransactionsTab() {
         <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         <p className="mt-2 text-gray-600">Finansal veriler yükleniyor...</p>
         <p className="mt-1 text-xs text-gray-500">
-          Kullanıcı verisi kontrol ediliyor ve kategoriler hazırlanıyor
+          Kategoriler: {categoriesLoading ? 'Yükleniyor...' : `${categories.length} kategori`}
+        </p>
+        <p className="mt-1 text-xs text-gray-500">
+          {error && `Hata: ${error}`}
         </p>
       </div>
     );
@@ -150,10 +154,12 @@ export function TransactionsTab() {
           </button>
           <button 
             onClick={() => setShowForm(true)}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+            disabled={categoriesLoading || categories.length === 0}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+            title={categoriesLoading ? 'Kategoriler yükleniyor...' : categories.length === 0 ? 'Kategoriler yüklenemedi' : 'İşlem ekle'}
           >
             <Plus size={16} />
-            İşlem Ekle
+            {categoriesLoading ? 'Kategoriler Yükleniyor...' : 'İşlem Ekle'}
           </button>
         </div>
       </div>
