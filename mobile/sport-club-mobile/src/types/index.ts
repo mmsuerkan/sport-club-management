@@ -14,24 +14,22 @@ export interface UserProfile {
 // Student Types
 export interface Student {
   id: string;
-  firstName: string;
-  lastName: string;
-  email?: string;
-  phoneNumber?: string;
-  parentName?: string;
-  parentPhone?: string;
-  dateOfBirth?: Date;
-  address?: string;
+  fullName: string;
+  birthDate: string;
+  phone: string;
+  email: string;
+  address: string;
+  tcNo: string;
+  parentName: string;
+  parentPhone: string;
+  emergencyContact: string;
+  emergencyPhone: string;
+  notes: string;
   branchId: string;
-  groupId?: string;
-  profilePicture?: string;
-  isActive: boolean;
-  registrationDate: Date;
-  emergencyContact?: {
-    name: string;
-    phone: string;
-    relationship: string;
-  };
+  branchName: string;
+  groupId: string;
+  groupName: string;
+  createdAt: Date;
 }
 
 // Trainer Types
@@ -121,11 +119,11 @@ export type MainTabParamList = {
   Profile: undefined;
 };
 
-export type StudentStackParamList = {
-  StudentList: undefined;
-  StudentDetail: { studentId: string };
-  AddStudent: undefined;
-  EditStudent: { studentId: string };
+export type StudentsStackParamList = {
+  StudentsList: undefined;
+  StudentDetail: { student: Student };
+  StudentAdd: undefined;
+  StudentEdit: { student: Student };
 };
 
 export type AttendanceStackParamList = {

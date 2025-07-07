@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { collection, getDocs, query, orderBy, limit, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 import { useAuth } from '../../contexts/AuthContext';
 import { COLORS, SPACING, FONT_SIZES } from '../../constants';
 import Button from '../../components/ui/Button';
+import { db } from '../../services/firebase';
 
 interface DashboardStats {
   totalMembers: number;
@@ -57,50 +59,177 @@ const DashboardScreen: React.FC = () => {
 
   useEffect(() => {
     fetchDashboardData();
+    
+    // Real-time listeners kurulumu
+    const unsubscribeActivities = onSnapshot(
+      query(collection(db, 'activity_logs'), orderBy('timestamp', 'desc'), limit(5)),
+      (snapshot) => {
+        const recentActivities: Activity[] = [];
+        snapshot.forEach((doc) => {
+          const log = doc.data();
+          recentActivities.push({
+            id: doc.id,
+            type: log.type || 'info',
+            description: log.description || 'Bilinmeyen aktivite',
+            timestamp: log.timestamp?.toDate() || new Date(),
+            user: log.user || undefined
+          });
+        });
+        setActivities(recentActivities);
+      },
+      (error) => {
+        console.error('Activity logs dinleme hatası:', error);
+      }
+    );
+    
+    // Students collection'u dinle
+    const unsubscribeStudents = onSnapshot(
+      collection(db, 'students'),
+      (snapshot) => {
+        console.log('Real-time students update:', snapshot.size);
+        setStats(prev => ({
+          ...prev,
+          totalMembers: snapshot.size,
+          monthlyRevenue: snapshot.size * 350
+        }));
+      },
+      (error) => {
+        console.error('Students collection listener error:', error);
+      }
+    );
+    
+    // Groups collection'u dinle
+    const unsubscribeGroups = onSnapshot(
+      collection(db, 'groups'),
+      (snapshot) => {
+        setStats(prev => ({
+          ...prev,
+          activeTrainings: snapshot.size
+        }));
+      }
+    );
+    
+    // Matches collection'u dinle
+    const unsubscribeMatches = onSnapshot(
+      collection(db, 'matches'),
+      (snapshot) => {
+        setStats(prev => ({
+          ...prev,
+          upcomingTournaments: snapshot.size
+        }));
+      }
+    );
+    
+    // Cleanup function
+    return () => {
+      unsubscribeActivities();
+      unsubscribeStudents();
+      unsubscribeGroups();
+      unsubscribeMatches();
+    };
   }, []);
 
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
       
-      // Simulated data - replace with actual Firebase calls
-      setTimeout(() => {
-        setStats({
-          totalMembers: 45,
-          activeTrainings: 6,
-          monthlyRevenue: 15750,
-          upcomingTournaments: 3
+      // Toplam öğrenci sayısı
+      const studentsSnapshot = await getDocs(collection(db, 'students'));
+      const totalMembers = studentsSnapshot.size;
+      console.log('Students collection size:', totalMembers);
+      console.log('Students docs:', studentsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      
+      // Aktif grup sayısı
+      const groupsSnapshot = await getDocs(collection(db, 'groups'));
+      const activeTrainings = groupsSnapshot.size;
+      
+      // Bu ay gelir hesaplama (öğrenci sayısı × ortalama ücret)
+      const avgMonthlyFee = 350; // Ortalama aylık ücret
+      const monthlyRevenue = totalMembers * avgMonthlyFee;
+      
+      // Yaklaşan etkinlik/maç sayısı
+      const matchesSnapshot = await getDocs(collection(db, 'matches'));
+      const upcomingTournaments = matchesSnapshot.size;
+      
+      setStats({
+        totalMembers,
+        activeTrainings,
+        monthlyRevenue,
+        upcomingTournaments
+      });
+      
+      // Activity logs'ları Firebase'den çek
+      let activityLogsSnapshot;
+      try {
+        activityLogsSnapshot = await getDocs(
+          query(collection(db, 'activity_logs'), orderBy('timestamp', 'desc'), limit(5))
+        );
+      } catch (orderError) {
+        // Eğer timestamp alanı yoksa normal sorgu yap
+        activityLogsSnapshot = await getDocs(
+          query(collection(db, 'activity_logs'), limit(5))
+        );
+      }
+      
+      const recentActivities: Activity[] = [];
+      activityLogsSnapshot.forEach((doc) => {
+        const log = doc.data();
+        recentActivities.push({
+          id: doc.id,
+          type: log.type || 'info',
+          description: log.description || 'Bilinmeyen aktivite',
+          timestamp: log.timestamp?.toDate() || new Date(),
+          user: log.user || undefined
         });
-        
-        setActivities([
-          {
-            id: '1',
-            type: 'member',
-            description: 'Yeni öğrenci kaydı',
-            timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-            user: 'Ahmet Yılmaz'
-          },
-          {
-            id: '2',
-            type: 'training',
-            description: 'Antrenman tamamlandı',
-            timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000),
-            user: 'U15 Grubu'
-          },
-          {
-            id: '3',
-            type: 'system',
-            description: 'Sistem güncellendi',
-            timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000)
-          }
-        ]);
-        
-        setLoading(false);
-      }, 1000);
+      });
+      
+      setActivities(recentActivities);
+      
     } catch (error) {
       console.error('Dashboard verileri yüklenirken hata:', error);
+      // Hata durumunda varsayılan değerler
+      setStats({
+        totalMembers: 0,
+        activeTrainings: 0,
+        monthlyRevenue: 0,
+        upcomingTournaments: 0
+      });
+      setActivities([]);
+    } finally {
       setLoading(false);
     }
+  };
+
+  const clearActivities = async () => {
+    try {
+      Alert.alert(
+        'Aktiviteleri Temizle',
+        'Tüm aktivite kayıtlarını silmek istediğinizden emin misiniz?',
+        [
+          {
+            text: 'İptal',
+            style: 'cancel',
+          },
+          {
+            text: 'Sil',
+            style: 'destructive',
+            onPress: async () => {
+              // Firebase'deki activity_logs collection'ındaki tüm logları sil
+              const logsSnapshot = await getDocs(collection(db, 'activity_logs'));
+              const deletePromises = logsSnapshot.docs.map(doc => deleteDoc(doc.ref));
+              await Promise.all(deletePromises);
+            },
+          },
+        ]
+      );
+    } catch (error) {
+      console.error('Aktiviteler silinirken hata:', error);
+      Alert.alert('Hata', 'Aktiviteler silinirken bir hata oluştu.');
+    }
+  };
+  
+  const refreshActivities = () => {
+    fetchDashboardData();
   };
 
   const handleLogout = async () => {
@@ -186,7 +315,15 @@ const DashboardScreen: React.FC = () => {
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Text style={styles.cardTitle}>Son Aktiviteler</Text>
-            <Text style={styles.cardIcon}>⚡</Text>
+            <View style={styles.cardActions}>
+              <TouchableOpacity onPress={refreshActivities} style={styles.actionButton}>
+                <Ionicons name="refresh-outline" size={16} color={COLORS.gray?.[500] || '#9ca3af'} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={clearActivities} style={styles.actionButton}>
+                <Ionicons name="trash-outline" size={16} color={COLORS.gray?.[500] || '#9ca3af'} />
+              </TouchableOpacity>
+              <Text style={styles.cardIcon}>⚡</Text>
+            </View>
           </View>
           <View style={styles.activitiesList}>
             {activities.length > 0 ? activities.map((activity) => (
@@ -372,6 +509,15 @@ const styles = StyleSheet.create({
   },
   cardIcon: {
     fontSize: FONT_SIZES.lg,
+  },
+  cardActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+  },
+  actionButton: {
+    padding: 4,
+    borderRadius: 4,
   },
   activitiesList: {
     gap: SPACING.sm,
