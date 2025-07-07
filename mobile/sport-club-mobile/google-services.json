@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "289942747132",
+    "project_id": "sportclubmanagement-2daba",
+    "storage_bucket": "sportclubmanagement-2daba.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:289942747132:android:b0099de0ee30439573a479",
+        "android_client_info": {
+          "package_name": "com.sportclub.management"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCSC60komTpGpmewjTBHW06SfN8v1f-n1E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
