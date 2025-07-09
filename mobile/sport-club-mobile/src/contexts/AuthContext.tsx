@@ -9,6 +9,7 @@ import {
   resetPassword as firebaseResetPassword,
   UserData 
 } from '../lib/firebase/auth';
+import { initializeNotificationService } from '../services/notifications';
 
 interface AuthContextType {
   user: User | null;
@@ -47,6 +48,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         try {
           const data = await getUserData(user.uid);
           setUserData(data);
+          
+          // Initialize notification service after user login
+          await initializeNotificationService(user.uid);
         } catch (error) {
           console.error('Error fetching user data:', error);
           setUserData(null);
@@ -66,6 +70,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const user = await firebaseSignIn(email, password);
       const data = await getUserData(user.uid);
       setUserData(data);
+      
+      // Initialize notification service after sign in
+      await initializeNotificationService(user.uid);
     } catch (error) {
       throw error;
     }
@@ -80,6 +87,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const user = await firebaseSignUp(email, password, userData);
       const data = await getUserData(user.uid);
       setUserData(data);
+      
+      // Initialize notification service after sign up
+      await initializeNotificationService(user.uid);
     } catch (error) {
       throw error;
     }
@@ -87,8 +97,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logOut = async (): Promise<void> => {
     try {
+      // Clear states first to prevent infinite loop
+      setUser(null);
+      setUserData(null);
+      
       await firebaseLogOut();
-      // State will be cleared by the auth listener
     } catch (error) {
       console.error('Logout error:', error);
       throw error;

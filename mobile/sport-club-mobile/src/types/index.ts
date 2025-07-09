@@ -116,6 +116,7 @@ export type MainTabParamList = {
   Students: undefined;
   Trainers: undefined;
   Attendance: undefined;
+  Notifications: undefined;
   Profile: undefined;
 };
 

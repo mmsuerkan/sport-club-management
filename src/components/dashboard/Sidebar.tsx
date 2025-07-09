@@ -13,7 +13,8 @@ import {
   GraduationCap,
   Dumbbell,
   ClipboardCheck,
-  UserCog
+  UserCog,
+  Bell
 } from 'lucide-react';
 
 const menuItems = [
@@ -26,6 +27,11 @@ const menuItems = [
     title: 'Kullanıcı Yönetimi',
     icon: UserCog,
     href: '/dashboard/users'
+  },
+  {
+    title: 'Bildirimler',
+    icon: Bell,
+    href: '/dashboard/notifications'
   },
   {
     title: 'Şubeler',

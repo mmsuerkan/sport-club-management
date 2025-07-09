@@ -206,6 +206,37 @@ service cloud.firestore {
                       request.resource.data.read == true;
       allow delete: if false; // Notifications are managed by the system
     }
+    
+    // =======================
+    // NOTIFICATION SYSTEM
+    // =======================
+    
+    // Notification sending - only ADMIN can send notifications
+    match /notifications/{notificationId} {
+      allow write: if hasRole('ADMIN');
+      allow read: if isValidUser() && 
+                    (request.auth.uid in resource.data.targetUsers ||
+                     getUserData().role in resource.data.targetRoles);
+    }
+    
+    // User tokens for push notifications
+    match /user_tokens/{tokenId} {
+      allow read, write: if isValidUser() && 
+                          (resource.data.userId == request.auth.uid || 
+                           hasRole('ADMIN'));
+    }
+    
+    // Notification preferences
+    match /notification_preferences/{userId} {
+      allow read, write: if isValidUser() && 
+                          (request.auth.uid == userId || 
+                           hasRole('ADMIN'));
+    }
+    
+    // Notification stats - ADMIN only
+    match /notification_stats/{statId} {
+      allow read, write: if hasRole('ADMIN');
+    }
 
     // =======================
     // CATCH-ALL DENY
