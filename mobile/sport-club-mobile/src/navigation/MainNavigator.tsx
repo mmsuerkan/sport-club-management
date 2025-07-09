@@ -107,7 +107,10 @@ const MainNavigator: React.FC = () => {
       <Tab.Screen 
         name="Profile" 
         component={ProfileScreen}
-        options={{ title: 'Profil' }}
+        options={{ 
+          title: 'Profil',
+          headerShown: false 
+        }}
       />
     </Tab.Navigator>
   );

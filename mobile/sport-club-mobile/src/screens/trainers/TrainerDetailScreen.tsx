@@ -30,7 +30,7 @@ interface Trainer {
   groupId: string;
   groupName: string;
   notes: string;
-  createdAt: Date;
+  createdAt: Date | string;
 }
 
 type TrainersStackParamList = {
@@ -61,7 +61,14 @@ export default function TrainerDetailScreen() {
   };
 
   const handleEdit = () => {
-    navigation.navigate('TrainerEdit', { trainer });
+    navigation.navigate('TrainerEdit', { 
+      trainer: {
+        ...trainer,
+        createdAt: typeof trainer.createdAt === 'string' 
+          ? new Date(trainer.createdAt) 
+          : trainer.createdAt
+      }
+    });
   };
 
   const handleDelete = () => {
@@ -173,7 +180,9 @@ export default function TrainerDetailScreen() {
           <DetailRow 
             icon="calendar-outline" 
             label="Kayıt Tarihi" 
-            value={trainer.createdAt.toLocaleDateString('tr-TR')} 
+            value={typeof trainer.createdAt === 'string' 
+              ? new Date(trainer.createdAt).toLocaleDateString('tr-TR')
+              : trainer.createdAt.toLocaleDateString('tr-TR')} 
           />
         </View>
       </ScrollView>

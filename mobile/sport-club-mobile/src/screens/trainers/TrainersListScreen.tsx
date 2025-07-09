@@ -181,7 +181,12 @@ export default function TrainersListScreen() {
   const renderTrainerItem = ({ item }: { item: Trainer }) => (
     <TouchableOpacity
       style={styles.trainerCard}
-      onPress={() => navigation.navigate('TrainerDetail', { trainer: item })}
+      onPress={() => navigation.navigate('TrainerDetail', { 
+        trainer: {
+          ...item,
+          createdAt: item.createdAt.toISOString()
+        } 
+      })}
     >
       <View style={styles.trainerHeader}>
         <View style={styles.trainerAvatar}>
