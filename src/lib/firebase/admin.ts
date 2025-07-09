@@ -1,5 +1,6 @@
 import { initializeApp, cert, getApps, App } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
+import { getFirestore } from 'firebase-admin/firestore';
 
 let adminApp: App;
 
@@ -24,6 +25,7 @@ if (!getApps().length) {
 }
 
 export const adminAuth = getAuth(adminApp);
+export const adminDb = getFirestore(adminApp);
 
 // Verify ID Token function
 export async function verifyIdToken(token: string) {

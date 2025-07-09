@@ -12,11 +12,27 @@ import {
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from './config';
 
+export enum UserRole {
+  ADMIN = 'ADMIN',
+  TRAINER = 'TRAINER',
+  PARENT = 'PARENT',
+  STUDENT = 'STUDENT'
+}
+
 export interface UserData {
   email: string;
+  name: string;
+  role: UserRole;
   clubId: string;
   branchIds: string[];
+  isActive: boolean;
   createdAt: Date;
+  createdBy: string;
+  // Mobile-specific fields
+  phone?: string;
+  studentId?: string; // For STUDENT role
+  parentId?: string;  // For PARENT role
+  children?: string[]; // For PARENT role (student IDs)
 }
 
 export const signIn = async (email: string, password: string, rememberMe: boolean = false) => {
@@ -34,9 +50,13 @@ export const signIn = async (email: string, password: string, rememberMe: boolea
     if (!userDoc.exists()) {
       await setDoc(doc(db, 'users', user.uid), {
         email: user.email,
+        name: user.email?.split('@')[0] || 'Kullanıcı',
+        role: UserRole.ADMIN, // Default role, should be changed by admin
         clubId: '',
         branchIds: [],
-        createdAt: new Date()
+        isActive: true,
+        createdAt: new Date(),
+        createdBy: user.uid // Self-created for first admin
       });
     }
     
@@ -57,9 +77,17 @@ export const signUp = async (
     
     await setDoc(doc(db, 'users', user.uid), {
       email,
+      name: userData?.name || email.split('@')[0] || 'Kullanıcı',
+      role: userData?.role || UserRole.ADMIN,
       clubId: userData?.clubId || '',
       branchIds: userData?.branchIds || [],
-      createdAt: new Date()
+      isActive: userData?.isActive !== undefined ? userData.isActive : true,
+      createdAt: new Date(),
+      createdBy: userData?.createdBy || user.uid,
+      phone: userData?.phone,
+      studentId: userData?.studentId,
+      parentId: userData?.parentId,
+      children: userData?.children
     });
     
     return user;
@@ -95,6 +123,89 @@ export const onAuthChange = (callback: (user: User | null) => void) => {
 export const resetPassword = async (email: string) => {
   try {
     await sendPasswordResetEmail(auth, email);
+  } catch (error) {
+    throw error;
+  }
+};
+
+// User management functions (Admin only)
+export const getAllUsers = async (): Promise<UserData[]> => {
+  try {
+    const { getDocs, collection } = await import('firebase/firestore');
+    const querySnapshot = await getDocs(collection(db, 'users'));
+    const users: UserData[] = [];
+    
+    querySnapshot.forEach((doc) => {
+      users.push({
+        ...doc.data(),
+        id: doc.id
+      } as UserData & { id: string });
+    });
+    
+    return users;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const createUserByAdmin = async (
+  email: string,
+  password: string,
+  userData: Omit<UserData, 'email' | 'createdAt'>,
+  adminId: string
+): Promise<User> => {
+  try {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+    
+    await setDoc(doc(db, 'users', user.uid), {
+      email,
+      name: userData.name,
+      role: userData.role,
+      clubId: userData.clubId,
+      branchIds: userData.branchIds,
+      isActive: userData.isActive,
+      createdAt: new Date(),
+      createdBy: adminId,
+      phone: userData.phone,
+      studentId: userData.studentId,
+      parentId: userData.parentId,
+      children: userData.children
+    });
+    
+    return user;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const updateUserData = async (
+  userId: string,
+  updateData: Partial<UserData>
+): Promise<void> => {
+  try {
+    const { updateDoc } = await import('firebase/firestore');
+    await updateDoc(doc(db, 'users', userId), updateData);
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const deleteUser = async (userId: string): Promise<void> => {
+  try {
+    const { deleteDoc } = await import('firebase/firestore');
+    await deleteDoc(doc(db, 'users', userId));
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const deactivateUser = async (userId: string): Promise<void> => {
+  try {
+    const { updateDoc } = await import('firebase/firestore');
+    await updateDoc(doc(db, 'users', userId), {
+      isActive: false
+    });
   } catch (error) {
     throw error;
   }

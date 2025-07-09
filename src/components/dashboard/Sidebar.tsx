@@ -12,7 +12,8 @@ import {
   UsersIcon,
   GraduationCap,
   Dumbbell,
-  ClipboardCheck
+  ClipboardCheck,
+  UserCog
 } from 'lucide-react';
 
 const menuItems = [
@@ -20,6 +21,11 @@ const menuItems = [
     title: 'Dashboard',
     icon: Home,
     href: '/dashboard'
+  },
+  {
+    title: 'Kullanıcı Yönetimi',
+    icon: UserCog,
+    href: '/dashboard/users'
   },
   {
     title: 'Şubeler',

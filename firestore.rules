@@ -40,14 +40,15 @@ service cloud.firestore {
     // USER DOCUMENTS
     // =======================
     
-    // Users can read their own document, only certain fields can be updated
+    // Users can read their own document, ADMIN can read/write all users
     match /users/{userId} {
-      allow read: if isOwner(userId);
-      allow create: if false; // Users are created server-side only
-      allow update: if isOwner(userId) && 
-                      request.resource.data.role == resource.data.role && // Can't change own role
-                      request.resource.data.clubId == resource.data.clubId; // Can't change club
-      allow delete: if false; // Users cannot be deleted through client
+      allow read: if isOwner(userId) || hasRole('ADMIN');
+      allow create: if hasRole('ADMIN'); // Only admins can create users
+      allow update: if (isOwner(userId) && 
+                        request.resource.data.role == resource.data.role && // Can't change own role
+                        request.resource.data.clubId == resource.data.clubId) || // Can't change club
+                        hasRole('ADMIN'); // Admins can update any user
+      allow delete: if hasRole('ADMIN'); // Only admins can delete users
     }
 
     // =======================

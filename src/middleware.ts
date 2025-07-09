@@ -2,13 +2,13 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // Cache for verified tokens to reduce API calls
-const tokenCache = new Map<string, { valid: boolean; expiresAt: number }>();
+const tokenCache = new Map<string, { valid: boolean; isAdmin: boolean; isActive: boolean; expiresAt: number }>();
 
-async function verifyToken(token: string, request: NextRequest): Promise<boolean> {
+async function verifyTokenAndRole(token: string, request: NextRequest): Promise<{ valid: boolean; isAdmin: boolean; isActive: boolean }> {
   // Check cache first
   const cached = tokenCache.get(token);
   if (cached && cached.expiresAt > Date.now()) {
-    return cached.valid;
+    return { valid: cached.valid, isAdmin: cached.isAdmin, isActive: cached.isActive };
   }
 
   try {
@@ -23,8 +23,8 @@ async function verifyToken(token: string, request: NextRequest): Promise<boolean
     });
 
     if (!response.ok) {
-      tokenCache.set(token, { valid: false, expiresAt: Date.now() + 5 * 60 * 1000 }); // Cache for 5 minutes
-      return false;
+      tokenCache.set(token, { valid: false, isAdmin: false, isActive: false, expiresAt: Date.now() + 5 * 60 * 1000 }); // Cache for 5 minutes
+      return { valid: false, isAdmin: false, isActive: false };
     }
 
     const data = await response.json();
@@ -32,15 +32,17 @@ async function verifyToken(token: string, request: NextRequest): Promise<boolean
     if (data.valid) {
       // Cache valid token until it expires
       const expiresAt = data.expiresAt * 1000; // Convert to milliseconds
-      tokenCache.set(token, { valid: true, expiresAt });
-      return true;
+      const isAdmin = data.userData?.role === 'ADMIN';
+      const isActive = data.userData?.isActive ?? true;
+      tokenCache.set(token, { valid: true, isAdmin, isActive, expiresAt });
+      return { valid: true, isAdmin, isActive };
     }
 
-    tokenCache.set(token, { valid: false, expiresAt: Date.now() + 5 * 60 * 1000 });
-    return false;
+    tokenCache.set(token, { valid: false, isAdmin: false, isActive: false, expiresAt: Date.now() + 5 * 60 * 1000 });
+    return { valid: false, isAdmin: false, isActive: false };
   } catch (error) {
     // On error, deny access but don't cache
-    return false;
+    return { valid: false, isAdmin: false, isActive: false };
   }
 }
 
@@ -50,6 +52,11 @@ export async function middleware(request: NextRequest) {
   
   // Allow API routes to be accessed
   if (pathname.startsWith('/api')) {
+    return NextResponse.next();
+  }
+  
+  // Skip middleware for /unauthorized and /account-disabled paths to prevent infinite loop
+  if (pathname === '/unauthorized' || pathname === '/account-disabled') {
     return NextResponse.next();
   }
   
@@ -68,12 +75,26 @@ export async function middleware(request: NextRequest) {
       return response;
     }
     
-    // Verify token validity
-    const isValidToken = await verifyToken(token, request);
-    if (!isValidToken) {
+    // Verify token validity and check admin role
+    const { valid, isAdmin, isActive } = await verifyTokenAndRole(token, request);
+    if (!valid) {
       const response = NextResponse.redirect(new URL('/login', request.url));
       response.cookies.delete('auth-token');
       response.cookies.delete('auth-state');
+      return response;
+    }
+    
+    // Check if user account is active
+    if (!isActive) {
+      const response = NextResponse.redirect(new URL('/account-disabled', request.url));
+      response.cookies.delete('auth-token');
+      response.cookies.delete('auth-state');
+      return response;
+    }
+    
+    // Only ADMIN role can access web dashboard
+    if (!isAdmin) {
+      const response = NextResponse.redirect(new URL('/unauthorized', request.url));
       return response;
     }
   }
@@ -81,14 +102,24 @@ export async function middleware(request: NextRequest) {
   // For public routes when user has tokens
   if (isPublicPath && token && authState === 'authenticated') {
     // Verify token before redirecting to dashboard
-    const isValidToken = await verifyToken(token, request);
+    const { valid, isAdmin, isActive } = await verifyTokenAndRole(token, request);
     
-    if (isValidToken && (pathname === '/login' || pathname === '/')) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+    if (valid && (pathname === '/login' || pathname === '/')) {
+      // Check if account is active first
+      if (!isActive) {
+        return NextResponse.redirect(new URL('/account-disabled', request.url));
+      }
+      
+      // Only redirect ADMIN users to dashboard, others to unauthorized
+      if (isAdmin) {
+        return NextResponse.redirect(new URL('/dashboard', request.url));
+      } else {
+        return NextResponse.redirect(new URL('/unauthorized', request.url));
+      }
     }
     
     // If token is invalid, clear cookies
-    if (!isValidToken) {
+    if (!valid) {
       const response = NextResponse.next();
       response.cookies.delete('auth-token');
       response.cookies.delete('auth-state');
