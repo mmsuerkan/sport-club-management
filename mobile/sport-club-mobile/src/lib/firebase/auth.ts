@@ -10,13 +10,28 @@ import {
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../../services/firebase';
 
+export enum UserRole {
+  ADMIN = 'ADMIN',
+  TRAINER = 'TRAINER',
+  PARENT = 'PARENT',
+  STUDENT = 'STUDENT'
+}
+
 export interface UserData {
   email: string;
+  name: string;
+  role: UserRole;
   clubId: string;
   branchIds: string[];
+  isActive: boolean;
   createdAt: Date;
+  createdBy: string;
+  // Mobile-specific fields
+  phone?: string;
   displayName?: string;
-  role?: string;
+  studentId?: string; // For STUDENT role
+  parentId?: string;  // For PARENT role
+  children?: string[]; // For PARENT role (student IDs)
 }
 
 export const signIn = async (email: string, password: string) => {
@@ -30,13 +45,24 @@ export const signIn = async (email: string, password: string) => {
     // If user document doesn't exist, create it with default values
     if (!userDoc.exists()) {
       await setDoc(doc(db, 'users', user.uid), {
-        email: user.email,
+        email: user.email || '',
+        name: user.displayName || user.email?.split('@')[0] || 'Kullanıcı',
+        role: UserRole.STUDENT, // Default role for mobile users
         clubId: '',
         branchIds: [],
+        isActive: true,
         createdAt: new Date(),
+        createdBy: user.uid,
         displayName: user.displayName || '',
-        role: 'user'
+        phone: ''
       });
+    } else {
+      // Check if user account is active
+      const userData = userDoc.data();
+      if (userData && userData.isActive === false) {
+        await signOut(auth);
+        throw new Error('Hesabınız devre dışı bırakılmıştır. Lütfen yönetici ile iletişime geçin.');
+      }
     }
     
     return user;
@@ -63,11 +89,18 @@ export const signUp = async (
     
     await setDoc(doc(db, 'users', user.uid), {
       email,
+      name: userData?.name || userData?.displayName || email.split('@')[0] || 'Kullanıcı',
+      role: userData?.role || UserRole.STUDENT,
       clubId: userData?.clubId || '',
       branchIds: userData?.branchIds || [],
+      isActive: userData?.isActive !== undefined ? userData.isActive : true,
       createdAt: new Date(),
+      createdBy: userData?.createdBy || user.uid,
       displayName: userData?.displayName || '',
-      role: userData?.role || 'user'
+      phone: userData?.phone || '',
+      studentId: userData?.studentId,
+      parentId: userData?.parentId,
+      children: userData?.children
     });
     
     return user;
@@ -110,4 +143,45 @@ export const resetPassword = async (email: string) => {
   } catch (error) {
     throw error;
   }
+};
+
+// Role-based utility functions
+export const hasRole = (userData: UserData | null, role: UserRole): boolean => {
+  return userData?.role === role;
+};
+
+export const hasAnyRole = (userData: UserData | null, roles: UserRole[]): boolean => {
+  return userData ? roles.includes(userData.role) : false;
+};
+
+export const isAdmin = (userData: UserData | null): boolean => {
+  return hasRole(userData, UserRole.ADMIN);
+};
+
+export const isTrainer = (userData: UserData | null): boolean => {
+  return hasRole(userData, UserRole.TRAINER);
+};
+
+export const isParent = (userData: UserData | null): boolean => {
+  return hasRole(userData, UserRole.PARENT);
+};
+
+export const isStudent = (userData: UserData | null): boolean => {
+  return hasRole(userData, UserRole.STUDENT);
+};
+
+export const canManageStudents = (userData: UserData | null): boolean => {
+  return hasAnyRole(userData, [UserRole.ADMIN, UserRole.TRAINER]);
+};
+
+export const canManageTrainers = (userData: UserData | null): boolean => {
+  return hasRole(userData, UserRole.ADMIN);
+};
+
+export const canTakeAttendance = (userData: UserData | null): boolean => {
+  return hasAnyRole(userData, [UserRole.ADMIN, UserRole.TRAINER]);
+};
+
+export const canViewReports = (userData: UserData | null): boolean => {
+  return hasAnyRole(userData, [UserRole.ADMIN, UserRole.TRAINER]);
 };

@@ -58,10 +58,10 @@ export default function ProfileScreen() {
       if (userDoc.exists()) {
         const data = userDoc.data();
         setUserProfile({
-          name: data.name || 'İsimsiz Kullanıcı',
+          name: data.name || data.displayName || 'İsimsiz Kullanıcı',
           email: user.email || '',
           phone: data.phone || '',
-          role: data.role || 'user',
+          role: data.role || 'STUDENT',
           branch: data.branch || '',
           createdAt: data.createdAt?.toDate() || new Date(),
         });
@@ -167,6 +167,10 @@ export default function ProfileScreen() {
 
   const getRoleDisplay = (role: string) => {
     const roleMap: { [key: string]: string } = {
+      ADMIN: 'Yönetici',
+      TRAINER: 'Antrenör',
+      PARENT: 'Veli',
+      STUDENT: 'Öğrenci',
       admin: 'Yönetici',
       trainer: 'Antrenör',
       user: 'Kullanıcı',

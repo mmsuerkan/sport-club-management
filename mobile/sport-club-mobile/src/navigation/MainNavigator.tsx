@@ -4,6 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { View } from 'react-native';
 import { COLORS } from '../constants';
 import { MainTabParamList } from '../types';
+import { useAuth } from '../contexts/AuthContext';
+import { canManageStudents, canManageTrainers, canTakeAttendance, UserRole } from '../lib/firebase/auth';
 
 // Tab Screens
 import DashboardScreen from '../screens/main/DashboardScreen';
@@ -15,6 +17,8 @@ import ProfileScreen from '../screens/main/ProfileScreen';
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 const MainNavigator: React.FC = () => {
+  const { userData } = useAuth();
+  
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -80,30 +84,43 @@ const MainNavigator: React.FC = () => {
           headerShown: false 
         }}
       />
-      <Tab.Screen 
-        name="Students" 
-        component={StudentsNavigator}
-        options={{ 
-          title: 'Öğrenciler',
-          headerShown: false 
-        }}
-      />
-      <Tab.Screen 
-        name="Trainers" 
-        component={TrainersNavigator}
-        options={{ 
-          title: 'Antrenörler',
-          headerShown: false 
-        }}
-      />
-      <Tab.Screen 
-        name="Attendance" 
-        component={AttendanceNavigator}
-        options={{ 
-          title: 'Yoklama',
-          headerShown: false 
-        }}
-      />
+      
+      {/* Students tab - only for ADMIN and TRAINER */}
+      {canManageStudents(userData) && (
+        <Tab.Screen 
+          name="Students" 
+          component={StudentsNavigator}
+          options={{ 
+            title: 'Öğrenciler',
+            headerShown: false 
+          }}
+        />
+      )}
+      
+      {/* Trainers tab - only for ADMIN */}
+      {canManageTrainers(userData) && (
+        <Tab.Screen 
+          name="Trainers" 
+          component={TrainersNavigator}
+          options={{ 
+            title: 'Antrenörler',
+            headerShown: false 
+          }}
+        />
+      )}
+      
+      {/* Attendance tab - only for ADMIN and TRAINER */}
+      {canTakeAttendance(userData) && (
+        <Tab.Screen 
+          name="Attendance" 
+          component={AttendanceNavigator}
+          options={{ 
+            title: 'Yoklama',
+            headerShown: false 
+          }}
+        />
+      )}
+      
       <Tab.Screen 
         name="Profile" 
         component={ProfileScreen}

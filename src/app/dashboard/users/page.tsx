@@ -26,17 +26,40 @@ export default function UsersPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState<UserWithId | null>(null);
   const [formData, setFormData] = useState({
-    name: '',
     email: '',
     password: '',
     role: UserRole.TRAINER,
-    phone: '',
-    isActive: true
+    isActive: true,
+    studentId: '',
+    trainerId: ''
   });
+  const [students, setStudents] = useState<any[]>([]);
+  const [trainers, setTrainers] = useState<any[]>([]);
 
   useEffect(() => {
     loadUsers();
+    loadStudentsAndTrainers();
   }, []);
+
+  const loadStudentsAndTrainers = async () => {
+    try {
+      // Öğrencileri yükle
+      const studentsResponse = await fetch('/api/students');
+      if (studentsResponse.ok) {
+        const studentsData = await studentsResponse.json();
+        setStudents(studentsData);
+      }
+
+      // Antrenörleri yükle
+      const trainersResponse = await fetch('/api/trainers');
+      if (trainersResponse.ok) {
+        const trainersData = await trainersResponse.json();
+        setTrainers(trainersData);
+      }
+    } catch (error) {
+      console.error('Öğrenci/Antrenör listesi yüklenirken hata:', error);
+    }
+  };
 
   const loadUsers = async () => {
     try {
@@ -63,35 +86,78 @@ export default function UsersPage() {
       if (editingUser) {
         // Update existing user
         await updateUserData(editingUser.id, {
-          name: formData.name,
           role: formData.role,
-          phone: formData.phone,
-          isActive: formData.isActive
+          isActive: formData.isActive,
+          phone: '' // Boş string olarak gönder
         });
       } else {
         // Create new user
-        await createUserByAdmin(
+        let userName = '';
+        let selectedRecord = null;
+
+        // İlişkilendirilecek kayıttan adı al
+        if (formData.role === UserRole.TRAINER && formData.trainerId) {
+          selectedRecord = trainers.find(t => t.id === formData.trainerId);
+          userName = selectedRecord?.fullName || selectedRecord?.name || '';
+        } else if (formData.role === UserRole.PARENT && formData.studentId) {
+          selectedRecord = students.find(s => s.id === formData.studentId);
+          userName = selectedRecord?.fullName || selectedRecord?.name || '';
+        } else if (formData.role === UserRole.STUDENT && formData.studentId) {
+          selectedRecord = students.find(s => s.id === formData.studentId);
+          userName = selectedRecord?.fullName || selectedRecord?.name || '';
+        } else if (formData.role === UserRole.ADMIN) {
+          // Admin için email'den kullanıcı adı oluştur
+          userName = formData.email.split('@')[0];
+        }
+
+        const userData = {
+          name: userName,
+          role: formData.role,
+          clubId: '',
+          branchIds: [],
+          isActive: formData.isActive,
+          phone: '', // Boş string olarak gönder
+          createdBy: user?.uid || ''
+        };
+
+        const newUser = await createUserByAdmin(
           formData.email,
           formData.password,
-          {
-            name: formData.name,
-            role: formData.role,
-            clubId: '',
-            branchIds: [],
-            isActive: formData.isActive,
-            phone: formData.phone,
-            createdBy: user?.uid || ''
-          },
+          userData,
           user?.uid || ''
         );
+
+        // Rol bazlı ilişkilendirme
+        if (formData.role === UserRole.TRAINER && formData.trainerId) {
+          // Antrenör kaydını kullanıcı ID'si ile güncelle
+          await fetch(`/api/trainers/${formData.trainerId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: newUser.uid })
+          });
+        } else if (formData.role === UserRole.PARENT && formData.studentId) {
+          // Öğrenci kaydını parent ID'si ile güncelle
+          await fetch(`/api/students/${formData.studentId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ parentId: newUser.uid })
+          });
+        } else if (formData.role === UserRole.STUDENT && formData.studentId) {
+          // Öğrenci kaydını kullanıcı ID'si ile güncelle
+          await fetch(`/api/students/${formData.studentId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: newUser.uid })
+          });
+        }
       }
       
       setShowModal(false);
       setEditingUser(null);
       resetForm();
       loadUsers();
+      loadStudentsAndTrainers(); // Dropdown'ları güncelle
     } catch (error) {
-      console.error('Error saving user:', error);
       alert('Kullanıcı kaydedilemedi: ' + (error as Error).message);
     }
   };
@@ -99,12 +165,12 @@ export default function UsersPage() {
   const handleEdit = (userData: UserWithId) => {
     setEditingUser(userData);
     setFormData({
-      name: userData.name || '',
       email: userData.email || '',
       password: '',
       role: userData.role || UserRole.TRAINER,
-      phone: userData.phone || '',
-      isActive: userData.isActive ?? true
+      isActive: userData.isActive ?? true,
+      studentId: '',
+      trainerId: ''
     });
     setShowModal(true);
   };
@@ -114,6 +180,7 @@ export default function UsersPage() {
       try {
         await deleteUser(userId);
         loadUsers();
+        loadStudentsAndTrainers(); // Dropdown'ları güncelle
       } catch (error) {
         console.error('Error deleting user:', error);
         alert('Kullanıcı silinemedi: ' + (error as Error).message);
@@ -132,12 +199,12 @@ export default function UsersPage() {
 
   const resetForm = () => {
     setFormData({
-      name: '',
       email: '',
       password: '',
       role: UserRole.TRAINER,
-      phone: '',
-      isActive: true
+      isActive: true,
+      studentId: '',
+      trainerId: ''
     });
   };
 
@@ -355,19 +422,6 @@ export default function UsersPage() {
             </h2>
             
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Ad Soyad
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  required
-                />
-              </div>
-
               {!editingUser && (
                 <>
                   <div>
@@ -405,7 +459,7 @@ export default function UsersPage() {
                 </label>
                 <select
                   value={formData.role}
-                  onChange={(e) => setFormData({...formData, role: e.target.value as UserRole})}
+                  onChange={(e) => setFormData({...formData, role: e.target.value as UserRole, studentId: '', trainerId: ''})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 >
                   <option value={UserRole.ADMIN}>Yönetici</option>
@@ -415,17 +469,119 @@ export default function UsersPage() {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Telefon
-                </label>
-                <input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                />
-              </div>
+              {/* Antrenör seçimi - TRAINER rolü için */}
+              {formData.role === UserRole.TRAINER && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Antrenör Kaydı
+                  </label>
+                  {(() => {
+                    const availableTrainers = trainers.filter(t => {
+                      const hasUserId = t.userId && t.userId.trim() !== '';
+                      return !hasUserId;
+                    });
+                    
+                    if (availableTrainers.length === 0) {
+                      return (
+                        <p className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
+                          Tüm antrenör kayıtları zaten bir kullanıcı hesabıyla ilişkilendirilmiş. 
+                          Önce yeni bir antrenör kaydı oluşturmanız gerekiyor.
+                        </p>
+                      );
+                    }
+                    
+                    return (
+                    <>
+                      <select
+                        value={formData.trainerId}
+                        onChange={(e) => setFormData({...formData, trainerId: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        required
+                      >
+                        <option value="">Antrenör seçin...</option>
+                        {availableTrainers.map((trainer) => (
+                          <option key={trainer.id} value={trainer.id}>
+                            {trainer.fullName || trainer.name}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Bu kullanıcı hesabı seçilen antrenör kaydıyla ilişkilendirilecek
+                      </p>
+                    </>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {/* Öğrenci seçimi - PARENT rolü için */}
+              {formData.role === UserRole.PARENT && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Öğrenci Kaydı (Çocuk)
+                  </label>
+                  {students.filter(s => !s.parentId).length === 0 ? (
+                    <p className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
+                      Tüm öğrenci kayıtları zaten bir veli hesabıyla ilişkilendirilmiş. 
+                      Önce yeni bir öğrenci kaydı oluşturmanız gerekiyor.
+                    </p>
+                  ) : (
+                    <>
+                      <select
+                        value={formData.studentId}
+                        onChange={(e) => setFormData({...formData, studentId: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        required
+                      >
+                        <option value="">Öğrenci seçin...</option>
+                        {students.filter(student => !student.parentId).map((student) => (
+                          <option key={student.id} value={student.id}>
+                            {student.fullName || student.name}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Bu veli hesabı seçilen öğrenciyle ilişkilendirilecek
+                      </p>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Öğrenci seçimi - STUDENT rolü için */}
+              {formData.role === UserRole.STUDENT && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Öğrenci Kaydı
+                  </label>
+                  {students.filter(s => !s.userId).length === 0 ? (
+                    <p className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
+                      Tüm öğrenci kayıtları zaten bir kullanıcı hesabıyla ilişkilendirilmiş. 
+                      Önce yeni bir öğrenci kaydı oluşturmanız gerekiyor.
+                    </p>
+                  ) : (
+                    <>
+                      <select
+                        value={formData.studentId}
+                        onChange={(e) => setFormData({...formData, studentId: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        required
+                      >
+                        <option value="">Öğrenci seçin...</option>
+                        {students.filter(student => !student.userId).map((student) => (
+                          <option key={student.id} value={student.id}>
+                            {student.fullName || student.name}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Bu öğrenci hesabı seçilen kayıtla ilişkilendirilecek
+                      </p>
+                    </>
+                  )}
+                </div>
+              )}
+
 
               <div className="flex items-center">
                 <input

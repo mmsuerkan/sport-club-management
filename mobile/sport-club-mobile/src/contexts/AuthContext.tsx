@@ -87,14 +87,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logOut = async (): Promise<void> => {
     try {
-      setUser(null);
-      setUserData(null);
       await firebaseLogOut();
+      // State will be cleared by the auth listener
     } catch (error) {
       console.error('Logout error:', error);
-      // Clear state even if logout fails
-      setUser(null);
-      setUserData(null);
+      throw error;
     }
   };
 

@@ -9,7 +9,7 @@ import {
   browserLocalPersistence,
   browserSessionPersistence
 } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, getDocs, query, collection, where } from 'firebase/firestore';
 import { auth, db } from './config';
 
 export enum UserRole {
@@ -155,26 +155,28 @@ export const createUserByAdmin = async (
   adminId: string
 ): Promise<User> => {
   try {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
-    
-    await setDoc(doc(db, 'users', user.uid), {
-      email,
-      name: userData.name,
-      role: userData.role,
-      clubId: userData.clubId,
-      branchIds: userData.branchIds,
-      isActive: userData.isActive,
-      createdAt: new Date(),
-      createdBy: adminId,
-      phone: userData.phone,
-      studentId: userData.studentId,
-      parentId: userData.parentId,
-      children: userData.children
+    // API endpoint'i kullanarak kullanıcı oluştur
+    const response = await fetch('/api/users/create', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email,
+        password,
+        userData,
+        adminId
+      })
     });
-    
-    return user;
-  } catch (error) {
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || 'Kullanıcı oluşturulamadı');
+    }
+
+    return result.user;
+  } catch (error: any) {
     throw error;
   }
 };
@@ -185,7 +187,17 @@ export const updateUserData = async (
 ): Promise<void> => {
   try {
     const { updateDoc } = await import('firebase/firestore');
-    await updateDoc(doc(db, 'users', userId), updateData);
+    
+    // Undefined değerleri temizle
+    const cleanedData: any = {};
+    Object.keys(updateData).forEach(key => {
+      const value = (updateData as any)[key];
+      if (value !== undefined) {
+        cleanedData[key] = value;
+      }
+    });
+    
+    await updateDoc(doc(db, 'users', userId), cleanedData);
   } catch (error) {
     throw error;
   }
@@ -193,8 +205,14 @@ export const updateUserData = async (
 
 export const deleteUser = async (userId: string): Promise<void> => {
   try {
-    const { deleteDoc } = await import('firebase/firestore');
-    await deleteDoc(doc(db, 'users', userId));
+    // API endpoint'i kullanarak kullanıcıyı sil
+    const response = await fetch(`/api/users/${userId}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      throw new Error('Kullanıcı silinemedi');
+    }
   } catch (error) {
     throw error;
   }

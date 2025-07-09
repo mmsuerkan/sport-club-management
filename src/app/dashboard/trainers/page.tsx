@@ -34,6 +34,7 @@ interface Trainer {
   groupName: string;
   notes: string;
   createdAt: Date;
+  userId?: string; // Kullanıcı hesabı ile ilişkilendirme
 }
 
 export default function TrainersPage() {
