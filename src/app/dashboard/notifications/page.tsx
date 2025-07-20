@@ -2,32 +2,34 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { 
-  Send, 
-  Bell, 
-  Users, 
-  Clock, 
-  Target, 
+import {
+  Send,
+  Bell,
+  Users,
+  Clock,
+  Target,
   AlertCircle,
   CheckCircle,
   XCircle,
   Eye
 } from 'lucide-react';
-import { 
-  NotificationFormData, 
-  NotificationType, 
-  NotificationTargetType, 
+import {
+  NotificationFormData,
+  NotificationType,
+  NotificationTargetType,
   NotificationPriority,
-  Notification 
+  Notification
 } from '@/types/notification';
 import { UserRole } from '@/lib/firebase/auth';
 import { getNotifications } from '@/lib/firebase/notifications';
+import ModalTitle from '@/components/modal-title';
+import PageTitle from '@/components/page-title';
 
 export default function NotificationsPage() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [showForm, setShowForm] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState<NotificationFormData>({
     title: '',
     body: '',
@@ -91,7 +93,7 @@ export default function NotificationsPage() {
 
     try {
       setLoading(true);
-      
+
       const response = await fetch('/api/notifications/send', {
         method: 'POST',
         headers: {
@@ -122,9 +124,9 @@ export default function NotificationsPage() {
         imageUrl: '',
       });
 
-      setShowForm(false);
+      setShowModal(false);
       await loadNotifications();
-      
+
       alert('Bildirim başarıyla gönderildi!');
     } catch (error) {
       console.error('Error sending notification:', error);
@@ -189,77 +191,72 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div>
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Bildirimler</h1>
-          <p className="text-gray-600">Kullanıcılara bildirim gönder ve geçmişi görüntüle</p>
-        </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
-          disabled={loading}
-        >
-          <Send size={20} />
-          Bildirim Gönder
-        </button>
-      </div>
 
+      <PageTitle
+        setEditingUser={undefined}
+        setShowModal={setShowModal}
+        pageTitle="Bildirimler"
+        pageIcon={<Send />}
+        pageDescription="Kullanıcılara bildirim gönderebilir ve geçmişi görüntüleyebilirsiniz."
+        firstButtonText="Bildirim Gönder"
+        buttonIcon={<Send />}
+      />
       {/* İstatistikler */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-lg border">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 my-5">
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 border border-blue-200">
           <div className="flex items-center gap-3">
-            <div className="bg-blue-100 p-2 rounded-lg">
-              <Bell className="text-blue-600" size={20} />
+            <div className="bg-blue-500 p-2 rounded-lg w-12 h-12 flex items-center justify-center">
+              <Bell className="h-6 w-6 text-white" size={20} />
             </div>
             <div>
-              <div className="text-2xl font-bold text-gray-900">
+              <div className="text-3xl font-bold text-blue-900">
                 {notifications.length}
               </div>
-              <div className="text-sm text-gray-600">Toplam Bildirim</div>
+              <div className="text-blue-700 text-sm">Toplam Bildirim</div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-lg border">
+        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-6 border border-green-200">
           <div className="flex items-center gap-3">
-            <div className="bg-green-100 p-2 rounded-lg">
-              <CheckCircle className="text-green-600" size={20} />
+            <div className="bg-green-500 p-2 rounded-lg w-12 h-12 flex items-center justify-center">
+              <CheckCircle className="h-6 w-6 text-white" size={20} />
             </div>
             <div>
-              <div className="text-2xl font-bold text-green-600">
+              <div className="text-3xl font-bold text-green-900">
                 {notifications.filter(n => n.status === 'SENT').length}
               </div>
-              <div className="text-sm text-gray-600">Gönderildi</div>
+              <div className="text-sm text-green-700">Gönderildi</div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-lg border">
+        <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-2xl p-6 border border-yellow-200">
           <div className="flex items-center gap-3">
-            <div className="bg-yellow-100 p-2 rounded-lg">
-              <Clock className="text-yellow-600" size={20} />
+            <div className="bg-yellow-500 p-2 rounded-lg w-12 h-12 flex items-center justify-center">
+              <Clock className="h-6 w-6 text-white" size={20} />
             </div>
             <div>
-              <div className="text-2xl font-bold text-yellow-600">
+              <div className="text-3xl font-bold text-yellow-900">
                 {notifications.filter(n => n.status === 'SENDING' || n.status === 'SCHEDULED').length}
               </div>
-              <div className="text-sm text-gray-600">Beklemede</div>
+              <div className="text-sm text-yellow-700">Beklemede</div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-lg border">
+        <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-2xl p-6 border border-red-200">
           <div className="flex items-center gap-3">
-            <div className="bg-red-100 p-2 rounded-lg">
-              <XCircle className="text-red-600" size={20} />
+            <div className="bg-red-500 p-2 rounded-lg w-12 h-12 flex items-center justify-center">
+              <XCircle className="h-6 w-6 text-white" size={20} />
             </div>
             <div>
-              <div className="text-2xl font-bold text-red-600">
+              <div className="text-3xl font-bold text-red-900">
                 {notifications.filter(n => n.status === 'FAILED').length}
               </div>
-              <div className="text-sm text-gray-600">Başarısız</div>
+              <div className="text-sm text-red-700">Başarısız</div>
             </div>
           </div>
         </div>
@@ -274,19 +271,19 @@ export default function NotificationsPage() {
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
                   Bildirim
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
                   Hedef
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
                   Durum
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
                   Tarih
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
                   İstatistik
                 </th>
               </tr>
@@ -309,11 +306,11 @@ export default function NotificationsPage() {
                       <Target size={16} className="text-gray-400" />
                       <span className="text-sm text-gray-900">
                         {notification.targetType === NotificationTargetType.ALL_USERS && 'Tüm Kullanıcılar'}
-                        {notification.targetType === NotificationTargetType.SPECIFIC_ROLES && 
+                        {notification.targetType === NotificationTargetType.SPECIFIC_ROLES &&
                           `${notification.targetRoles?.length || 0} Rol`}
-                        {notification.targetType === NotificationTargetType.SPECIFIC_USERS && 
+                        {notification.targetType === NotificationTargetType.SPECIFIC_USERS &&
                           `${notification.targetUsers?.length || 0} Kullanıcı`}
-                        {notification.targetType === NotificationTargetType.SPECIFIC_GROUPS && 
+                        {notification.targetType === NotificationTargetType.SPECIFIC_GROUPS &&
                           `${notification.targetGroups?.length || 0} Grup`}
                       </span>
                     </div>
@@ -347,19 +344,10 @@ export default function NotificationsPage() {
       </div>
 
       {/* Bildirim Gönderme Formu Modal */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      {showModal && (
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Bildirim Gönder</h2>
-              <button
-                onClick={() => setShowForm(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <XCircle size={24} />
-              </button>
-            </div>
-
+            <ModalTitle modalTitle="Bildirim Gönder" setShowModal={setShowModal} />
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Başlık */}
               <div>
@@ -369,7 +357,7 @@ export default function NotificationsPage() {
                 <input
                   type="text"
                   value={formData.title}
-                  onChange={(e) => setFormData({...formData, title: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                   placeholder="Bildirim başlığı"
@@ -383,7 +371,7 @@ export default function NotificationsPage() {
                 </label>
                 <textarea
                   value={formData.body}
-                  onChange={(e) => setFormData({...formData, body: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, body: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   rows={4}
                   required
@@ -399,7 +387,7 @@ export default function NotificationsPage() {
                   </label>
                   <select
                     value={formData.type}
-                    onChange={(e) => setFormData({...formData, type: e.target.value as NotificationType})}
+                    onChange={(e) => setFormData({ ...formData, type: e.target.value as NotificationType })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     {typeOptions.map(option => (
@@ -416,7 +404,7 @@ export default function NotificationsPage() {
                   </label>
                   <select
                     value={formData.priority}
-                    onChange={(e) => setFormData({...formData, priority: e.target.value as NotificationPriority})}
+                    onChange={(e) => setFormData({ ...formData, priority: e.target.value as NotificationPriority })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     {priorityOptions.map(option => (
@@ -435,7 +423,7 @@ export default function NotificationsPage() {
                 </label>
                 <select
                   value={formData.targetType}
-                  onChange={(e) => setFormData({...formData, targetType: e.target.value as NotificationTargetType})}
+                  onChange={(e) => setFormData({ ...formData, targetType: e.target.value as NotificationTargetType })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value={NotificationTargetType.ALL_USERS}>Tüm Kullanıcılar</option>
@@ -475,7 +463,7 @@ export default function NotificationsPage() {
                 <input
                   type="url"
                   value={formData.actionUrl}
-                  onChange={(e) => setFormData({...formData, actionUrl: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, actionUrl: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="https://example.com/page"
                 />
@@ -485,7 +473,7 @@ export default function NotificationsPage() {
               <div className="flex gap-2 pt-4">
                 <button
                   type="button"
-                  onClick={() => setShowForm(false)}
+                  onClick={() => setShowModal(false)}
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                   disabled={loading}
                 >

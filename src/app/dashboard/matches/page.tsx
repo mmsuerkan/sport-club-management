@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { 
-  Calendar, 
-  Clock, 
-  Users, 
-  MapPin, 
+import {
+  Calendar,
+  Clock,
+  Users,
+  MapPin,
   Search,
   Plus,
   Edit,
@@ -21,18 +21,19 @@ import {
   Star
 } from 'lucide-react';
 import { db } from '@/lib/firebase/config';
-import { 
-  collection, 
-  doc, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
+import {
+  collection,
+  doc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
   query,
   orderBy,
   Timestamp,
   getDocs
 } from 'firebase/firestore';
 import { createListener } from '@/lib/firebase/listener-utils';
+import PageTitle from '@/components/page-title';
 
 interface Match {
   id: string;
@@ -135,11 +136,11 @@ export default function MatchesPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [currentView, setCurrentView] = useState<'grid' | 'list' | 'calendar'>('grid');
-  
+
   // Player stats states
   const [playerStats, setPlayerStats] = useState<PlayerStats[]>([]);
   const [matchEvents, setMatchEvents] = useState<MatchEvent[]>([]);
-  
+
   // Form states for player stats
   const [newPlayerStat, setNewPlayerStat] = useState<Partial<PlayerStats>>({
     team: 'home',
@@ -164,7 +165,7 @@ export default function MatchesPage() {
     flagrantFouls: 0,
     rating: 6.0
   });
-  
+
   // Form states for match events
   const [newEvent, setNewEvent] = useState<Partial<MatchEvent>>({
     type: 'field_goal',
@@ -236,7 +237,7 @@ export default function MatchesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       const matchData: Partial<Match> = {
         homeTeam: formData.homeTeam,
@@ -255,19 +256,19 @@ export default function MatchesPage() {
       if (formData.homeScore && formData.homeScore.trim() !== '') {
         matchData.homeScore = parseInt(formData.homeScore);
       }
-      
+
       if (formData.awayScore && formData.awayScore.trim() !== '') {
         matchData.awayScore = parseInt(formData.awayScore);
       }
-      
+
       if (formData.referee && formData.referee.trim() !== '') {
         matchData.referee = formData.referee;
       }
-      
+
       if (formData.notes && formData.notes.trim() !== '') {
         matchData.notes = formData.notes;
       }
-      
+
       if (formData.attendance && formData.attendance.trim() !== '') {
         matchData.attendance = parseInt(formData.attendance);
       }
@@ -276,14 +277,14 @@ export default function MatchesPage() {
       if (playerStats.length > 0) {
         matchData.playerStats = playerStats;
       }
-      
+
       if (matchEvents.length > 0) {
         matchData.events = matchEvents;
       }
 
       if (editingMatch) {
         await updateDoc(doc(db, 'matches', editingMatch.id), matchData);
-        
+
         // Aktivite log'u ekle
         await addActivityLog(
           'match',
@@ -295,7 +296,7 @@ export default function MatchesPage() {
           ...matchData,
           createdAt: Timestamp.now()
         });
-        
+
         // Aktivite log'u ekle
         await addActivityLog(
           'match',
@@ -345,7 +346,7 @@ export default function MatchesPage() {
     };
 
     setPlayerStats([...playerStats, stat]);
-    
+
     // Reset form
     setNewPlayerStat({
       team: 'home',
@@ -395,7 +396,7 @@ export default function MatchesPage() {
     };
 
     setMatchEvents([...matchEvents, event]);
-    
+
     // Reset form
     setNewEvent({
       type: 'field_goal',
@@ -455,26 +456,26 @@ export default function MatchesPage() {
       notes: match.notes || '',
       attendance: match.attendance?.toString() || ''
     });
-    
+
     // Load existing player stats and events if available
     if (match.statistics?.homeStats || match.statistics?.awayStats) {
       // You can load team stats here if needed
     }
-    
+
     // Load player stats if available
     if (match.playerStats) {
       setPlayerStats(match.playerStats);
     } else {
       setPlayerStats([]);
     }
-    
+
     // Load match events if available
     if (match.events) {
       setMatchEvents(match.events);
     } else {
       setMatchEvents([]);
     }
-    
+
     setShowModal(true);
   };
 
@@ -498,7 +499,7 @@ export default function MatchesPage() {
     setEditingMatch(null);
     setPlayerStats([]);
     setMatchEvents([]);
-    
+
     // Reset player stat form
     setNewPlayerStat({
       team: 'home',
@@ -523,7 +524,7 @@ export default function MatchesPage() {
       flagrantFouls: 0,
       rating: 6.0
     });
-    
+
     // Reset event form
     setNewEvent({
       type: 'field_goal',
@@ -567,13 +568,13 @@ export default function MatchesPage() {
 
   const filteredMatches = matches.filter(match => {
     const matchesSearch = match.homeTeam.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         match.awayTeam.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         match.league.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         match.venue.toLowerCase().includes(searchTerm.toLowerCase());
-    
+      match.awayTeam.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      match.league.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      match.venue.toLowerCase().includes(searchTerm.toLowerCase());
+
     const matchesStatus = statusFilter === 'all' || match.status === statusFilter;
     const matchesType = typeFilter === 'all' || match.matchType === typeFilter;
-    
+
     return matchesSearch && matchesStatus && matchesType;
   });
 
@@ -597,29 +598,16 @@ export default function MatchesPage() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      
+    <div>
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <Calendar className="h-6 w-6 text-white" />
-              </div>
-              Maç Takvimi
-            </h1>
-            <p className="text-gray-600 mt-2">Tüm maçları yönetin, sonuçları takip edin ve istatistikleri görüntüleyin</p>
-          </div>
-          <button
-            onClick={() => setShowModal(true)}
-            className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-300 transform hover:scale-105 flex items-center gap-2"
-          >
-            <Plus className="h-5 w-5" />
-            Yeni Maç Ekle
-          </button>
-        </div>
-      </div>
+      <PageTitle
+        setEditingUser={undefined}
+        setShowModal={setShowModal}
+        pageTitle="Maç Takvimi"
+        pageIcon={<Calendar />}
+        pageDescription="Tüm maçları yönetebilir, sonuçları takip edebilir ve istatistikleri görüntüleyebilirsiniz."
+        firstButtonText="Yeni Maç Takvimi Ekle"
+      />
 
       {/* İstatistik Kartları */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -717,17 +705,15 @@ export default function MatchesPage() {
           <div className="flex bg-gray-100 rounded-lg p-1">
             <button
               onClick={() => setCurrentView('grid')}
-              className={`px-3 py-1 rounded-md transition-colors ${
-                currentView === 'grid' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600'
-              }`}
+              className={`px-3 py-1 rounded-md transition-colors ${currentView === 'grid' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600'
+                }`}
             >
               Grid
             </button>
             <button
               onClick={() => setCurrentView('list')}
-              className={`px-3 py-1 rounded-md transition-colors ${
-                currentView === 'list' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600'
-              }`}
+              className={`px-3 py-1 rounded-md transition-colors ${currentView === 'list' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600'
+                }`}
             >
               Liste
             </button>
@@ -763,7 +749,7 @@ export default function MatchesPage() {
                     <h3 className="font-bold text-lg text-gray-900 mb-1">{match.homeTeam}</h3>
                     <span className="text-sm text-gray-500">Ev Sahibi</span>
                   </div>
-                  
+
                   <div className="flex items-center gap-4 mx-6">
                     {match.status === 'finished' || match.status === 'live' ? (
                       <div className="text-center">
@@ -820,7 +806,7 @@ export default function MatchesPage() {
                     <BarChart3 className="h-4 w-4" />
                     İstatistikler
                   </button>
-                  
+
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleEdit(match)}
@@ -849,13 +835,13 @@ export default function MatchesPage() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Maç</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tarih & Saat</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mekan</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lig</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Durum</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Skor</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksiyonlar</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase ">Maç</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase ">Tarih & Saat</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase ">Mekan</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase ">Lig</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase ">Durum</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase ">Skor</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase ">Aksiyonlar</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -939,7 +925,7 @@ export default function MatchesPage() {
                 {editingMatch ? 'Maçı Düzenle' : 'Yeni Maç Ekle'}
               </h3>
             </div>
-            
+
             <form onSubmit={handleSubmit} className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Ev Sahibi Takım */}
@@ -1156,7 +1142,7 @@ export default function MatchesPage() {
               {/* Oyuncu İstatistikleri ve Olaylar Sekmesi */}
               <div className="mt-8 border-t border-gray-200 pt-6">
                 <h4 className="text-lg font-semibold text-gray-900 mb-4">Detaylı İstatistikler ve Olaylar</h4>
-                
+
                 {/* Sekme Butonları */}
                 <div className="flex gap-3 mb-6">
                   <button
@@ -1265,7 +1251,7 @@ export default function MatchesPage() {
                 </p>
               </div>
             </div>
-            
+
             <div className="p-6">
               {/* Skor */}
               {(selectedMatch.status === 'finished' || selectedMatch.status === 'live') && (
@@ -1465,12 +1451,12 @@ export default function MatchesPage() {
                 </button>
               </div>
             </div>
-            
+
             <div className="p-6">
               {/* Yeni Oyuncu Ekleme Formu */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
                 <h4 className="text-lg font-semibold text-blue-900 mb-4">Yeni Oyuncu İstatistiği Ekle</h4>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {/* Oyuncu Seçimi */}
                   <div className="md:col-span-2">
@@ -1773,7 +1759,7 @@ export default function MatchesPage() {
               {/* Mevcut Oyuncu İstatistikleri */}
               <div>
                 <h4 className="text-lg font-semibold text-gray-900 mb-4">Kayıtlı Oyuncular ({playerStats.length})</h4>
-                
+
                 {playerStats.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
                     <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
@@ -1802,7 +1788,7 @@ export default function MatchesPage() {
                             </button>
                           </div>
                         </div>
-                        
+
                         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 text-sm">
                           <div className="text-center">
                             <p className="text-gray-500">Dakika</p>
@@ -1866,12 +1852,12 @@ export default function MatchesPage() {
                 </button>
               </div>
             </div>
-            
+
             <div className="p-6">
               {/* Yeni Olay Ekleme Formu */}
               <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
                 <h4 className="text-lg font-semibold text-green-900 mb-4">Yeni Olay Ekle</h4>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Olay Tipi */}
                   <div>
@@ -1990,7 +1976,7 @@ export default function MatchesPage() {
               {/* Mevcut Olaylar */}
               <div>
                 <h4 className="text-lg font-semibold text-gray-900 mb-4">Maç Olayları ({matchEvents.length})</h4>
-                
+
                 {matchEvents.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
                     <Activity className="h-12 w-12 mx-auto mb-4 text-gray-300" />

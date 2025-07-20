@@ -21,7 +21,7 @@ export default function DashboardLayout({
       <div className="flex-1 flex flex-col">
         <Header onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
         
-        <main className="flex-1 p-4">
+        <main className="flex-1 p-6">
           <div className="h-full">
             {children}
           </div>

@@ -2,16 +2,18 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { 
-  getAllUsers, 
-  createUserByAdmin, 
-  updateUserData, 
-  deleteUser, 
+import {
+  getAllUsers,
+  createUserByAdmin,
+  updateUserData,
+  deleteUser,
   deactivateUser,
   UserRole,
-  UserData 
+  UserData
 } from '@/lib/firebase/auth';
-import { Plus, Edit, Trash2, Search, Filter, UserCheck, UserX } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Filter, UserCheck, UserX, XCircle, Edit2, UserCog } from 'lucide-react';
+import ModalTitle from '@/components/modal-title';
+import PageTitle from '@/components/page-title';
 
 interface UserWithId extends UserData {
   id: string;
@@ -75,7 +77,7 @@ export default function UsersPage() {
 
   const filteredUsers = users.filter(userData => {
     const matchesSearch = (userData.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (userData.email || '').toLowerCase().includes(searchTerm.toLowerCase());
+      (userData.email || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = roleFilter === 'ALL' || userData.role === roleFilter;
     return matchesSearch && matchesRole;
   });
@@ -151,7 +153,7 @@ export default function UsersPage() {
           });
         }
       }
-      
+
       setShowModal(false);
       setEditingUser(null);
       resetForm();
@@ -208,6 +210,13 @@ export default function UsersPage() {
     });
   };
 
+  
+  const handleCancel = () => {
+    setShowModal(false);
+    setEditingUser(null);
+    resetForm();
+  };
+
   const getRoleColor = (role: UserRole) => {
     switch (role) {
       case UserRole.ADMIN:
@@ -247,25 +256,16 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div>
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Kullanıcı Yönetimi</h1>
-          <p className="text-gray-600">Sistem kullanıcılarını yönetin</p>
-        </div>
-        <button
-          onClick={() => {
-            setEditingUser(null);
-            resetForm();
-            setShowModal(true);
-          }}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
-        >
-          <Plus size={20} />
-          Yeni Kullanıcı
-        </button>
-      </div>
+      <PageTitle
+        setEditingUser={setEditingUser}
+        setShowModal={setShowModal}
+        pageTitle="Kullanıcı Yönetimi"
+        pageDescription="Sistem kullanıcılarını yönetebilirsiniz."
+        firstButtonText="Yeni Kullanıcı Ekle"
+        pageIcon={<UserCog />}
+      />
 
       {/* Filters */}
       <div className="flex gap-4 items-center">
@@ -293,28 +293,28 @@ export default function UsersPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-lg border">
-          <div className="text-2xl font-bold text-gray-900">{users.length}</div>
-          <div className="text-sm text-gray-600">Toplam Kullanıcı</div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 my-5">
+        <div className="bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl p-6 border border-slate-200">
+          <div className="mb-1 text-3xl font-bold text-slate-600">{users.length}</div>
+          <div className="text-sm text-slate-700">Toplam Kullanıcı</div>
         </div>
-        <div className="bg-white p-4 rounded-lg border">
-          <div className="text-2xl font-bold text-red-600">
+        <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-2xl p-6 border border-red-200">
+          <div className="mb-1 text-3xl font-bold text-red-600">
             {users.filter(u => u.role === UserRole.ADMIN).length}
           </div>
-          <div className="text-sm text-gray-600">Yönetici</div>
+          <div className="text-sm text-red-700">Yönetici</div>
         </div>
-        <div className="bg-white p-4 rounded-lg border">
-          <div className="text-2xl font-bold text-blue-600">
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 border border-blue-200">
+          <div className="mb-1 text-3xl font-bold text-blue-600">
             {users.filter(u => u.role === UserRole.TRAINER).length}
           </div>
-          <div className="text-sm text-gray-600">Antrenör</div>
+          <div className="text-sm text-blue-700">Antrenör</div>
         </div>
-        <div className="bg-white p-4 rounded-lg border">
-          <div className="text-2xl font-bold text-green-600">
+        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-6 border border-green-200">
+          <div className="mb-1 text-3xl font-bold text-green-600">
             {users.filter(u => u.isActive).length}
           </div>
-          <div className="text-sm text-gray-600">Aktif</div>
+          <div className="text-sm text-green-700">Aktif</div>
         </div>
       </div>
 
@@ -324,22 +324,22 @@ export default function UsersPage() {
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
                   Kullanıcı
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
                   E-posta
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
                   Rol
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
                   Telefon
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
                   Durum
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
                   İşlemler
                 </th>
               </tr>
@@ -359,9 +359,16 @@ export default function UsersPage() {
                           {userData.name || 'İsimsiz Kullanıcı'}
                         </div>
                         <div className="text-sm text-gray-500">
-                          {userData.createdAt ? 
-                            new Date(userData.createdAt.seconds ? userData.createdAt.seconds * 1000 : userData.createdAt).toLocaleDateString('tr-TR') 
-                            : 'Tarih belirtilmemiş'}
+                          {userData.createdAt
+                            ? (() => {
+                                if (userData.createdAt && typeof userData.createdAt === 'object' && typeof (userData.createdAt as any).toDate === 'function') {
+                                  return (userData.createdAt as any).toDate().toLocaleDateString('tr-TR');
+                                } else {
+                                  return new Date(userData.createdAt).toLocaleDateString('tr-TR');
+                                }
+                              })()
+                            : 'Tarih belirtilmemiş'
+                        }
                         </div>
                       </div>
                     </div>
@@ -378,9 +385,8 @@ export default function UsersPage() {
                     {userData.phone || '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      userData.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                    }`}>
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${userData.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}>
                       {userData.isActive ? 'Aktif' : 'Pasif'}
                     </span>
                   </td>
@@ -390,7 +396,7 @@ export default function UsersPage() {
                         onClick={() => handleEdit(userData)}
                         className="text-blue-600 hover:text-blue-900"
                       >
-                        <Edit size={16} />
+                        <Edit2 size={16} />
                       </button>
                       <button
                         onClick={() => handleToggleActive(userData.id, userData.isActive)}
@@ -415,12 +421,12 @@ export default function UsersPage() {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">
-              {editingUser ? 'Kullanıcı Düzenle' : 'Yeni Kullanıcı Ekle'}
-            </h2>
-            
+        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-[9999] p-4" onClick={handleCancel}>
+          <div className="bg-white rounded-2xl p-8 w-full max-w-lg shadow-2xl border border-gray-100 transform transition-all" onClick={(e) => e.stopPropagation()}>
+            <ModalTitle
+              modalTitle={editingUser ? 'Kullanıcı Düzenle' : 'Yeni Kullanıcı Ekle'}
+              setShowModal={setShowModal}
+            />
             <form onSubmit={handleSubmit} className="space-y-4">
               {!editingUser && (
                 <>
@@ -431,7 +437,7 @@ export default function UsersPage() {
                     <input
                       type="email"
                       value={formData.email}
-                      onChange={(e) => setFormData({...formData, email: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md"
                       required
                     />
@@ -444,7 +450,7 @@ export default function UsersPage() {
                     <input
                       type="password"
                       value={formData.password}
-                      onChange={(e) => setFormData({...formData, password: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md"
                       required
                       minLength={6}
@@ -459,7 +465,7 @@ export default function UsersPage() {
                 </label>
                 <select
                   value={formData.role}
-                  onChange={(e) => setFormData({...formData, role: e.target.value as UserRole, studentId: '', trainerId: ''})}
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole, studentId: '', trainerId: '' })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 >
                   <option value={UserRole.ADMIN}>Yönetici</option>
@@ -480,35 +486,35 @@ export default function UsersPage() {
                       const hasUserId = t.userId && t.userId.trim() !== '';
                       return !hasUserId;
                     });
-                    
+
                     if (availableTrainers.length === 0) {
                       return (
                         <p className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
-                          Tüm antrenör kayıtları zaten bir kullanıcı hesabıyla ilişkilendirilmiş. 
+                          Tüm antrenör kayıtları zaten bir kullanıcı hesabıyla ilişkilendirilmiş.
                           Önce yeni bir antrenör kaydı oluşturmanız gerekiyor.
                         </p>
                       );
                     }
-                    
+
                     return (
-                    <>
-                      <select
-                        value={formData.trainerId}
-                        onChange={(e) => setFormData({...formData, trainerId: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                        required
-                      >
-                        <option value="">Antrenör seçin...</option>
-                        {availableTrainers.map((trainer) => (
-                          <option key={trainer.id} value={trainer.id}>
-                            {trainer.fullName || trainer.name}
-                          </option>
-                        ))}
-                      </select>
-                      <p className="text-sm text-gray-500 mt-1">
-                        Bu kullanıcı hesabı seçilen antrenör kaydıyla ilişkilendirilecek
-                      </p>
-                    </>
+                      <>
+                        <select
+                          value={formData.trainerId}
+                          onChange={(e) => setFormData({ ...formData, trainerId: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                          required
+                        >
+                          <option value="">Antrenör seçin...</option>
+                          {availableTrainers.map((trainer) => (
+                            <option key={trainer.id} value={trainer.id}>
+                              {trainer.fullName || trainer.name}
+                            </option>
+                          ))}
+                        </select>
+                        <p className="text-sm text-gray-500 mt-1">
+                          Bu kullanıcı hesabı seçilen antrenör kaydıyla ilişkilendirilecek
+                        </p>
+                      </>
                     );
                   })()}
                 </div>
@@ -522,14 +528,14 @@ export default function UsersPage() {
                   </label>
                   {students.filter(s => !s.parentId).length === 0 ? (
                     <p className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
-                      Tüm öğrenci kayıtları zaten bir veli hesabıyla ilişkilendirilmiş. 
+                      Tüm öğrenci kayıtları zaten bir veli hesabıyla ilişkilendirilmiş.
                       Önce yeni bir öğrenci kaydı oluşturmanız gerekiyor.
                     </p>
                   ) : (
                     <>
                       <select
                         value={formData.studentId}
-                        onChange={(e) => setFormData({...formData, studentId: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md"
                         required
                       >
@@ -556,14 +562,14 @@ export default function UsersPage() {
                   </label>
                   {students.filter(s => !s.userId).length === 0 ? (
                     <p className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
-                      Tüm öğrenci kayıtları zaten bir kullanıcı hesabıyla ilişkilendirilmiş. 
+                      Tüm öğrenci kayıtları zaten bir kullanıcı hesabıyla ilişkilendirilmiş.
                       Önce yeni bir öğrenci kaydı oluşturmanız gerekiyor.
                     </p>
                   ) : (
                     <>
                       <select
                         value={formData.studentId}
-                        onChange={(e) => setFormData({...formData, studentId: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md"
                         required
                       >
@@ -587,7 +593,7 @@ export default function UsersPage() {
                 <input
                   type="checkbox"
                   checked={formData.isActive}
-                  onChange={(e) => setFormData({...formData, isActive: e.target.checked})}
+                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
                   className="mr-2"
                 />
                 <label className="text-sm font-medium text-gray-700">

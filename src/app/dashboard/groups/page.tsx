@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, Edit2, Trash2, UsersIcon, Clock, Building } from 'lucide-react';
+import { Edit2, Trash2, UsersIcon, Clock, Building } from 'lucide-react';
 import { collection, getDocs, doc, setDoc, deleteDoc, query, where, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
+import PageTitle from '@/components/page-title';
+import ModalTitle from '@/components/modal-title';
 
 interface Branch {
   id: string;
@@ -24,7 +26,7 @@ interface Group {
 export default function GroupsPage() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
-  const [showForm, setShowForm] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
   const [formData, setFormData] = useState({ name: '', branchId: '', time: '' });
   const [loading, setLoading] = useState(true);
@@ -114,7 +116,7 @@ export default function GroupsPage() {
       }
       
       setFormData({ name: '', branchId: '', time: '' });
-      setShowForm(false);
+      setShowModal(false);
       setEditingGroup(null);
       fetchGroups();
     } catch (error) {
@@ -125,7 +127,7 @@ export default function GroupsPage() {
   const handleEdit = (group: Group) => {
     setEditingGroup(group);
     setFormData({ name: group.name, branchId: group.branchId, time: group.time });
-    setShowForm(true);
+    setShowModal(true);
   };
 
   const handleDelete = async (groupId: string) => {
@@ -140,34 +142,29 @@ export default function GroupsPage() {
   };
 
   const handleCancel = () => {
-    setShowForm(false);
+    setShowModal(false);
     setEditingGroup(null);
     setFormData({ name: '', branchId: '', time: '' });
   };
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Gruplar</h1>
-          <p className="text-gray-600 mt-2">Antrenman gruplarını yönetin</p>
-        </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-        >
-          <Plus size={20} />
-          Yeni Grup
-        </button>
-      </div>
-
+      <PageTitle
+        setEditingUser={undefined}
+        setShowModal={setShowModal}
+        pageTitle="Gruplar"
+        pageDescription="Antrenman gruplarını yönetebilirsiniz."
+        firstButtonText="Yeni Grup Ekle"
+        pageIcon={<UsersIcon />}
+      />
       {/* Form Modal */}
-      {showForm && typeof document !== 'undefined' && createPortal(
+      {showModal && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-[9999] p-4" onClick={handleCancel}>
           <div className="bg-white rounded-2xl p-8 w-full max-w-lg shadow-2xl border border-gray-100 transform transition-all" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-xl font-semibold mb-4">
-              {editingGroup ? 'Grup Düzenle' : 'Yeni Grup Ekle'}
-            </h2>
+            <ModalTitle
+              modalTitle={editingGroup ? 'Grup Düzenle' : 'Yeni Grup Ekle'}
+              setShowModal={setShowModal}
+            />
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -254,19 +251,19 @@ export default function GroupsPage() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
                     Grup Adı
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
                     Şube
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
                     Antrenman Saati
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
                     Oluşturulma Tarihi
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase ">
                     İşlemler
                   </th>
                 </tr>

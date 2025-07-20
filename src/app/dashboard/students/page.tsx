@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, Edit2, Trash2, GraduationCap, Phone, Mail, MapPin, Building, Clock } from 'lucide-react';
+import { Edit2, Trash2, GraduationCap, Phone, Mail, Building, Clock } from 'lucide-react';
 import { collection, getDocs, doc, setDoc, deleteDoc, updateDoc, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
+import PageTitle from '@/components/page-title';
+import ModalTitle from '@/components/modal-title';
 
 interface Branch {
   id: string;
@@ -44,7 +46,7 @@ export default function StudentsPage() {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [filteredGroups, setFilteredGroups] = useState<Group[]>([]);
-  const [showForm, setShowForm] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [formData, setFormData] = useState({
     fullName: '',
@@ -87,7 +89,7 @@ export default function StudentsPage() {
   // Update student names when branches or groups change
   useEffect(() => {
     if (branches.length > 0 || groups.length > 0) {
-      setStudents(prevStudents => 
+      setStudents(prevStudents =>
         prevStudents.map(student => {
           const branch = branches.find(b => b.id === student.branchId);
           const group = groups.find(g => g.id === student.groupId);
@@ -164,7 +166,7 @@ export default function StudentsPage() {
     try {
       const selectedBranch = branches.find(b => b.id === formData.branchId);
       const selectedGroup = groups.find(g => g.id === formData.groupId);
-      
+
       const studentData = {
         ...formData,
         fullName: formData.fullName.trim(),
@@ -187,7 +189,7 @@ export default function StudentsPage() {
           ...studentData,
           updatedAt: new Date()
         });
-        
+
         // Aktivite log'u ekle
         await addActivityLog(
           'member',
@@ -201,7 +203,7 @@ export default function StudentsPage() {
           ...studentData,
           createdAt: new Date()
         });
-        
+
         // Aktivite log'u ekle
         await addActivityLog(
           'member',
@@ -209,7 +211,7 @@ export default function StudentsPage() {
           formData.fullName.trim()
         );
       }
-      
+
       resetForm();
       fetchStudents();
     } catch (error) {
@@ -234,7 +236,7 @@ export default function StudentsPage() {
       branchId: student.branchId,
       groupId: student.groupId
     });
-    setShowForm(true);
+    setShowModal(true);
   };
 
   const handleDelete = async (studentId: string) => {
@@ -249,7 +251,7 @@ export default function StudentsPage() {
   };
 
   const resetForm = () => {
-    setShowForm(false);
+    setShowModal(false);
     setEditingStudent(null);
     setFormData({
       fullName: '',
@@ -270,27 +272,23 @@ export default function StudentsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Öğrenciler</h1>
-          <p className="text-gray-600 mt-2">Öğrenci kayıtlarını yönetin</p>
-        </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-        >
-          <Plus size={20} />
-          Yeni Öğrenci
-        </button>
-      </div>
+      <PageTitle
+        setEditingUser={undefined}
+        setShowModal={setShowModal}
+        pageTitle="Öğrenciler"
+        pageDescription="Öğrenci kayıtlarını yönetebilirsiniz."
+        firstButtonText="Yeni Öğrenci Ekle"
+        pageIcon={<GraduationCap />}
+      />
 
       {/* Form Modal */}
-      {showForm && typeof document !== 'undefined' && createPortal(
+      {showModal && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-[9999] p-4" onClick={resetForm}>
           <div className="bg-white rounded-2xl p-8 w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-100 transform transition-all" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-xl font-semibold mb-4">
-              {editingStudent ? 'Öğrenci Düzenle' : 'Yeni Öğrenci Kayıt'}
-            </h2>
+            <ModalTitle
+              modalTitle={editingStudent ? 'Öğrenci Düzenle' : 'Yeni Öğrenci Ekle'}
+              setShowModal={setShowModal}
+            />
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Temel Bilgiler */}
@@ -514,19 +512,19 @@ export default function StudentsPage() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
                     Öğrenci
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
                     İletişim
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
                     Şube & Grup
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
                     Kayıt Tarihi
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase ">
                     İşlemler
                   </th>
                 </tr>

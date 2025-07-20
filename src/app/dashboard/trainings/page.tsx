@@ -33,6 +33,7 @@ import {
   Timestamp
 } from 'firebase/firestore';
 import { createListener } from '@/lib/firebase/listener-utils';
+import PageTitle from '@/components/page-title';
 
 interface Training {
   id: string;
@@ -568,60 +569,63 @@ export default function TrainingsPage() {
   }
 
   return (
-    <div className="p-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Antrenmanlar</h1>
-        <p className="text-gray-600">Tüm antrenmanları görüntüleyin ve yönetin</p>
-      </div>
+    <div>
+      <PageTitle
+        setEditingUser={undefined}
+        setShowModal={setShowModal}
+        pageTitle="Antrenmanlar"
+        pageDescription="Tüm antrenmanları görüntüleyebilir ve yönetebilirsiniz."
+        pageIcon={<Dumbbell />}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 border border-blue-200">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <CalendarDays className="h-6 w-6 text-blue-600" />
+            <div className="p-3 bg-blue-500 rounded-lg">
+              <CalendarDays className="h-6 w-6 text-white" />
             </div>
-            <span className="text-sm text-gray-500">Bu Ay</span>
+            <span className="text-blue-600 font-medium text-sm">Bu Ay</span>
           </div>
-          <h3 className="text-2xl font-bold text-gray-900">
+          <h3 className="text-3xl font-bold text-blue-900 mb-1">
             {expandedTrainings.filter(t => new Date(t.date).getMonth() === new Date().getMonth()).length}
           </h3>
-          <p className="text-gray-600 text-sm mt-1">Toplam Antrenman</p>
+          <p className="text-blue-700 text-sm">Toplam Antrenman</p>
         </div>
 
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-6 border border-green-200">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-green-100 rounded-lg">
-              <Timer className="h-6 w-6 text-green-600" />
+            <div className="p-3 bg-green-500 rounded-lg">
+              <Timer className="h-6 w-6 text-white" />
             </div>
-            <span className="text-sm text-gray-500">Bugün</span>
+            <span className="text-green-600 font-medium text-sm">Bugün</span>
           </div>
-          <h3 className="text-2xl font-bold text-gray-900">
+          <h3 className="text-3xl font-bold text-green-900 mb-1">
             {expandedTrainings.filter(t => t.date === new Date().toISOString().split('T')[0] && t.status === 'ongoing').length}
           </h3>
-          <p className="text-gray-600 text-sm mt-1">Devam Eden</p>
+          <p className="text-green-700 text-sm">Devam Eden</p>
         </div>
 
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-6 border border-purple-200">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-purple-100 rounded-lg">
-              <UserCheck className="h-6 w-6 text-purple-600" />
+            <div className="p-3 bg-purple-500 rounded-lg">
+              <UserCheck className="h-6 w-6 text-white" />
             </div>
-            <span className="text-sm text-gray-500">Aktif</span>
+            <span className="text-purple-500 font-medium text-sm">Aktif</span>
           </div>
-          <h3 className="text-2xl font-bold text-gray-900">
+          <h3 className="text-3xl font-bold text-purple-900">
             {expandedTrainings.filter(t => t.status === 'scheduled').length}
           </h3>
-          <p className="text-gray-600 text-sm mt-1">Planlanmış</p>
+          <p className="text-purple-600 text-sm mt-1">Planlanmış</p>
         </div>
 
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+        <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl p-6 border border-orange-200">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-orange-100 rounded-lg">
-              <Users className="h-6 w-6 text-orange-600" />
+            <div className="p-3 bg-orange-500 rounded-lg">
+              <Users className="h-6 w-6 text-white" />
             </div>
-            <span className="text-sm text-gray-500">Kapasite</span>
+            <span className="text-sm text-orange-500 font-medium">Kapasite</span>
           </div>
-          <h3 className="text-2xl font-bold text-gray-900">
+          <h3 className="text-2xl font-bold text-orange-900">
             {expandedTrainings.reduce((acc, t) => acc + t.currentParticipants, 0)}
           </h3>
           <p className="text-gray-600 text-sm mt-1">Toplam Katılımcı</p>

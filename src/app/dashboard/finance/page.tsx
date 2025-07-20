@@ -10,6 +10,7 @@ import {
 import TransactionList from '@/components/finance/TransactionList';
 import BudgetList from '@/components/finance/BudgetList';
 import FinanceOverview from '@/components/finance/FinanceOverview';
+import PageTitle from '@/components/page-title';
 
 export default function FinancePage() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -21,20 +22,14 @@ export default function FinancePage() {
   ];
 
   return (
-    <div className="p-6 space-y-6">
+    <div>
       {/* Header */}
-      <div className="flex items-center">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-            <DollarSign className="h-6 w-6 text-green-600" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Finansal Yönetim</h1>
-            <p className="text-gray-600">Gelir, gider ve bütçe yönetimi ile kapsamlı mali raporlama</p>
-          </div>
-        </div>
-      </div>
-
+      <PageTitle
+        setEditingUser={undefined}
+        pageTitle="Finansal Yönetim"
+        pageDescription="Gelir, gider ve bütçe yönetimi ile kapsamlı mali raporlama hazırlayabilirsiniz."
+        pageIcon={<DollarSign />}
+      />
       {/* Tabs */}
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-8">

@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, Edit2, Trash2, Building, MapPin } from 'lucide-react';
+import { Edit2, Trash2, Building, MapPin } from 'lucide-react';
 import { collection, getDocs, doc, setDoc, deleteDoc, query, where, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
+import ModalTitle from '@/components/modal-title';
+import PageTitle from '@/components/page-title';
 
 interface Branch {
   id: string;
@@ -15,7 +17,7 @@ interface Branch {
 
 export default function BranchesPage() {
   const [branches, setBranches] = useState<Branch[]>([]);
-  const [showForm, setShowForm] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [editingBranch, setEditingBranch] = useState<Branch | null>(null);
   const [formData, setFormData] = useState({ name: '', address: '' });
   const [loading, setLoading] = useState(true);
@@ -49,7 +51,7 @@ export default function BranchesPage() {
       if (editingBranch) {
         // Güncelleme
         const batch = writeBatch(db);
-        
+
         // Şube bilgisini güncelle
         const branchRef = doc(db, 'branches', editingBranch.id);
         batch.update(branchRef, {
@@ -57,33 +59,33 @@ export default function BranchesPage() {
           address: formData.address.trim(),
           updatedAt: new Date()
         });
-        
+
         // İlgili öğrencilerin branchName'ini güncelle
         const studentsQuery = query(
           collection(db, 'students'),
           where('branchId', '==', editingBranch.id)
         );
         const studentsSnapshot = await getDocs(studentsQuery);
-        
+
         studentsSnapshot.docs.forEach((studentDoc) => {
           batch.update(studentDoc.ref, {
             branchName: formData.name.trim()
           });
         });
-        
+
         // İlgili grupların branchName'ini güncelle
         const groupsQuery = query(
           collection(db, 'groups'),
           where('branchId', '==', editingBranch.id)
         );
         const groupsSnapshot = await getDocs(groupsQuery);
-        
+
         groupsSnapshot.docs.forEach((groupDoc) => {
           batch.update(groupDoc.ref, {
             branchName: formData.name.trim()
           });
         });
-        
+
         await batch.commit();
       } else {
         // Yeni ekleme
@@ -94,9 +96,9 @@ export default function BranchesPage() {
           createdAt: new Date()
         });
       }
-      
+
       setFormData({ name: '', address: '' });
-      setShowForm(false);
+      setShowModal(false);
       setEditingBranch(null);
       fetchBranches();
     } catch (error) {
@@ -107,7 +109,7 @@ export default function BranchesPage() {
   const handleEdit = (branch: Branch) => {
     setEditingBranch(branch);
     setFormData({ name: branch.name, address: branch.address });
-    setShowForm(true);
+    setShowModal(true);
   };
 
   const handleDelete = async (branchId: string) => {
@@ -122,34 +124,29 @@ export default function BranchesPage() {
   };
 
   const handleCancel = () => {
-    setShowForm(false);
+    setShowModal(false);
     setEditingBranch(null);
     setFormData({ name: '', address: '' });
   };
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Şubeler</h1>
-          <p className="text-gray-600 mt-2">Klüp şubelerini yönetin</p>
-        </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-        >
-          <Plus size={20} />
-          Yeni Şube
-        </button>
-      </div>
-
+      <PageTitle
+        setEditingUser={undefined}
+        setShowModal={setShowModal}
+        pageTitle="Şubeler"
+        pageDescription="Kulüp şubelerini yönetebilirsiniz."
+        firstButtonText="Yeni Şube Ekle"
+        pageIcon={<Building />}
+      />
       {/* Form Modal */}
-      {showForm && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-[9999] p-4" onClick={handleCancel}>
+      {showModal && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-[9999] p-4" onClick={handleCancel}>
+          <ModalTitle
+            modalTitle={editingBranch ? 'Şube Düzenle' : 'Yeni Şube Ekle'}
+            setShowModal={setShowModal}
+          />
           <div className="bg-white rounded-2xl p-8 w-full max-w-lg shadow-2xl border border-gray-100 transform transition-all" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-xl font-semibold mb-4">
-              {editingBranch ? 'Şube Düzenle' : 'Yeni Şube Ekle'}
-            </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -218,16 +215,16 @@ export default function BranchesPage() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
                     Şube Adı
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
                     Adres
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
                     Oluşturulma Tarihi
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase ">
                     İşlemler
                   </th>
                 </tr>

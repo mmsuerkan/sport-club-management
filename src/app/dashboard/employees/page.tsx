@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, Edit2, Trash2, UserCheck, Phone, Mail, Briefcase, Clock } from 'lucide-react';
+import { Edit2, Trash2, UserCheck, Phone, Mail, Briefcase, Clock, UsersIcon } from 'lucide-react';
 import { collection, getDocs, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
+import PageTitle from '@/components/page-title';
+import ModalTitle from '@/components/modal-title';
 
 interface Branch {
   id: string;
@@ -29,7 +31,7 @@ interface Employee {
 export default function EmployeesPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
-  const [showForm, setShowForm] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [formData, setFormData] = useState({
     fullName: '',
@@ -52,7 +54,7 @@ export default function EmployeesPage() {
   // Update employee branch names when branches change
   useEffect(() => {
     if (branches.length > 0) {
-      setEmployees(prevEmployees => 
+      setEmployees(prevEmployees =>
         prevEmployees.map(employee => {
           const branch = branches.find(b => b.id === employee.branchId);
           return {
@@ -100,7 +102,7 @@ export default function EmployeesPage() {
 
     try {
       const selectedBranch = branches.find(b => b.id === formData.branchId);
-      
+
       const employeeData = {
         ...formData,
         fullName: formData.fullName.trim(),
@@ -127,7 +129,7 @@ export default function EmployeesPage() {
           createdAt: new Date()
         });
       }
-      
+
       resetForm();
       fetchEmployees();
     } catch (error) {
@@ -148,7 +150,7 @@ export default function EmployeesPage() {
       branchId: employee.branchId || '',
       notes: employee.notes || ''
     });
-    setShowForm(true);
+    setShowModal(true);
   };
 
   const handleDelete = async (employeeId: string) => {
@@ -163,7 +165,7 @@ export default function EmployeesPage() {
   };
 
   const resetForm = () => {
-    setShowForm(false);
+    setShowModal(false);
     setEditingEmployee(null);
     setFormData({
       fullName: '',
@@ -180,27 +182,23 @@ export default function EmployeesPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Çalışanlar</h1>
-          <p className="text-gray-600 mt-2">Çalışan kayıtlarını yönetin</p>
-        </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-        >
-          <Plus size={20} />
-          Yeni Çalışan
-        </button>
-      </div>
+      <PageTitle
+        setEditingUser={undefined}
+        setShowModal={setShowModal}
+        pageTitle="Çalışanlar"
+        pageDescription="Kulüp çalışanlarını yönetebilirsiniz."
+        firstButtonText="Yeni Çalışan Ekle"
+        pageIcon={<UsersIcon />}
+      />
 
       {/* Form Modal */}
-      {showForm && typeof document !== 'undefined' && createPortal(
+      {showModal && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-[9999] p-4" onClick={resetForm}>
           <div className="bg-white rounded-2xl p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-100 transform transition-all" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-xl font-semibold mb-4">
-              {editingEmployee ? 'Çalışan Düzenle' : 'Yeni Çalışan Kayıt'}
-            </h2>
+            <ModalTitle
+              modalTitle={editingEmployee ? 'Çalışan Düzenle' : 'Yeni Çalışan Ekle'}
+              setShowModal={setShowModal}
+            />
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Temel Bilgiler */}
@@ -393,19 +391,19 @@ export default function EmployeesPage() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
                     Çalışan
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
                     İletişim
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
                     Pozisyon & Şube
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
                     Başlama Tarihi
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase ">
                     İşlemler
                   </th>
                 </tr>

@@ -45,8 +45,9 @@ import {
   Star,
   UserPlus,
   CalendarDays,
-  User
-} from 'lucide-react';
+  User,
+  Activity} from 'lucide-react';
+import PageTitle from '@/components/page-title';
 
 interface Event {
   id: string;
@@ -349,30 +350,16 @@ export default function EventsPage() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div >
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-2">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-              Etkinlikler
-              <Sparkles className="h-8 w-8 text-yellow-500" />
-            </h1>
-            <p className="text-gray-600 mt-1">Kulüp etkinliklerini yönetin ve takip edin</p>
-          </div>
-          <button
-            onClick={() => {
-              resetForm();
-              setShowModal(true);
-            }}
-            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-          >
-            <Plus className="h-5 w-5" />
-            Yeni Etkinlik
-          </button>
-        </div>
-      </div>
-
+      <PageTitle
+        setEditingUser={undefined}
+        setShowModal={setShowModal}
+        pageTitle="Etkinlikler"
+        pageDescription="Kulüp etkinliklerini yönetebilir ve takip edebilirsiniz."
+        firstButtonText="Yeni Etkinlik Ekle"
+        pageIcon={<Activity />}
+      />
       {/* Filters and View Mode */}
       <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
         <div className="flex flex-col lg:flex-row gap-4">
@@ -590,22 +577,22 @@ export default function EventsPage() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
                     Etkinlik
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
                     Kategori
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
                     Tarih
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
                     Konum
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
                     Katılımcılar
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
                     İşlemler
                   </th>
                 </tr>
