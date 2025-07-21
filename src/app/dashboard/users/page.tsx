@@ -7,13 +7,13 @@ import {
   createUserByAdmin,
   updateUserData,
   deleteUser,
-  deactivateUser,
   UserRole,
   UserData
 } from '@/lib/firebase/auth';
-import { Plus, Edit, Trash2, Search, Filter, UserCheck, UserX, XCircle, Edit2, UserCog } from 'lucide-react';
+import { Trash2, Search, UserCheck, UserX, Edit2, UserCog } from 'lucide-react';
 import ModalTitle from '@/components/modal-title';
 import PageTitle from '@/components/page-title';
+import StatCard from '@/components/stat-card';
 
 interface UserWithId extends UserData {
   id: string;
@@ -294,28 +294,45 @@ export default function UsersPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 my-5">
-        <div className="bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl p-6 border border-slate-200">
-          <div className="mb-1 text-3xl font-bold text-slate-600">{users.length}</div>
-          <div className="text-sm text-slate-700">Toplam Kullanıcı</div>
-        </div>
-        <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-2xl p-6 border border-red-200">
-          <div className="mb-1 text-3xl font-bold text-red-600">
-            {users.filter(u => u.role === UserRole.ADMIN).length}
-          </div>
-          <div className="text-sm text-red-700">Yönetici</div>
-        </div>
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 border border-blue-200">
-          <div className="mb-1 text-3xl font-bold text-blue-600">
-            {users.filter(u => u.role === UserRole.TRAINER).length}
-          </div>
-          <div className="text-sm text-blue-700">Antrenör</div>
-        </div>
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-6 border border-green-200">
-          <div className="mb-1 text-3xl font-bold text-green-600">
-            {users.filter(u => u.isActive).length}
-          </div>
-          <div className="text-sm text-green-700">Aktif</div>
-        </div>
+
+
+        <StatCard
+          value={users.length}
+          subLabel="Toplam Kullanıcı"
+          subLabelTextColor="text-slate-700"
+          gradientFrom="from-slate-50"
+          gradientTo="to-slate-100"
+          borderColor="border-slate-200"
+          textColor='text-slate-600'
+        />
+        <StatCard
+          value={users.filter(u => u.role === UserRole.ADMIN).length}
+          subLabel="Yönetici"
+          subLabelTextColor="text-red-700"
+          gradientFrom="from-red-50"
+          gradientTo="to-red-100"
+          borderColor="border-red-200"
+          textColor='text-red-600'
+        />
+        <StatCard
+          value={users.filter(u => u.role === UserRole.TRAINER).length}
+          subLabel="Antrenör"
+          subLabelTextColor="text-blue-700"
+          gradientFrom="from-blue-50"
+          gradientTo="to-blue-100"
+          borderColor="border-blue-200"
+          textColor='text-blue-600'
+        />
+
+        <StatCard
+          value={users.filter(u => u.isActive).length}
+          subLabel="Aktif"
+          subLabelTextColor="text-green-700"
+          gradientFrom="from-green-50"
+          gradientTo="to-green-100"
+          borderColor="border-green-200"
+          textColor='text-green-600'
+        />
       </div>
 
       {/* Users Table */}

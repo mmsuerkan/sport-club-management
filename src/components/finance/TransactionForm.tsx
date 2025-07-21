@@ -276,7 +276,7 @@ export default function TransactionForm({ isOpen, onClose, onSuccess, editTransa
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
           {/* Transaction Type */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">

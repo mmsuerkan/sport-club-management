@@ -34,6 +34,7 @@ import {
 } from 'firebase/firestore';
 import { createListener } from '@/lib/firebase/listener-utils';
 import PageTitle from '@/components/page-title';
+import StatCard from '@/components/stat-card';
 
 interface Match {
   id: string;
@@ -611,51 +612,60 @@ export default function MatchesPage() {
 
       {/* İstatistik Kartları */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 border border-blue-200">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center">
-              <Calendar className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-sm text-blue-600 font-medium">Toplam</span>
-          </div>
-          <h3 className="text-3xl font-bold text-blue-900 mb-1">{stats.totalMatches}</h3>
-          <p className="text-blue-700 text-sm">Toplam Maç</p>
-        </div>
+        <StatCard
+          icon={<Calendar />}
+          label="Toplam"
+          labelTextColor="text-blue-600"
+          value={stats.totalMatches}
+          subLabel="Toplam Maç"
+          subLabelTextColor="text-blue-700"
+          gradientFrom="from-blue-50"
+          gradientTo="to-blue-100"
+          borderColor="border-blue-200"
+          iconBgColor="bg-blue-500"
+          textColor="text-blue-900"
+        />
+        <StatCard
+          icon={<Zap />}
+          label="Canlı"
+          labelTextColor="text-green-600"
+          value={stats.liveMatches}
+          subLabel="Devam Eden"
+          subLabelTextColor="text-green-700"
+          gradientFrom="from-green-50"
+          gradientTo="to-green-100"
+          borderColor="border-green-200"
+          iconBgColor="bg-green-500"
+          textColor="text-green-900"
+        />
+        <StatCard
+          icon={<Clock />}
+          label="Yaşlaşan"
+          labelTextColor="text-purple-600"
+          value={stats.upcomingMatches}
+          subLabel="Planlanmış"
+          subLabelTextColor="text-purple-700"
+          gradientFrom="from-purple-50"
+          gradientTo="to-purple-100"
+          borderColor="border-purple-200"
+          iconBgColor="bg-purple-500"
+          textColor="text-purple-900"
+        />
 
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-6 border border-green-200">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
-              <Zap className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-sm text-green-600 font-medium">Canlı</span>
-          </div>
-          <h3 className="text-3xl font-bold text-green-900 mb-1">{stats.liveMatches}</h3>
-          <p className="text-green-700 text-sm">Devam Eden</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-6 border border-purple-200">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center">
-              <Clock className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-sm text-purple-600 font-medium">Yaklaşan</span>
-          </div>
-          <h3 className="text-3xl font-bold text-purple-900 mb-1">{stats.upcomingMatches}</h3>
-          <p className="text-purple-700 text-sm">Planlanmış</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl p-6 border border-orange-200">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center">
-              <Trophy className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-sm text-orange-600 font-medium">Galibiyet</span>
-          </div>
-          <h3 className="text-3xl font-bold text-orange-900 mb-1">{stats.wins}</h3>
-          <p className="text-orange-700 text-sm">Kazanılan</p>
-        </div>
+        <StatCard
+          icon={<Trophy />}
+          label="Galibiyet"
+          labelTextColor="text-orange-600"
+          value={stats.wins}
+          subLabel="Kazanılan"
+          subLabelTextColor="text-orange-700"
+          gradientFrom="from-orange-50"
+          gradientTo="to-orange-100"
+          borderColor="border-orange-200"
+          iconBgColor="bg-orange-500"
+          textColor="text-orange-900"
+        />
       </div>
-
       {/* Filtreler ve Görünüm */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
         <div className="flex flex-col lg:flex-row gap-4">

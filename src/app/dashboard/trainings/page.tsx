@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { 
-  Calendar, 
-  Clock, 
-  Users, 
-  MapPin, 
-  User, 
+import {
+  Calendar,
+  Clock,
+  Users,
+  MapPin,
+  User,
   Search,
   ChevronLeft,
   ChevronRight,
@@ -22,18 +22,19 @@ import {
   X
 } from 'lucide-react';
 import { db } from '@/lib/firebase/config';
-import { 
-  collection, 
-  doc, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
+import {
+  collection,
+  doc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
   query,
   orderBy,
   Timestamp
 } from 'firebase/firestore';
 import { createListener } from '@/lib/firebase/listener-utils';
 import PageTitle from '@/components/page-title';
+import StatCard from '@/components/stat-card';
 
 interface Training {
   id: string;
@@ -129,10 +130,10 @@ export default function TrainingsPage() {
 
     const instances: RecurringTrainingInstance[] = [];
     const startDate = new Date(baseTraining.date);
-    
+
     // End date'i hesapla
     let endDate = maxEndDate;
-    
+
     // Eğer recurringEndDate varsa onu kullan
     if (baseTraining.recurringEndDate) {
       endDate = new Date(baseTraining.recurringEndDate);
@@ -140,17 +141,17 @@ export default function TrainingsPage() {
     // Eğer recurringCount varsa o kadar period hesapla
     else if (baseTraining.recurringCount && baseTraining.recurringCount > 0) {
       endDate = new Date(startDate);
-      const multiplier = baseTraining.recurringType === 'months' ? 
+      const multiplier = baseTraining.recurringType === 'months' ?
         baseTraining.recurringCount * 4 : // 4 hafta = 1 ay yaklaşık
         baseTraining.recurringCount;
-      
+
       endDate.setDate(endDate.getDate() + (multiplier * 7)); // Hafta cinsinden hesapla
     }
-    
-      
+
+
     // Tekrarlanan günlerin numara karşılıkları
     const recurringDayNumbers = baseTraining.recurringDays.map(day => {
-      switch(day) {
+      switch (day) {
         case 'Pazartesi': return 1;
         case 'Salı': return 2;
         case 'Çarşamba': return 3;
@@ -164,13 +165,13 @@ export default function TrainingsPage() {
 
     const iterDate = new Date(startDate);
     iterDate.setDate(iterDate.getDate() + 1); // Bir sonraki günden başla
-    
+
     while (iterDate <= endDate) {
       const dayOfWeek = iterDate.getDay();
-      
+
       if (recurringDayNumbers.includes(dayOfWeek as 0 | 1 | 2 | 3 | 4 | 5 | 6)) {
         const instanceDate = iterDate.toISOString().split('T')[0];
-        
+
         // Eğer bu tarih excludedDates listesinde varsa, instance oluşturma
         if (!baseTraining.excludedDates?.includes(instanceDate)) {
           instances.push({
@@ -183,10 +184,10 @@ export default function TrainingsPage() {
           });
         }
       }
-      
+
       iterDate.setDate(iterDate.getDate() + 1);
     }
-    
+
     return instances;
   };
 
@@ -199,21 +200,21 @@ export default function TrainingsPage() {
           ...doc.data()
         } as Training));
         setTrainings(trainingsData);
-        
+
         // Tekrarlanan antrenmanları generate et
         const expanded: (Training | RecurringTrainingInstance)[] = [];
         const endDate = new Date();
         endDate.setMonth(endDate.getMonth() + 6); // 6 ay ileri
-        
+
         trainingsData.forEach(training => {
           expanded.push(training);
-          
+
           if (training.isRecurring) {
             const instances = generateRecurringTrainings(training, endDate);
             expanded.push(...instances);
           }
         });
-        
+
         setExpandedTrainings(expanded);
         setLoading(false);
       }
@@ -275,7 +276,7 @@ export default function TrainingsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       const selectedGroup = groups.find(g => g.id === formData.groupId);
       const selectedBranch = branches.find(b => b.id === formData.branchId);
@@ -299,7 +300,7 @@ export default function TrainingsPage() {
       if (formData.isRecurring && formData.recurringCount && formData.recurringCount.trim()) {
         trainingData.recurringCount = parseInt(formData.recurringCount);
       }
-      
+
       if (formData.isRecurring && formData.recurringType) {
         trainingData.recurringType = formData.recurringType;
       }
@@ -314,7 +315,7 @@ export default function TrainingsPage() {
       if (editingTraining && editingTraining.id) {
         // Mevcut antrenmanı güncelle
         await updateDoc(doc(db, 'trainings', editingTraining.id), trainingData);
-        
+
         // Aktivite log'u ekle
         await addActivityLog(
           'training',
@@ -327,21 +328,21 @@ export default function TrainingsPage() {
           ...trainingData,
           createdAt: Timestamp.now()
         });
-        
+
         // Aktivite log'u ekle
         await addActivityLog(
           'training',
           'Yeni antrenman planlandı',
           `${formData.name} - ${selectedGroup?.name || ''}`
         );
-        
+
         // Eğer bu bir recurring instance'dan türetilmişse, o instance'ı exclude et
         if (editingTraining && editingTraining.parentId) {
           const parentTraining = trainings.find(t => t.id === editingTraining.parentId);
           if (parentTraining) {
             const excludedDates = parentTraining.excludedDates || [];
             excludedDates.push(formData.date);
-            
+
             await updateDoc(doc(db, 'trainings', editingTraining.parentId), {
               excludedDates,
               updatedAt: Timestamp.now()
@@ -361,18 +362,18 @@ export default function TrainingsPage() {
     // Eğer bu bir recurring instance ise (parentId var), sadece o instance'ı işaretleyelim
     if ('parentId' in trainingToDelete) {
       const confirmMessage = `${new Date(trainingToDelete.date).toLocaleDateString('tr-TR')} tarihli bu antrenmanı silmek istediğinizden emin misiniz?\n\nNot: Bu sadece seçili tarih için antrenmanı siler, diğer tekrarlanan antrenmanlar etkilenmez.`;
-      
+
       if (window.confirm(confirmMessage)) {
         // Instance silme: Bu durumda sadece o tarihi hariç tutmak için parent'a silinen tarihler listesi ekleyeceğiz
         try {
           const parentId = trainingToDelete.parentId;
           const parentTraining = trainings.find(t => t.id === parentId);
-          
+
           if (parentTraining && parentId) {
             const excludedDates = [...(parentTraining.excludedDates || [])];
             const dateToExclude = trainingToDelete.date;
             excludedDates.push(dateToExclude);
-            
+
             await updateDoc(doc(db, 'trainings', parentId), {
               excludedDates,
               updatedAt: Timestamp.now()
@@ -386,27 +387,27 @@ export default function TrainingsPage() {
     } else {
       // Ana antrenman silme
       const isRecurring = trainingToDelete.isRecurring;
-      
+
       if (isRecurring) {
         // Tekrarlanan antrenmanlar için özel uyarı
-        const recurringCount = expandedTrainings.filter(t => 
+        const recurringCount = expandedTrainings.filter(t =>
           'parentId' in t && t.parentId === trainingToDelete.id
         ).length;
-        
+
         const confirmMessage = `⚠️ ANA ANTRENMAN SİLME UYARISI ⚠️\n\n` +
           `"${trainingToDelete.name}" ana antrenmanını silmek istediğinizden emin misiniz?\n\n` +
           `Bu işlem aynı zamanda ${recurringCount} adet tekrarlanan antrenmanı da silecektir.\n\n` +
           `Eğer sadece belirli bir tarihi silmek istiyorsanız "İPTAL" tuşuna basın ve ` +
           `"Oluşturulan" etiketli antrenmanı silin.\n\n` +
           `Devam etmek istiyor musunuz?`;
-          
+
         if (!window.confirm(confirmMessage)) return;
       } else {
         // Normal antrenman silme
         const confirmMessage = `"${trainingToDelete.name}" antrenmanını silmek istediğinizden emin misiniz?`;
         if (!window.confirm(confirmMessage)) return;
       }
-      
+
       try {
         await deleteDoc(doc(db, 'trainings', trainingToDelete.id));
       } catch (error) {
@@ -424,9 +425,9 @@ export default function TrainingsPage() {
         'Evet: Sadece bu tarih için özel antrenman oluştur\n' +
         'Hayır: Ana antrenmanı düzenlemek için iptal et'
       );
-      
+
       if (!shouldContinue) return;
-      
+
       // Instance düzenleme: Parent ID'yi temizle ve özel bir antrenman olarak kaydet
       setEditingTraining({
         ...training,
@@ -439,7 +440,7 @@ export default function TrainingsPage() {
     } else {
       setEditingTraining(training);
     }
-    
+
     setFormData({
       name: training.name,
       description: training.description,
@@ -508,20 +509,20 @@ export default function TrainingsPage() {
 
   const filteredTrainings = expandedTrainings.filter(training => {
     const matchesSearch = training.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         training.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         training.location.toLowerCase().includes(searchTerm.toLowerCase());
+      training.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      training.location.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesBranch = !filterBranch || training.branchId === filterBranch;
     const matchesGroup = !filterGroup || training.groupId === filterGroup;
     const matchesStatus = !filterStatus || training.status === filterStatus;
-    
+
     return matchesSearch && matchesBranch && matchesGroup && matchesStatus;
   });
 
-  const filteredGroups = groups.filter(group => 
+  const filteredGroups = groups.filter(group =>
     !formData.branchId || group.branchId === formData.branchId
   );
 
-  const filteredTrainers = trainers.filter(trainer => 
+  const filteredTrainers = trainers.filter(trainer =>
     !formData.groupId || trainer.groupId === formData.groupId
   );
 
@@ -579,57 +580,59 @@ export default function TrainingsPage() {
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 border border-blue-200">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-blue-500 rounded-lg">
-              <CalendarDays className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-blue-600 font-medium text-sm">Bu Ay</span>
-          </div>
-          <h3 className="text-3xl font-bold text-blue-900 mb-1">
-            {expandedTrainings.filter(t => new Date(t.date).getMonth() === new Date().getMonth()).length}
-          </h3>
-          <p className="text-blue-700 text-sm">Toplam Antrenman</p>
-        </div>
+        <StatCard
+          icon={<CalendarDays />}
+          label="Bu Ay"
+          labelTextColor="text-blue-600"
+          value={expandedTrainings.filter(t => new Date(t.date).getMonth() === new Date().getMonth()).length}
+          subLabel="Toplam Antrenman"
+          subLabelTextColor="text-blue-700"
+          gradientFrom="from-blue-50"
+          gradientTo="to-blue-100"
+          borderColor="border-blue-200"
+          iconBgColor="bg-blue-500"
+          textColor="text-blue-900"
+        />
+        <StatCard
+          icon={<Timer />}
+          label="Bugün"
+          labelTextColor="text-green-600"
+          value={expandedTrainings.filter(t => t.date === new Date().toISOString().split('T')[0] && t.status === 'ongoing').length}
+          subLabel="Devam Eden"
+          subLabelTextColor="text-green-700"
+          gradientFrom="from-green-50"
+          gradientTo="to-green-100"
+          borderColor="border-green-200"
+          iconBgColor="bg-green-500"
+          textColor="text-green-900"
+        />
+        <StatCard
+          icon={<UserCheck />}
+          label="Aktif"
+          labelTextColor="text-purple-600"
+          value={expandedTrainings.filter(t => t.status === 'scheduled').length}
+          subLabel="Planlanmış"
+          subLabelTextColor="text-purple-700"
+          gradientFrom="from-purple-50"
+          gradientTo="to-purple-100"
+          borderColor="border-purple-200"
+          iconBgColor="bg-purple-500"
+          textColor="text-purple-900"
+        />
 
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-6 border border-green-200">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-green-500 rounded-lg">
-              <Timer className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-green-600 font-medium text-sm">Bugün</span>
-          </div>
-          <h3 className="text-3xl font-bold text-green-900 mb-1">
-            {expandedTrainings.filter(t => t.date === new Date().toISOString().split('T')[0] && t.status === 'ongoing').length}
-          </h3>
-          <p className="text-green-700 text-sm">Devam Eden</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-6 border border-purple-200">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-purple-500 rounded-lg">
-              <UserCheck className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-purple-500 font-medium text-sm">Aktif</span>
-          </div>
-          <h3 className="text-3xl font-bold text-purple-900">
-            {expandedTrainings.filter(t => t.status === 'scheduled').length}
-          </h3>
-          <p className="text-purple-600 text-sm mt-1">Planlanmış</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl p-6 border border-orange-200">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-orange-500 rounded-lg">
-              <Users className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-sm text-orange-500 font-medium">Kapasite</span>
-          </div>
-          <h3 className="text-2xl font-bold text-orange-900">
-            {expandedTrainings.reduce((acc, t) => acc + t.currentParticipants, 0)}
-          </h3>
-          <p className="text-gray-600 text-sm mt-1">Toplam Katılımcı</p>
-        </div>
+        <StatCard
+          icon={<Users />}
+          label="Kapasite"
+          labelTextColor="text-orange-600"
+          value={expandedTrainings.reduce((acc, t) => acc + t.currentParticipants, 0)}
+          subLabel="Toplam Kapasite"
+          subLabelTextColor="text-orange-700"
+          gradientFrom="from-orange-50"
+          gradientTo="to-orange-100"
+          borderColor="border-orange-200"
+          iconBgColor="bg-orange-500"
+          textColor="text-orange-900"
+        />
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100">
@@ -782,7 +785,7 @@ export default function TrainingsPage() {
                       <td className="p-4">
                         <div className="flex items-center gap-2">
                           <div className="flex-1 bg-gray-200 rounded-full h-2">
-                            <div 
+                            <div
                               className="bg-blue-600 h-2 rounded-full"
                               style={{ width: `${(training.currentParticipants / training.maxParticipants) * 100}%` }}
                             />
@@ -864,11 +867,11 @@ export default function TrainingsPage() {
                   {day}
                 </div>
               ))}
-              
+
               {getDaysInMonth(currentDate).map((day, index) => {
                 const trainingsForDay = day ? getTrainingsForDate(day) : [];
                 const isToday = day && day.toDateString() === new Date().toDateString();
-                
+
                 return (
                   <div
                     key={index}
@@ -1084,7 +1087,7 @@ export default function TrainingsPage() {
                       🔄 Bu antrenman tekrarlansın
                     </label>
                   </div>
-                  
+
                   {formData.isRecurring && (
                     <div className="space-y-6 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
                       <div>
@@ -1111,7 +1114,7 @@ export default function TrainingsPage() {
                           ))}
                         </div>
                       </div>
-                      
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1140,7 +1143,7 @@ export default function TrainingsPage() {
                             Örn: &quot;8 Hafta&quot; = 8 hafta boyunca tekrarla
                           </p>
                         </div>
-                        
+
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
                             📆 Veya Bitiş Tarihi
@@ -1157,13 +1160,13 @@ export default function TrainingsPage() {
                           </p>
                         </div>
                       </div>
-                      
+
                       {formData.recurringDays.length > 0 && (formData.recurringCount || formData.recurringEndDate) && (
                         <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
                           <p className="text-sm text-green-700">
                             <span className="font-medium">Özet:</span> Bu antrenman{' '}
                             <span className="font-semibold">{formData.recurringDays.join(', ')}</span> günlerinde{' '}
-                            {formData.recurringEndDate 
+                            {formData.recurringEndDate
                               ? `${new Date(formData.recurringEndDate).toLocaleDateString('tr-TR')} tarihine kadar`
                               : `${formData.recurringCount} ${formData.recurringType === 'weeks' ? 'hafta' : 'ay'} boyunca`
                             } tekrarlanacak.
@@ -1281,7 +1284,7 @@ export default function TrainingsPage() {
                     </span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-3">
-                    <div 
+                    <div
                       className="bg-blue-600 h-3 rounded-full transition-all"
                       style={{ width: `${(selectedTraining.currentParticipants / selectedTraining.maxParticipants) * 100}%` }}
                     />
@@ -1306,7 +1309,7 @@ export default function TrainingsPage() {
                         ))}
                       </div>
                     </div>
-                    
+
                     {selectedTraining.recurringCount && (
                       <div>
                         <span className="text-sm text-gray-600 font-medium">⏱️ Tekrarlama Süresi: </span>
@@ -1315,7 +1318,7 @@ export default function TrainingsPage() {
                         </span>
                       </div>
                     )}
-                    
+
                     {selectedTraining.recurringEndDate && (
                       <div>
                         <span className="text-sm text-gray-600 font-medium">📆 Bitiş Tarihi: </span>
@@ -1324,7 +1327,7 @@ export default function TrainingsPage() {
                         </span>
                       </div>
                     )}
-                    
+
                     {'parentId' in selectedTraining && (
                       <div className="pt-2 border-t border-blue-200">
                         <span className="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-sm font-medium">
