@@ -35,6 +35,7 @@ import {
 import { createListener } from '@/lib/firebase/listener-utils';
 import PageTitle from '@/components/page-title';
 import StatCard from '@/components/stat-card';
+import Loading from '@/components/loading';
 
 interface Match {
   id: string;
@@ -592,9 +593,7 @@ export default function MatchesPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-      </div>
+      <Loading message='Maçlar yükleniyor...' />
     );
   }
 
@@ -665,7 +664,7 @@ export default function MatchesPage() {
           iconBgColor="bg-orange-500"
           textColor="text-orange-900"
         />
-      </div>
+        </div>
       {/* Filtreler ve Görünüm */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
         <div className="flex flex-col lg:flex-row gap-4">

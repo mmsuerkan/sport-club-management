@@ -48,6 +48,7 @@ import {
   User,
   Activity} from 'lucide-react';
 import PageTitle from '@/components/page-title';
+import Loading from '@/components/loading';
 
 interface Event {
   id: string;
@@ -343,9 +344,7 @@ export default function EventsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
+      <Loading message="Etkinlikler yükleniyor..." />
     );
   }
 

@@ -35,6 +35,7 @@ import {
 import { createListener } from '@/lib/firebase/listener-utils';
 import PageTitle from '@/components/page-title';
 import StatCard from '@/components/stat-card';
+import Loading from '@/components/loading';
 
 interface Training {
   id: string;
@@ -562,10 +563,7 @@ export default function TrainingsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        <span className="ml-3 text-gray-600">Yükleniyor...</span>
-      </div>
+      <Loading message="Eğitimler yükleniyor..." />
     );
   }
 

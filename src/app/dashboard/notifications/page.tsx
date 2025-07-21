@@ -24,6 +24,7 @@ import { UserRole } from '@/lib/firebase/auth';
 import { getNotifications } from '@/lib/firebase/notifications';
 import ModalTitle from '@/components/modal-title';
 import PageTitle from '@/components/page-title';
+import Loading from '@/components/loading';
 
 export default function NotificationsPage() {
   const { user } = useAuth();
@@ -184,9 +185,7 @@ export default function NotificationsPage() {
 
   if (loading && notifications.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
+      <Loading message="Bildirimler yükleniyor..." />
     );
   }
 

@@ -38,6 +38,7 @@ import { createListener } from '@/lib/firebase/listener-utils';
 import { attendanceService } from '@/lib/firebase/attendance-service';
 import dynamic from 'next/dynamic';
 import PageTitle from '@/components/page-title';
+import Loading from '@/components/loading';
 
 const AttendanceAnalytics = dynamic(
   () => import('@/components/attendance/AttendanceAnalytics'),
@@ -498,10 +499,7 @@ export default function AttendancePage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <p className="ml-2 text-gray-600">Veriler yükleniyor...</p>
-      </div>
+      <Loading message='Veriler yükleniyor...' />
     );
   }
 

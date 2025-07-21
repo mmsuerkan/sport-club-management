@@ -7,6 +7,7 @@ import { collection, getDocs, doc, setDoc, deleteDoc, updateDoc } from 'firebase
 import { db } from '@/lib/firebase/config';
 import PageTitle from '@/components/page-title';
 import ModalTitle from '@/components/modal-title';
+import Loading from '@/components/loading';
 
 interface Branch {
   id: string;
@@ -374,10 +375,7 @@ export default function EmployeesPage() {
       {/* Employees List */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100">
         {loading ? (
-          <div className="p-8 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-2 text-gray-600">Çalışanlar yükleniyor...</p>
-          </div>
+          <Loading message="Çalışanlar yükleniyor..." />
         ) : employees.length === 0 ? (
           <div className="p-8 text-center">
             <UserCheck className="mx-auto h-12 w-12 text-gray-400" />
