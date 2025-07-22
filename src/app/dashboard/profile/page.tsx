@@ -223,7 +223,7 @@ export default function ProfilePage() {
         setClubFormData(clubData);
       }
     } catch (error) {
-      console.error('Klüp bilgileri yüklenirken hata:', error);
+      console.error('Kulüp bilgileri yüklenirken hata:', error);
     }
   };
 
@@ -370,13 +370,13 @@ export default function ProfilePage() {
       setClubEditMode(false);
       
       // Log activity
-      await logActivity('update', 'Klüp bilgileri güncellendi');
+      await logActivity('update', 'Kulüp bilgileri güncellendi');
       
-      alert('Klüp bilgileri başarıyla güncellendi!');
+      alert('Kulüp bilgileri başarıyla güncellendi!');
       
     } catch (error) {
-      console.error('Klüp bilgileri güncellenirken hata:', error);
-      alert('Klüp bilgileri güncellenemedi');
+      console.error('Kulüp bilgileri güncellenirken hata:', error);
+      alert('Kulüp bilgileri güncellenemedi');
     } finally {
       setSavingClubInfo(false);
     }
@@ -571,7 +571,7 @@ export default function ProfilePage() {
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
-              Klüp Bilgileri
+              Kulüp Bilgileri
             </button>
             <button
               onClick={() => setActiveTab('activity')}
@@ -723,9 +723,9 @@ export default function ProfilePage() {
                 <div>
                   <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
                     <Building className="h-5 w-5" />
-                    Klüp Bilgileri
+                    Kulüp Bilgileri
                   </h2>
-                  <p className="text-gray-600 mt-1">Klüp adı ve iletişim bilgilerini yönetin</p>
+                  <p className="text-gray-600 mt-1">Kulüp adı ve iletişim bilgilerini yönetin</p>
                 </div>
                 <button
                   onClick={() => setClubEditMode(!clubEditMode)}
@@ -740,7 +740,7 @@ export default function ProfilePage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Klüp Adı
+                      Kulüp Adı
                     </label>
                     <input
                       type="text"
@@ -748,7 +748,7 @@ export default function ProfilePage() {
                       onChange={(e) => setClubFormData({ ...clubFormData, clubName: e.target.value })}
                       disabled={!clubEditMode}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50"
-                      placeholder="Klüp adını giriniz"
+                      placeholder="Kulüp adını giriniz"
                     />
                   </div>
 
@@ -782,7 +782,7 @@ export default function ProfilePage() {
 
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Klüp Açıklaması
+                      Kulüp Açıklaması
                     </label>
                     <textarea
                       value={clubFormData.clubDescription}
@@ -790,7 +790,7 @@ export default function ProfilePage() {
                       disabled={!clubEditMode}
                       rows={3}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50"
-                      placeholder="Klüp hakkında kısa açıklama"
+                      placeholder="Kulüp hakkında kısa açıklama"
                     />
                   </div>
 
@@ -804,7 +804,7 @@ export default function ProfilePage() {
                       disabled={!clubEditMode}
                       rows={2}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50"
-                      placeholder="Klüp adresi"
+                      placeholder="Kulüp adresi"
                     />
                   </div>
                 </div>

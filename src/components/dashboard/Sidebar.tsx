@@ -91,8 +91,15 @@ export default function Sidebar() {
   return (
     <div className="w-[280px] bg-white border-r border-gray-200 h-screen flex flex-col">
       <div className="p-4 border-b border-gray-200">
-        <h1 className="text-xl font-bold text-gray-900">Sports Club</h1>
-        <p className="text-xs text-gray-500 mt-1">Yönetim Paneli</p>
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center transform transition-transform group-hover:scale-110">
+            <Activity className="w-7 h-7 text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Sports Club</h1>
+            <p className="text-xs text-gray-500 mt-1">Yönetim Paneli</p>
+          </div>
+        </div>
       </div>
 
       <nav className="flex-1 p-3">

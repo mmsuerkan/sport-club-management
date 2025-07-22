@@ -476,7 +476,7 @@ const resetForm = () => {
               <div className="flex gap-2 pt-4">
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
+                  onClick={resetForm}
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                   disabled={loading}
                 >

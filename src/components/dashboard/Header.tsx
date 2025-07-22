@@ -23,7 +23,7 @@ export default function Header({ onMenuToggle }: HeaderProps) {
       if (!user) return;
       
       try {
-        // Önce settings'den klüp bilgilerini al
+        // Önce settings'den kulüp bilgilerini al
         const settingsDoc = await getDoc(doc(db, 'settings', 'app-settings'));
         if (settingsDoc.exists()) {
           const settings = settingsDoc.data();
@@ -37,7 +37,7 @@ export default function Header({ onMenuToggle }: HeaderProps) {
           setLogoUrl(userData.photoURL || null);
         }
       } catch (error) {
-        console.error('Klüp bilgileri yüklenirken hata:', error);
+        console.error('Kulüp bilgileri yüklenirken hata:', error);
       }
     };
     
@@ -63,13 +63,13 @@ export default function Header({ onMenuToggle }: HeaderProps) {
             <Menu size={20} />
           </button>
           
-          {/* Logo ve Klüp Adı */}
+          {/* Logo ve Kulüp Adı */}
           <div className="flex items-center gap-3">
             {logoUrl ? (
               <div className="relative w-10 h-10">
                 <Image
                   src={`${logoUrl}?t=${Date.now()}`}
-                  alt="Klüp Logo"
+                  alt="Kulüp Logo"
                   fill
                   className="object-cover rounded-full"
                   sizes="40px"
@@ -108,9 +108,9 @@ export default function Header({ onMenuToggle }: HeaderProps) {
           <div className="relative">
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-lg"
+              className="flex items-center gap-2 p-2"
             >
-              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                 <User size={16} className="text-white" />
               </div>
               <span className="text-sm font-medium text-gray-700">
@@ -119,7 +119,7 @@ export default function Header({ onMenuToggle }: HeaderProps) {
             </button>
 
             {showUserMenu && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1">
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-[1]">
                 <Link
                   href="/dashboard/profile"
                   className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
