@@ -5,6 +5,7 @@ import StatCard from '@/components/dashboard/StatCard';
 import { useState, useEffect } from 'react';
 import { collection, getDocs, query, where, orderBy, limit, onSnapshot, addDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
+import Loading from '@/components/loading';
 
 interface DashboardStats {
   totalMembers: number;
@@ -124,10 +125,7 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="h-full flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <p className="ml-3 text-gray-600">Veriler yükleniyor...</p>
-      </div>
+      <Loading message="Veriler yükleniyor..." />
     );
   }
 

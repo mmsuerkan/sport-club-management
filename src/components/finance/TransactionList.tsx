@@ -11,7 +11,7 @@ import {
   Filter,
   Search,
   Plus,
-  Edit,
+  Edit2,
   Trash2
 } from 'lucide-react';
 import TransactionForm from './TransactionForm';
@@ -248,14 +248,14 @@ export default function TransactionList() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleEdit(transaction)}
-                      className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                      className="p-1 text-blue-400 hover:text-blue-700"
                       title="Düzenle"
                     >
-                      <Edit size={16} />
+                      <Edit2 size={16} />
                     </button>
                     <button
                       onClick={() => handleDelete(transaction.id)}
-                      className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                      className="p-1 text-red-400 hover:text-red-700"
                       title="Sil"
                     >
                       <Trash2 size={16} />

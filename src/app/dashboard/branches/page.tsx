@@ -109,7 +109,9 @@ export default function BranchesPage() {
 
   const handleEdit = (branch: Branch) => {
     setEditingBranch(branch);
-    setFormData({ name: branch.name, address: branch.address });
+    setFormData({
+      name: branch.name, address: branch.address
+    });
     setShowModal(true);
   };
 
@@ -124,13 +126,15 @@ export default function BranchesPage() {
     }
   };
 
-  const handleCancel = () => {
+
+  const resetForm = () => {
     setShowModal(false);
     setEditingBranch(null);
-    setFormData({ name: '', address: '' });
+    setFormData({
+      name: '', address: ''
+    });
   };
 
-  
   if (loading) {
     return (
       <Loading message="Şubeler yükleniyor..." />
@@ -140,7 +144,6 @@ export default function BranchesPage() {
   return (
     <div>
       <PageTitle
-        setEditingUser={undefined}
         setShowModal={setShowModal}
         pageTitle="Şubeler"
         pageDescription="Kulüp şubelerini yönetebilirsiniz."
@@ -149,12 +152,12 @@ export default function BranchesPage() {
       />
       {/* Form Modal */}
       {showModal && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-[9999] p-4" onClick={handleCancel}>
-          <ModalTitle
-            modalTitle={editingBranch ? 'Şube Düzenle' : 'Yeni Şube Ekle'}
-            setShowModal={setShowModal}
-          />
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-[9999] p-4" onClick={resetForm}>
           <div className="bg-white rounded-2xl p-8 w-full max-w-lg shadow-2xl border border-gray-100 transform transition-all" onClick={(e) => e.stopPropagation()}>
+            <ModalTitle
+              modalTitle={editingBranch ? 'Şube Düzenle' : 'Yeni Şube Ekle'}
+              onClose={resetForm}
+            />
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -184,17 +187,17 @@ export default function BranchesPage() {
               </div>
               <div className="flex gap-3 pt-4">
                 <button
-                  type="submit"
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg transition-colors"
-                >
-                  {editingBranch ? 'Güncelle' : 'Kaydet'}
-                </button>
-                <button
                   type="button"
-                  onClick={handleCancel}
-                  className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 rounded-lg transition-colors"
+                  onClick={resetForm}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                 >
                   İptal
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 text-white rounded-md bg-gradient-to-r from-blue-500 to-purple-600"
+                >
+                  {editingBranch ? 'Güncelle' : 'Kaydet'}
                 </button>
               </div>
             </form>
@@ -260,13 +263,13 @@ export default function BranchesPage() {
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => handleEdit(branch)}
-                          className="text-blue-600 hover:text-blue-700 p-1 hover:bg-blue-50 rounded"
+                          className="text-blue-400 hover:text-blue-700 p-1"
                         >
                           <Edit2 size={16} />
                         </button>
                         <button
                           onClick={() => handleDelete(branch.id)}
-                          className="text-red-600 hover:text-red-700 p-1 hover:bg-red-50 rounded"
+                          className="text-red-400 hover:text-red-700 p-1"
                         >
                           <Trash2 size={16} />
                         </button>

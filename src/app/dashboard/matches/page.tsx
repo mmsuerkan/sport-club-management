@@ -18,7 +18,8 @@ import {
   CheckCircle2,
   XCircle,
   AlertCircle,
-  Star
+  Star,
+  X
 } from 'lucide-react';
 import { db } from '@/lib/firebase/config';
 import {
@@ -36,6 +37,7 @@ import { createListener } from '@/lib/firebase/listener-utils';
 import PageTitle from '@/components/page-title';
 import StatCard from '@/components/stat-card';
 import Loading from '@/components/loading';
+import ModalTitle from '@/components/modal-title';
 
 interface Match {
   id: string;
@@ -196,8 +198,8 @@ export default function MatchesPage() {
   useEffect(() => {
     const unsubscribe = createListener(
       query(collection(db, 'matches'), orderBy('date', 'desc')),
-      (snapshot) => {
-        const matchesData = snapshot.docs.map(doc => ({
+      (snapshot: any) => {
+        const matchesData = snapshot.docs.map((doc: any) => ({
           id: doc.id,
           ...doc.data()
         } as Match));
@@ -534,6 +536,7 @@ export default function MatchesPage() {
       minute: 1,
       period: 1
     });
+    setShowModal(false);
   };
 
   const getStatusColor = (status: Match['status']) => {
@@ -810,7 +813,7 @@ export default function MatchesPage() {
                       setSelectedMatch(match);
                       setShowStatsModal(true);
                     }}
-                    className="flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium text-sm"
+                    className="text-slate-400 hover:text-slate-700 p-1"
                   >
                     <BarChart3 className="h-4 w-4" />
                     İstatistikler
@@ -819,13 +822,13 @@ export default function MatchesPage() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleEdit(match)}
-                      className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      className="text-blue-400 hover:text-blue-700 p-1"
                     >
                       <Edit className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => handleDelete(match.id)}
-                      className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      className="text-red-400 hover:text-red-700 p-1"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -899,19 +902,19 @@ export default function MatchesPage() {
                             setSelectedMatch(match);
                             setShowStatsModal(true);
                           }}
-                          className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          className="text-slate-400 hover:text-slate-700 p-1"
                         >
                           <BarChart3 className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => handleEdit(match)}
-                          className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          className="text-blue-400 hover:text-blue-700 p-1"
                         >
                           <Edit className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => handleDelete(match.id)}
-                          className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          className="text-red-400 hover:text-red-700 p-1"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -927,15 +930,10 @@ export default function MatchesPage() {
 
       {/* Maç Ekleme/Düzenleme Modalı */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="text-2xl font-bold text-gray-900">
-                {editingMatch ? 'Maçı Düzenle' : 'Yeni Maç Ekle'}
-              </h3>
-            </div>
-
-            <form onSubmit={handleSubmit} className="p-6">
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-[9999] p-4" onClick={resetForm}>
+          <div className="bg-white rounded-2xl p-8 w-full max-w-3xl shadow-2xl border border-gray-100 transform transition-all" onClick={(e) => e.stopPropagation()}>
+            <ModalTitle modalTitle={editingMatch ? 'Maçı Düzenle' : 'Yeni Maç Takvimi Ekle'} onClose={resetForm} />
+            <form onSubmit={handleSubmit} className="space-y-4 max-h-[80vh] overflow-y-auto">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Ev Sahibi Takım */}
                 <div>
@@ -1212,20 +1210,19 @@ export default function MatchesPage() {
               </div>
 
               {/* Butonlar */}
-              <div className="flex justify-end gap-3 mt-8">
+              <div className="flex gap-3 pt-4">
                 <button
                   type="button"
                   onClick={() => {
-                    setShowModal(false);
                     resetForm();
                   }}
-                  className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                 >
                   İptal
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-300"
+                  className="flex-1 px-4 py-2 text-white rounded-md bg-gradient-to-r from-blue-500 to-purple-600"
                 >
                   {editingMatch ? 'Güncelle' : 'Kaydet'}
                 </button>
@@ -1237,7 +1234,7 @@ export default function MatchesPage() {
 
       {/* İstatistikler Modalı */}
       {showStatsModal && selectedMatch && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center mt-0 p-4 z-50">
           <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
@@ -1423,7 +1420,7 @@ export default function MatchesPage() {
                     {selectedMatch.events
                       .sort((a, b) => a.minute - b.minute)
                       .map((event) => (
-                        <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <div key={event.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                           <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center font-bold text-gray-700">
                             {event.minute}&apos;
                           </div>
@@ -1447,7 +1444,7 @@ export default function MatchesPage() {
 
       {/* Oyuncu İstatistikleri Modalı */}
       {showPlayerStatsModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center mt-0 p-4 z-50">
           <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
@@ -1848,7 +1845,7 @@ export default function MatchesPage() {
 
       {/* Maç Olayları Modalı */}
       {showEventsModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm bg-opacity-50 flex items-center justify-center mt-0 p-4 z-50">
           <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">

@@ -189,6 +189,10 @@ export default function NotificationsPage() {
     );
   }
 
+const resetForm = () => {
+    setShowModal(false)      
+};
+
   return (
     <div>
       {/* Header */}
@@ -344,10 +348,10 @@ export default function NotificationsPage() {
 
       {/* Bildirim Gönderme Formu Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <ModalTitle modalTitle="Bildirim Gönder" setShowModal={setShowModal} />
-            <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-[9999] p-4" onClick={resetForm}>
+          <div className="bg-white rounded-2xl p-8 w-full max-w-lg shadow-2xl border border-gray-100 transform transition-all" onClick={(e) => e.stopPropagation()}>
+            <ModalTitle modalTitle="Bildirim Gönder" onClose={resetForm} />
+            <form onSubmit={handleSubmit} className="space-y-4 max-h-[90vh] overflow-y-auto">
               {/* Başlık */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -480,7 +484,7 @@ export default function NotificationsPage() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                  className="flex-1 px-4 py-2 text-white rounded-md bg-gradient-to-r from-blue-500 to-purple-600"
                   disabled={loading}
                 >
                   {loading ? 'Gönderiliyor...' : 'Gönder'}

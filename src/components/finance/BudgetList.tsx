@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { 
   Plus, 
-  Edit, 
+  Edit2, 
   Trash2, 
   TrendingUp, 
   TrendingDown,
@@ -232,13 +232,13 @@ export default function BudgetList() {
                   <div className="flex items-center gap-2">
                     <button 
                       onClick={() => handleEditBudget(budget)}
-                      className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
+                      className="p-1 text-blue-400 hover:text-blue-700"
                     >
-                      <Edit size={16} />
+                      <Edit2 size={16} />
                     </button>
                     <button 
                       onClick={() => handleDeleteBudget(budget.id!)}
-                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                      className="p-1 text-red-400 hover:text-red-700"
                     >
                       <Trash2 size={16} />
                     </button>

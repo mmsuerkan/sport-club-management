@@ -12,7 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
-  Edit,
+  Edit2,
   Trash2,
   Eye,
   Dumbbell,
@@ -36,6 +36,7 @@ import { createListener } from '@/lib/firebase/listener-utils';
 import PageTitle from '@/components/page-title';
 import StatCard from '@/components/stat-card';
 import Loading from '@/components/loading';
+import ModalTitle from '@/components/modal-title';
 
 interface Training {
   id: string;
@@ -195,8 +196,8 @@ export default function TrainingsPage() {
   useEffect(() => {
     const unsubscribeTrainings = createListener(
       query(collection(db, 'trainings'), orderBy('date', 'desc')),
-      (snapshot) => {
-        const trainingsData = snapshot.docs.map(doc => ({
+      (snapshot: any) => {
+        const trainingsData = snapshot.docs.map((doc: any) => ({
           id: doc.id,
           ...doc.data()
         } as Training));
@@ -207,7 +208,7 @@ export default function TrainingsPage() {
         const endDate = new Date();
         endDate.setMonth(endDate.getMonth() + 6); // 6 ay ileri
 
-        trainingsData.forEach(training => {
+        trainingsData.forEach((training: Training) => {
           expanded.push(training);
 
           if (training.isRecurring) {
@@ -223,8 +224,8 @@ export default function TrainingsPage() {
 
     const unsubscribeBranches = createListener(
       collection(db, 'branches'),
-      (snapshot) => {
-        const branchesData = snapshot.docs.map(doc => ({
+      (snapshot: any) => {
+        const branchesData = snapshot.docs.map((doc: any) => ({
           id: doc.id,
           ...doc.data()
         } as Branch));
@@ -234,8 +235,8 @@ export default function TrainingsPage() {
 
     const unsubscribeGroups = createListener(
       collection(db, 'groups'),
-      (snapshot) => {
-        const groupsData = snapshot.docs.map(doc => ({
+      (snapshot: any) => {
+        const groupsData = snapshot.docs.map((doc: any) => ({
           id: doc.id,
           ...doc.data()
         } as Group));
@@ -245,8 +246,8 @@ export default function TrainingsPage() {
 
     const unsubscribeTrainers = createListener(
       collection(db, 'trainers'),
-      (snapshot) => {
-        const trainersData = snapshot.docs.map(doc => ({
+      (snapshot: any) => {
+        const trainersData = snapshot.docs.map((doc: any) => ({
           id: doc.id,
           ...doc.data()
         } as Trainer));
@@ -485,7 +486,7 @@ export default function TrainingsPage() {
       recurringCount: '',
       recurringType: 'weeks'
     });
-    setEditingTraining(null);
+    setEditingTraining(null);setShowModal(false);
   };
 
   const getStatusColor = (status: string) => {
@@ -802,19 +803,19 @@ export default function TrainingsPage() {
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => handleViewDetails(training)}
-                            className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            className="text-slate-400 hover:text-slate-700 p-1"
                           >
                             <Eye className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => handleEdit(training)}
-                            className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            className="text-blue-400 hover:text-blue-700 p-1"
                           >
-                            <Edit className="h-4 w-4" />
+                            <Edit2 className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => handleDelete(training)}
-                            className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            className="text-red-400 hover:text-red-700 p-1"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -907,21 +908,14 @@ export default function TrainingsPage() {
       </div>
 
       {showModal && createPortal(
-        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
-          <div className="bg-white rounded-2xl p-8 w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-100">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">
-                {editingTraining ? 'Antrenmanı Düzenle' : 'Yeni Antrenman Ekle'}
-              </h2>
-              <button
-                onClick={() => setShowModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-[9999] p-4" onClick={resetForm}>
+          <div className="bg-white rounded-2xl p-8 w-full max-w-lg shadow-2xl border border-gray-100 transform transition-all" onClick={(e) => e.stopPropagation()}>
+            <ModalTitle
+              modalTitle={editingTraining ? 'Antrenmanı Düzenle' : 'Yeni Antrenman Ekle'}
+              onClose={resetForm}
+            />
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6 max-h-[70vh] overflow-y-auto">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1180,13 +1174,13 @@ export default function TrainingsPage() {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                 >
                   İptal
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="flex-1 px-4 py-2 text-white rounded-md bg-gradient-to-r from-blue-500 to-purple-600"
                 >
                   {editingTraining ? 'Güncelle' : 'Ekle'}
                 </button>
@@ -1198,8 +1192,8 @@ export default function TrainingsPage() {
       )}
 
       {showDetailsModal && selectedTraining && createPortal(
-        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
-          <div className="bg-white rounded-2xl p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-100">
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-[9999] p-4">
+          <div className="bg-white rounded-2xl p-8 w-full max-w-2xl shadow-2xl border border-gray-100">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-gray-900">Antrenman Detayları</h2>
               <button
@@ -1351,7 +1345,7 @@ export default function TrainingsPage() {
                   }}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
                 >
-                  <Edit className="h-4 w-4" />
+                  <Edit2 className="h-4 w-4" />
                   Düzenle
                 </button>
               </div>

@@ -7,7 +7,6 @@ import {
   Users,
   Calendar,
   Search,
-  Filter,
   CheckCircle,
   XCircle,
   Clock,
@@ -16,20 +15,12 @@ import {
   Eye,
   UserCheck,
   UserX,
-  BarChart2,
   Download,
-  Upload,
-  QrCode,
   AlertCircle
 } from 'lucide-react';
 import {
   collection,
-  getDocs,
-  doc,
-  setDoc,
-  updateDoc,
   query,
-  where,
   orderBy,
   Timestamp
 } from 'firebase/firestore';
@@ -150,8 +141,8 @@ export default function AttendancePage() {
     // Firebase listeners
     const unsubscribeBranches = createListener(
       collection(db, 'branches'),
-      (snapshot) => {
-        const branchesData = snapshot.docs.map(doc => ({
+      (snapshot: any) => {
+        const branchesData = snapshot.docs.map((doc: any) => ({
           id: doc.id,
           ...doc.data()
         } as Branch));
@@ -161,8 +152,8 @@ export default function AttendancePage() {
 
     const unsubscribeGroups = createListener(
       collection(db, 'groups'),
-      (snapshot) => {
-        const groupsData = snapshot.docs.map(doc => ({
+      (snapshot:any) => {
+        const groupsData = snapshot.docs.map((doc: any) => ({
           id: doc.id,
           ...doc.data()
         } as Group));
@@ -172,8 +163,8 @@ export default function AttendancePage() {
 
     const unsubscribeStudents = createListener(
       collection(db, 'students'),
-      (snapshot) => {
-        const studentsData = snapshot.docs.map(doc => ({
+      (snapshot: any) => {
+        const studentsData = snapshot.docs.map((doc: any) => ({
           id: doc.id,
           ...doc.data()
         } as Student));
@@ -183,8 +174,8 @@ export default function AttendancePage() {
 
     const unsubscribeTrainings = createListener(
       query(collection(db, 'trainings'), orderBy('date', 'desc')),
-      (snapshot) => {
-        const trainingsData = snapshot.docs.map(doc => {
+      (snapshot: any) => {
+        const trainingsData = snapshot.docs.map((doc: any) => {
           const data = doc.data();
           return {
             id: doc.id,
@@ -197,7 +188,7 @@ export default function AttendancePage() {
         setTrainings(trainingsData);
 
         // Create attendance sessions for trainings that don't have one
-        trainingsData.forEach(training => {
+        trainingsData.forEach((training: any)=> {
           if (training.status === 'scheduled') {
             attendanceService.createAttendanceSessionFromTraining(training);
           }
@@ -207,8 +198,8 @@ export default function AttendancePage() {
 
     const unsubscribeAttendanceSessions = createListener(
       query(collection(db, 'attendanceSessions'), orderBy('date', 'desc')),
-      (snapshot) => {
-        const sessionsData = snapshot.docs.map(doc => {
+      (snapshot: any) => {
+        const sessionsData = snapshot.docs.map((doc: any) => {
           const data = doc.data();
           return {
             id: doc.id,
@@ -763,7 +754,7 @@ export default function AttendancePage() {
 
           {/* Attendance Modal */}
           {showAttendanceModal && selectedTraining && typeof document !== 'undefined' && createPortal(
-            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
+            <div className="fixed inset-0 bg-black/20 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-[9999] p-4">
               <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl">
                 <div className="p-6 border-b border-gray-200">
                   <div className="flex items-center justify-between">

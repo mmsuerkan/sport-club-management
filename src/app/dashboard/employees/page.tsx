@@ -194,11 +194,11 @@ export default function EmployeesPage() {
 
       {/* Form Modal */}
       {showModal && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-[9999] p-4" onClick={resetForm}>
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-[9999] p-4" onClick={resetForm}>
           <div className="bg-white rounded-2xl p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-100 transform transition-all" onClick={(e) => e.stopPropagation()}>
             <ModalTitle
               modalTitle={editingEmployee ? 'Çalışan Düzenle' : 'Yeni Çalışan Ekle'}
-              setShowModal={setShowModal}
+              onClose={resetForm}
             />
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -353,17 +353,17 @@ export default function EmployeesPage() {
 
               <div className="flex gap-3 pt-4">
                 <button
-                  type="submit"
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg transition-colors"
-                >
-                  {editingEmployee ? 'Güncelle' : 'Kaydet'}
-                </button>
-                <button
                   type="button"
                   onClick={resetForm}
-                  className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 rounded-lg transition-colors"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                 >
                   İptal
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 text-white rounded-md bg-gradient-to-r from-blue-500 to-purple-600"
+                >
+                  {editingEmployee ? 'Güncelle' : 'Kaydet'}
                 </button>
               </div>
             </form>
@@ -466,13 +466,13 @@ export default function EmployeesPage() {
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => handleEdit(employee)}
-                          className="text-blue-600 hover:text-blue-700 p-1 hover:bg-blue-50 rounded"
+                          className="text-blue-400 hover:text-blue-700 p-1"
                         >
                           <Edit2 size={16} />
                         </button>
                         <button
                           onClick={() => handleDelete(employee.id)}
-                          className="text-red-600 hover:text-red-700 p-1 hover:bg-red-50 rounded"
+                          className="text-red-400 hover:text-red-700 p-1"
                         >
                           <Trash2 size={16} />
                         </button>

@@ -49,6 +49,7 @@ import {
   Activity} from 'lucide-react';
 import PageTitle from '@/components/page-title';
 import Loading from '@/components/loading';
+import ModalTitle from '@/components/modal-title';
 
 interface Event {
   id: string;
@@ -285,6 +286,8 @@ export default function EventsPage() {
     setImagePreview(null);
     setEditingEvent(null);
     setTagInput('');
+    setShowModal(false);
+    setEditingEvent(null)
   };
 
   const openEditModal = (event: Event) => {
@@ -792,26 +795,10 @@ export default function EventsPage() {
 
       {/* Create/Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b sticky top-0 bg-white z-10">
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-900">
-                  {editingEvent ? 'Etkinliği Düzenle' : 'Yeni Etkinlik Oluştur'}
-                </h2>
-                <button
-                  onClick={() => {
-                    setShowModal(false);
-                    resetForm();
-                  }}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-            </div>
-
-            <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-[9999] p-4" onClick={resetForm}>
+          <div className="bg-white rounded-2xl p-8 w-full max-w-2xl shadow-2xl border border-gray-100 transform transition-all" onClick={(e) => e.stopPropagation()}>
+            <ModalTitle modalTitle={editingEvent ? 'Etkinliği Düzenle' : 'Yeni Etkinlik Ekle'} onClose={resetForm} />
+            <form onSubmit={handleSubmit} className="space-y-6 max-h-[80vh] overflow-y-auto">
               {/* Image Upload */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1035,19 +1022,18 @@ export default function EventsPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    setShowModal(false);
                     resetForm();
                   }}
-                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                 >
                   İptal
                 </button>
                 <button
                   type="submit"
                   disabled={uploadingImage}
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-2 text-white rounded-md bg-gradient-to-r from-blue-500 to-purple-600"
                 >
-                  {uploadingImage ? 'Yükleniyor...' : editingEvent ? 'Güncelle' : 'Oluştur'}
+                  {uploadingImage ? 'Yükleniyor...' : editingEvent ? 'Güncelle' : 'Ekle'}
                 </button>
               </div>
             </form>

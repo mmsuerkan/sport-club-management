@@ -208,13 +208,8 @@ export default function UsersPage() {
       studentId: '',
       trainerId: ''
     });
-  };
-
-  
-  const handleCancel = () => {
     setShowModal(false);
     setEditingUser(null);
-    resetForm();
   };
 
   const getRoleColor = (role: UserRole) => {
@@ -411,19 +406,19 @@ export default function UsersPage() {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleEdit(userData)}
-                        className="text-blue-600 hover:text-blue-900"
+                        className="text-blue-400 hover:text-blue-700"
                       >
                         <Edit2 size={16} />
                       </button>
                       <button
                         onClick={() => handleToggleActive(userData.id, userData.isActive)}
-                        className={`${userData.isActive ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'}`}
+                        className={`${userData.isActive ? 'p-1 text-red-400 hover:text-red-700' : 'p-1 text-green-400 hover:text-green-700'}`}
                       >
                         {userData.isActive ? <UserX size={16} /> : <UserCheck size={16} />}
                       </button>
                       <button
                         onClick={() => handleDelete(userData.id)}
-                        className="text-red-600 hover:text-red-900"
+                        className="p-1 text-red-400 hover:text-red-700"
                       >
                         <Trash2 size={16} />
                       </button>
@@ -438,11 +433,11 @@ export default function UsersPage() {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-[9999] p-4" onClick={handleCancel}>
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-[9999] p-4" onClick={resetForm}>
           <div className="bg-white rounded-2xl p-8 w-full max-w-lg shadow-2xl border border-gray-100 transform transition-all" onClick={(e) => e.stopPropagation()}>
             <ModalTitle
               modalTitle={editingUser ? 'Kullanıcı Düzenle' : 'Yeni Kullanıcı Ekle'}
-              setShowModal={setShowModal}
+              onClose={resetForm}
             />
             <form onSubmit={handleSubmit} className="space-y-4">
               {!editingUser && (
@@ -628,7 +623,7 @@ export default function UsersPage() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  className="flex-1 px-4 py-2 text-white rounded-md bg-gradient-to-r from-blue-500 to-purple-600"
                 >
                   {editingUser ? 'Güncelle' : 'Ekle'}
                 </button>
