@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { Edit2, Trash2, UsersIcon, Clock, Building } from 'lucide-react';
+import { Edit2, Trash2, Clock, Building, UsersRound } from 'lucide-react';
 import { collection, getDocs, doc, setDoc, deleteDoc, query, where, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import PageTitle from '@/components/page-title';
 import ModalTitle from '@/components/modal-title';
 import Loading from '@/components/loading';
+import BasicModal from '@/components/modal';
+import { createPortal } from 'react-dom';
 
 interface Branch {
   id: string;
@@ -73,11 +74,11 @@ export default function GroupsPage() {
 
     try {
       const selectedBranch = branches.find(b => b.id === formData.branchId);
-      
+
       if (editingGroup) {
         // Güncelleme
         const batch = writeBatch(db);
-        
+
         // Grup bilgisini güncelle
         const groupRef = doc(db, 'groups', editingGroup.id);
         batch.update(groupRef, {
@@ -87,14 +88,14 @@ export default function GroupsPage() {
           time: formData.time.trim(),
           updatedAt: new Date()
         });
-        
+
         // İlgili öğrencilerin groupName ve branchName'ini güncelle
         const studentsQuery = query(
           collection(db, 'students'),
           where('groupId', '==', editingGroup.id)
         );
         const studentsSnapshot = await getDocs(studentsQuery);
-        
+
         studentsSnapshot.docs.forEach((studentDoc) => {
           batch.update(studentDoc.ref, {
             groupName: formData.name.trim(),
@@ -102,7 +103,7 @@ export default function GroupsPage() {
             branchId: formData.branchId
           });
         });
-        
+
         await batch.commit();
       } else {
         // Yeni ekleme
@@ -115,7 +116,7 @@ export default function GroupsPage() {
           createdAt: new Date()
         });
       }
-      
+
       setFormData({ name: '', branchId: '', time: '' });
       setShowModal(false);
       setEditingGroup(null);
@@ -156,79 +157,77 @@ export default function GroupsPage() {
         pageTitle="Gruplar"
         pageDescription="Antrenman gruplarını yönetebilirsiniz."
         firstButtonText="Yeni Grup Ekle"
-        pageIcon={<UsersIcon />}
+        pageIcon={<UsersRound />}
       />
       {/* Form Modal */}
       {showModal && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-[9999] p-4" onClick={resetForm}>
-          <div className="bg-white rounded-2xl p-8 w-full max-w-lg shadow-2xl border border-gray-100 transform transition-all" onClick={(e) => e.stopPropagation()}>
-            <ModalTitle
-              modalTitle={editingGroup ? 'Grup Düzenle' : 'Yeni Grup Ekle'}
-              onClose={resetForm}
-            />
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Grup Adı
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Örnek: Yüzme Başlangıç"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Şube
-                </label>
-                <select
-                  value={formData.branchId}
-                  onChange={(e) => setFormData({ ...formData, branchId: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                >
-                  <option value="">Şube seçiniz</option>
-                  {branches.map((branch) => (
-                    <option key={branch.id} value={branch.id}>
-                      {branch.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Antrenman Saati
-                </label>
-                <input
-                  type="text"
-                  value={formData.time}
-                  onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Örnek: Pazartesi 18:00-19:00"
-                  required
-                />
-              </div>
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                >
-                  İptal
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-2 text-white rounded-md bg-gradient-to-r from-blue-500 to-purple-600"
-                >
-                  {editingGroup ? 'Güncelle' : 'Kaydet'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>,
+        <BasicModal className='max-w-lg' open={showModal} onClose={() => resetForm()}>
+          <ModalTitle
+            modalTitle={editingGroup ? 'Grup Düzenle' : 'Yeni Grup Ekle'}
+            onClose={resetForm}
+          />
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Grup Adı
+              </label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Örnek: Yüzme Başlangıç"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Şube
+              </label>
+              <select
+                value={formData.branchId}
+                onChange={(e) => setFormData({ ...formData, branchId: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              >
+                <option value="">Şube seçiniz</option>
+                {branches.map((branch) => (
+                  <option key={branch.id} value={branch.id}>
+                    {branch.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Antrenman Saati
+              </label>
+              <input
+                type="text"
+                value={formData.time}
+                onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Örnek: Pazartesi 18:00-19:00"
+                required
+              />
+            </div>
+            <div className="flex gap-3 pt-4">
+              <button
+                type="button"
+                onClick={resetForm}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                İptal
+              </button>
+              <button
+                type="submit"
+                className="flex-1 px-4 py-2 text-white rounded-md bg-gradient-to-r from-blue-500 to-purple-600"
+              >
+                {editingGroup ? 'Güncelle' : 'Kaydet'}
+              </button>
+            </div>
+          </form>
+        </BasicModal>,
         document.body
       )}
 
@@ -238,7 +237,7 @@ export default function GroupsPage() {
           <Loading message="Gruplar yükleniyor..." />
         ) : groups.length === 0 ? (
           <div className="p-8 text-center">
-            <UsersIcon className="mx-auto h-12 w-12 text-gray-400" />
+            <UsersRound className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-2 text-sm font-medium text-gray-900">Grup bulunamadı</h3>
             <p className="mt-1 text-sm text-gray-500">
               İlk grubunuzu eklemek için &quot;Yeni Grup&quot; butonuna tıklayın.
@@ -271,7 +270,7 @@ export default function GroupsPage() {
                   <tr key={group.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <UsersIcon className="h-5 w-5 text-gray-400 mr-3" />
+                        <UsersRound className="h-5 w-5 text-gray-400 mr-3" />
                         <div className="text-sm font-medium text-gray-900">
                           {group.name}
                         </div>

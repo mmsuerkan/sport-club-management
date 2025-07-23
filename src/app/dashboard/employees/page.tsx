@@ -8,6 +8,7 @@ import { db } from '@/lib/firebase/config';
 import PageTitle from '@/components/page-title';
 import ModalTitle from '@/components/modal-title';
 import Loading from '@/components/loading';
+import BasicModal from '@/components/modal';
 
 interface Branch {
   id: string;
@@ -194,181 +195,180 @@ export default function EmployeesPage() {
 
       {/* Form Modal */}
       {showModal && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-[9999] p-4" onClick={resetForm}>
-          <div className="bg-white rounded-2xl p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-100 transform transition-all" onClick={(e) => e.stopPropagation()}>
-            <ModalTitle
-              modalTitle={editingEmployee ? 'Çalışan Düzenle' : 'Yeni Çalışan Ekle'}
-              onClose={resetForm}
-            />
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Temel Bilgiler */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Ad Soyad *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.fullName}
-                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Telefon *
-                  </label>
-                  <input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    E-posta
-                  </label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Şube *
-                  </label>
-                  <select
-                    value={formData.branchId}
-                    onChange={(e) => setFormData({ ...formData, branchId: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  >
-                    <option value="">Şube seçiniz</option>
-                    {branches.map((branch) => (
-                      <option key={branch.id} value={branch.id}>
-                        {branch.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Pozisyon
-                  </label>
-                  <select
-                    value={formData.position}
-                    onChange={(e) => setFormData({ ...formData, position: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Pozisyon seçiniz</option>
-                    <option value="Genel Müdür">Genel Müdür</option>
-                    <option value="Şube Müdürü">Şube Müdürü</option>
-                    <option value="İK Uzmanı">İK Uzmanı</option>
-                    <option value="Muhasebe Uzmanı">Muhasebe Uzmanı</option>
-                    <option value="Pazarlama Uzmanı">Pazarlama Uzmanı</option>
-                    <option value="Sekreter">Sekreter</option>
-                    <option value="Resepsiyon Görevlisi">Resepsiyon Görevlisi</option>
-                    <option value="Temizlik Görevlisi">Temizlik Görevlisi</option>
-                    <option value="Güvenlik Görevlisi">Güvenlik Görevlisi</option>
-                    <option value="Teknik Personel">Teknik Personel</option>
-                    <option value="Diğer">Diğer</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Departman
-                  </label>
-                  <select
-                    value={formData.department}
-                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Departman seçiniz</option>
-                    <option value="Yönetim">Yönetim</option>
-                    <option value="İnsan Kaynakları">İnsan Kaynakları</option>
-                    <option value="Muhasebe & Finans">Muhasebe & Finans</option>
-                    <option value="Pazarlama & Satış">Pazarlama & Satış</option>
-                    <option value="Operasyon">Operasyon</option>
-                    <option value="Teknik">Teknik</option>
-                    <option value="Güvenlik">Güvenlik</option>
-                    <option value="Temizlik">Temizlik</option>
-                    <option value="Diğer">Diğer</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Maaş
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={formData.salary}
-                      onChange={(e) => setFormData({ ...formData, salary: e.target.value })}
-                      className="w-full pl-3 pr-12 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="12.000"
-                    />
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                      <span className="text-gray-500 text-sm font-medium">₺</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    İşe Başlama Tarihi
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.startDate}
-                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-
-              {/* Notlar */}
+        <BasicModal className='max-w-lg' open={showModal} onClose={() => resetForm()}>
+          <ModalTitle
+            modalTitle={editingEmployee ? 'Çalışan Düzenle' : 'Yeni Çalışan Ekle'}
+            onClose={resetForm}
+          />
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Temel Bilgiler */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Notlar
+                  Ad Soyad *
                 </label>
-                <textarea
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                <input
+                  type="text"
+                  value={formData.fullName}
+                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  rows={3}
-                  placeholder="Ek bilgiler, özel notlar vb."
+                  required
                 />
               </div>
 
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                >
-                  İptal
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-2 text-white rounded-md bg-gradient-to-r from-blue-500 to-purple-600"
-                >
-                  {editingEmployee ? 'Güncelle' : 'Kaydet'}
-                </button>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Telefon *
+                </label>
+                <input
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
               </div>
-            </form>
-          </div>
-        </div>,
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  E-posta
+                </label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Şube *
+                </label>
+                <select
+                  value={formData.branchId}
+                  onChange={(e) => setFormData({ ...formData, branchId: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                >
+                  <option value="">Şube seçiniz</option>
+                  {branches.map((branch) => (
+                    <option key={branch.id} value={branch.id}>
+                      {branch.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Pozisyon
+                </label>
+                <select
+                  value={formData.position}
+                  onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Pozisyon seçiniz</option>
+                  <option value="Genel Müdür">Genel Müdür</option>
+                  <option value="Şube Müdürü">Şube Müdürü</option>
+                  <option value="İK Uzmanı">İK Uzmanı</option>
+                  <option value="Muhasebe Uzmanı">Muhasebe Uzmanı</option>
+                  <option value="Pazarlama Uzmanı">Pazarlama Uzmanı</option>
+                  <option value="Sekreter">Sekreter</option>
+                  <option value="Resepsiyon Görevlisi">Resepsiyon Görevlisi</option>
+                  <option value="Temizlik Görevlisi">Temizlik Görevlisi</option>
+                  <option value="Güvenlik Görevlisi">Güvenlik Görevlisi</option>
+                  <option value="Teknik Personel">Teknik Personel</option>
+                  <option value="Diğer">Diğer</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Departman
+                </label>
+                <select
+                  value={formData.department}
+                  onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Departman seçiniz</option>
+                  <option value="Yönetim">Yönetim</option>
+                  <option value="İnsan Kaynakları">İnsan Kaynakları</option>
+                  <option value="Muhasebe & Finans">Muhasebe & Finans</option>
+                  <option value="Pazarlama & Satış">Pazarlama & Satış</option>
+                  <option value="Operasyon">Operasyon</option>
+                  <option value="Teknik">Teknik</option>
+                  <option value="Güvenlik">Güvenlik</option>
+                  <option value="Temizlik">Temizlik</option>
+                  <option value="Diğer">Diğer</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Maaş
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={formData.salary}
+                    onChange={(e) => setFormData({ ...formData, salary: e.target.value })}
+                    className="w-full pl-3 pr-12 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="12.000"
+                  />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <span className="text-gray-500 text-sm font-medium">₺</span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  İşe Başlama Tarihi
+                </label>
+                <input
+                  type="date"
+                  value={formData.startDate}
+                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            {/* Notlar */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Notlar
+              </label>
+              <textarea
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows={3}
+                placeholder="Ek bilgiler, özel notlar vb."
+              />
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <button
+                type="button"
+                onClick={resetForm}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                İptal
+              </button>
+              <button
+                type="submit"
+                className="flex-1 px-4 py-2 text-white rounded-md bg-gradient-to-r from-blue-500 to-purple-600"
+              >
+                {editingEmployee ? 'Güncelle' : 'Kaydet'}
+              </button>
+            </div>
+          </form>
+        </BasicModal>
+        ,
         document.body
       )}
 

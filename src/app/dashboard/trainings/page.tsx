@@ -37,6 +37,7 @@ import PageTitle from '@/components/page-title';
 import StatCard from '@/components/stat-card';
 import Loading from '@/components/loading';
 import ModalTitle from '@/components/modal-title';
+import BasicModal from '@/components/modal';
 
 interface Training {
   id: string;
@@ -486,7 +487,7 @@ export default function TrainingsPage() {
       recurringCount: '',
       recurringType: 'weeks'
     });
-    setEditingTraining(null);setShowModal(false);
+    setEditingTraining(null); setShowModal(false);
   };
 
   const getStatusColor = (status: string) => {
@@ -907,287 +908,285 @@ export default function TrainingsPage() {
         )}
       </div>
 
-      {showModal && createPortal(
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-[9999] p-4" onClick={resetForm}>
-          <div className="bg-white rounded-2xl p-8 w-full max-w-lg shadow-2xl border border-gray-100 transform transition-all" onClick={(e) => e.stopPropagation()}>
-            <ModalTitle
-              modalTitle={editingTraining ? 'Antrenmanı Düzenle' : 'Yeni Antrenman Ekle'}
-              onClose={resetForm}
-            />
+      {showModal && typeof document !== 'undefined' && createPortal(
+        <BasicModal className='max-w-3xl' open={showModal} onClose={() => resetForm()}>
+          <ModalTitle
+            modalTitle={editingTraining ? 'Antrenmanı Düzenle' : 'Yeni Antrenman Ekle'}
+            onClose={resetForm}
+          />
 
-            <form onSubmit={handleSubmit} className="space-y-6 max-h-[70vh] overflow-y-auto">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <form onSubmit={handleSubmit} className="space-y-6 max-h-[70vh] overflow-y-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Antrenman Adı
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Örn: Sabah Yoga Dersi"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Şube
+                </label>
+                <select
+                  required
+                  value={formData.branchId}
+                  onChange={(e) => setFormData({ ...formData, branchId: e.target.value, groupId: '', trainerId: '' })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Şube Seçin</option>
+                  {branches.map(branch => (
+                    <option key={branch.id} value={branch.id}>{branch.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Grup
+                </label>
+                <select
+                  required
+                  value={formData.groupId}
+                  onChange={(e) => setFormData({ ...formData, groupId: e.target.value, trainerId: '' })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={!formData.branchId}
+                >
+                  <option value="">Grup Seçin</option>
+                  {filteredGroups.map(group => (
+                    <option key={group.id} value={group.id}>{group.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Eğitmen
+                </label>
+                <select
+                  required
+                  value={formData.trainerId}
+                  onChange={(e) => setFormData({ ...formData, trainerId: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={!formData.groupId}
+                >
+                  <option value="">Eğitmen Seçin</option>
+                  {filteredTrainers.map(trainer => (
+                    <option key={trainer.id} value={trainer.id}>{trainer.fullName}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Açıklama
+                </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Antrenman detayları..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Konum
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.location}
+                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Örn: Salon A"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Maksimum Katılımcı
+                </label>
+                <input
+                  type="number"
+                  required
+                  min="1"
+                  value={formData.maxParticipants}
+                  onChange={(e) => setFormData({ ...formData, maxParticipants: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="20"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tarih
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={formData.date}
+                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Antrenman Adı
+                    Başlangıç Saati
                   </label>
                   <input
-                    type="text"
+                    type="time"
                     required
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    value={formData.startTime}
+                    onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Örn: Sabah Yoga Dersi"
                   />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Şube
-                  </label>
-                  <select
-                    required
-                    value={formData.branchId}
-                    onChange={(e) => setFormData({ ...formData, branchId: e.target.value, groupId: '', trainerId: '' })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Şube Seçin</option>
-                    {branches.map(branch => (
-                      <option key={branch.id} value={branch.id}>{branch.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Grup
-                  </label>
-                  <select
-                    required
-                    value={formData.groupId}
-                    onChange={(e) => setFormData({ ...formData, groupId: e.target.value, trainerId: '' })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    disabled={!formData.branchId}
-                  >
-                    <option value="">Grup Seçin</option>
-                    {filteredGroups.map(group => (
-                      <option key={group.id} value={group.id}>{group.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Eğitmen
-                  </label>
-                  <select
-                    required
-                    value={formData.trainerId}
-                    onChange={(e) => setFormData({ ...formData, trainerId: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    disabled={!formData.groupId}
-                  >
-                    <option value="">Eğitmen Seçin</option>
-                    {filteredTrainers.map(trainer => (
-                      <option key={trainer.id} value={trainer.id}>{trainer.fullName}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Açıklama
-                  </label>
-                  <textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Antrenman detayları..."
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Konum
+                    Bitiş Saati
                   </label>
                   <input
-                    type="text"
+                    type="time"
                     required
-                    value={formData.location}
-                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                    value={formData.endTime}
+                    onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Örn: Salon A"
                   />
                 </div>
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Maksimum Katılımcı
-                  </label>
+              <div className="md:col-span-2">
+                <div className="flex items-center mb-4">
                   <input
-                    type="number"
-                    required
-                    min="1"
-                    value={formData.maxParticipants}
-                    onChange={(e) => setFormData({ ...formData, maxParticipants: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="20"
+                    type="checkbox"
+                    id="isRecurring"
+                    checked={formData.isRecurring}
+                    onChange={(e) => setFormData({ ...formData, isRecurring: e.target.checked })}
+                    className="mr-2"
                   />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tarih
+                  <label htmlFor="isRecurring" className="text-sm font-medium text-gray-700">
+                    🔄 Bu antrenman tekrarlansın
                   </label>
-                  <input
-                    type="date"
-                    required
-                    value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Başlangıç Saati
-                    </label>
-                    <input
-                      type="time"
-                      required
-                      value={formData.startTime}
-                      onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Bitiş Saati
-                    </label>
-                    <input
-                      type="time"
-                      required
-                      value={formData.endTime}
-                      onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
-
-                <div className="md:col-span-2">
-                  <div className="flex items-center mb-4">
-                    <input
-                      type="checkbox"
-                      id="isRecurring"
-                      checked={formData.isRecurring}
-                      onChange={(e) => setFormData({ ...formData, isRecurring: e.target.checked })}
-                      className="mr-2"
-                    />
-                    <label htmlFor="isRecurring" className="text-sm font-medium text-gray-700">
-                      🔄 Bu antrenman tekrarlansın
-                    </label>
-                  </div>
-
-                  {formData.isRecurring && (
-                    <div className="space-y-6 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-3">
-                          📅 Tekrarlanan Günler
-                        </label>
-                        <div className="flex flex-wrap gap-3">
-                          {['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'].map((day) => (
-                            <label key={day} className="flex items-center bg-white px-3 py-2 rounded-lg border border-gray-200 hover:bg-blue-50 cursor-pointer transition-colors">
-                              <input
-                                type="checkbox"
-                                checked={formData.recurringDays.includes(day)}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setFormData({ ...formData, recurringDays: [...formData.recurringDays, day] });
-                                  } else {
-                                    setFormData({ ...formData, recurringDays: formData.recurringDays.filter(d => d !== day) });
-                                  }
-                                }}
-                                className="mr-2 text-blue-600"
-                              />
-                              <span className="text-sm text-gray-700 font-medium">{day}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            ⏱️ Tekrarlama Süresi
-                          </label>
-                          <div className="flex gap-2">
+                {formData.isRecurring && (
+                  <div className="space-y-6 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-3">
+                        📅 Tekrarlanan Günler
+                      </label>
+                      <div className="flex flex-wrap gap-3">
+                        {['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'].map((day) => (
+                          <label key={day} className="flex items-center bg-white px-3 py-2 rounded-lg border border-gray-200 hover:bg-blue-50 cursor-pointer transition-colors">
                             <input
-                              type="number"
-                              min="1"
-                              max="52"
-                              value={formData.recurringCount}
-                              onChange={(e) => setFormData({ ...formData, recurringCount: e.target.value })}
-                              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              placeholder="Sayı"
+                              type="checkbox"
+                              checked={formData.recurringDays.includes(day)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setFormData({ ...formData, recurringDays: [...formData.recurringDays, day] });
+                                } else {
+                                  setFormData({ ...formData, recurringDays: formData.recurringDays.filter(d => d !== day) });
+                                }
+                              }}
+                              className="mr-2 text-blue-600"
                             />
-                            <select
-                              value={formData.recurringType}
-                              onChange={(e) => setFormData({ ...formData, recurringType: e.target.value as 'weeks' | 'months' })}
-                              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            >
-                              <option value="weeks">Hafta</option>
-                              <option value="months">Ay</option>
-                            </select>
-                          </div>
-                          <p className="text-xs text-gray-500 mt-1">
-                            Örn: &quot;8 Hafta&quot; = 8 hafta boyunca tekrarla
-                          </p>
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            📆 Veya Bitiş Tarihi
+                            <span className="text-sm text-gray-700 font-medium">{day}</span>
                           </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          ⏱️ Tekrarlama Süresi
+                        </label>
+                        <div className="flex gap-2">
                           <input
-                            type="date"
-                            value={formData.recurringEndDate}
-                            onChange={(e) => setFormData({ ...formData, recurringEndDate: e.target.value, recurringCount: e.target.value ? '' : formData.recurringCount })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            min={formData.date}
+                            type="number"
+                            min="1"
+                            max="52"
+                            value={formData.recurringCount}
+                            onChange={(e) => setFormData({ ...formData, recurringCount: e.target.value })}
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Sayı"
                           />
-                          <p className="text-xs text-gray-500 mt-1">
-                            Tarih seçilirse tekrarlama sayısı iptal olur
-                          </p>
+                          <select
+                            value={formData.recurringType}
+                            onChange={(e) => setFormData({ ...formData, recurringType: e.target.value as 'weeks' | 'months' })}
+                            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="weeks">Hafta</option>
+                            <option value="months">Ay</option>
+                          </select>
                         </div>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Örn: &quot;8 Hafta&quot; = 8 hafta boyunca tekrarla
+                        </p>
                       </div>
 
-                      {formData.recurringDays.length > 0 && (formData.recurringCount || formData.recurringEndDate) && (
-                        <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                          <p className="text-sm text-green-700">
-                            <span className="font-medium">Özet:</span> Bu antrenman{' '}
-                            <span className="font-semibold">{formData.recurringDays.join(', ')}</span> günlerinde{' '}
-                            {formData.recurringEndDate
-                              ? `${new Date(formData.recurringEndDate).toLocaleDateString('tr-TR')} tarihine kadar`
-                              : `${formData.recurringCount} ${formData.recurringType === 'weeks' ? 'hafta' : 'ay'} boyunca`
-                            } tekrarlanacak.
-                          </p>
-                        </div>
-                      )}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          📆 Veya Bitiş Tarihi
+                        </label>
+                        <input
+                          type="date"
+                          value={formData.recurringEndDate}
+                          onChange={(e) => setFormData({ ...formData, recurringEndDate: e.target.value, recurringCount: e.target.value ? '' : formData.recurringCount })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          min={formData.date}
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Tarih seçilirse tekrarlama sayısı iptal olur
+                        </p>
+                      </div>
                     </div>
-                  )}
-                </div>
-              </div>
 
-              <div className="flex justify-end gap-3 pt-6 border-t">
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                >
-                  İptal
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-2 text-white rounded-md bg-gradient-to-r from-blue-500 to-purple-600"
-                >
-                  {editingTraining ? 'Güncelle' : 'Ekle'}
-                </button>
+                    {formData.recurringDays.length > 0 && (formData.recurringCount || formData.recurringEndDate) && (
+                      <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <p className="text-sm text-green-700">
+                          <span className="font-medium">Özet:</span> Bu antrenman{' '}
+                          <span className="font-semibold">{formData.recurringDays.join(', ')}</span> günlerinde{' '}
+                          {formData.recurringEndDate
+                            ? `${new Date(formData.recurringEndDate).toLocaleDateString('tr-TR')} tarihine kadar`
+                            : `${formData.recurringCount} ${formData.recurringType === 'weeks' ? 'hafta' : 'ay'} boyunca`
+                          } tekrarlanacak.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-            </form>
-          </div>
-        </div>,
+            </div>
+
+            <div className="flex justify-end gap-3 pt-6 border-t">
+              <button
+                type="button"
+                onClick={resetForm}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                İptal
+              </button>
+              <button
+                type="submit"
+                className="flex-1 px-4 py-2 text-white rounded-md bg-gradient-to-r from-blue-500 to-purple-600"
+              >
+                {editingTraining ? 'Güncelle' : 'Ekle'}
+              </button>
+            </div>
+          </form>
+        </BasicModal>,
         document.body
       )}
 

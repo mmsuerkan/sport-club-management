@@ -25,6 +25,8 @@ import { getNotifications } from '@/lib/firebase/notifications';
 import ModalTitle from '@/components/modal-title';
 import PageTitle from '@/components/page-title';
 import Loading from '@/components/loading';
+import BasicModal from '@/components/modal';
+import { createPortal } from 'react-dom';
 
 export default function NotificationsPage() {
   const { user } = useAuth();
@@ -189,9 +191,9 @@ export default function NotificationsPage() {
     );
   }
 
-const resetForm = () => {
-    setShowModal(false)      
-};
+  const resetForm = () => {
+    setShowModal(false)
+  };
 
   return (
     <div>
@@ -347,152 +349,151 @@ const resetForm = () => {
       </div>
 
       {/* Bildirim Gönderme Formu Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-[9999] p-4" onClick={resetForm}>
-          <div className="bg-white rounded-2xl p-8 w-full max-w-lg shadow-2xl border border-gray-100 transform transition-all" onClick={(e) => e.stopPropagation()}>
-            <ModalTitle modalTitle="Bildirim Gönder" onClose={resetForm} />
-            <form onSubmit={handleSubmit} className="space-y-4 max-h-[90vh] overflow-y-auto">
-              {/* Başlık */}
+      {showModal && typeof document !== 'undefined' && createPortal(
+        <BasicModal className='max-w-lg' open={showModal} onClose={() => resetForm()}>
+          <ModalTitle modalTitle="Bildirim Gönder" onClose={resetForm} />
+          <form onSubmit={handleSubmit} className="space-y-4 max-h-[90vh] overflow-y-auto">
+            {/* Başlık */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Başlık
+              </label>
+              <input
+                type="text"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+                placeholder="Bildirim başlığı"
+              />
+            </div>
+
+            {/* İçerik */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                İçerik
+              </label>
+              <textarea
+                value={formData.body}
+                onChange={(e) => setFormData({ ...formData, body: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows={4}
+                required
+                placeholder="Bildirim içeriği"
+              />
+            </div>
+
+            {/* Tip ve Öncelik */}
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Başlık
-                </label>
-                <input
-                  type="text"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                  placeholder="Bildirim başlığı"
-                />
-              </div>
-
-              {/* İçerik */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  İçerik
-                </label>
-                <textarea
-                  value={formData.body}
-                  onChange={(e) => setFormData({ ...formData, body: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  rows={4}
-                  required
-                  placeholder="Bildirim içeriği"
-                />
-              </div>
-
-              {/* Tip ve Öncelik */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tip
-                  </label>
-                  <select
-                    value={formData.type}
-                    onChange={(e) => setFormData({ ...formData, type: e.target.value as NotificationType })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    {typeOptions.map(option => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Öncelik
-                  </label>
-                  <select
-                    value={formData.priority}
-                    onChange={(e) => setFormData({ ...formData, priority: e.target.value as NotificationPriority })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    {priorityOptions.map(option => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Hedef Tip */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Hedef Kitle
+                  Tip
                 </label>
                 <select
-                  value={formData.targetType}
-                  onChange={(e) => setFormData({ ...formData, targetType: e.target.value as NotificationTargetType })}
+                  value={formData.type}
+                  onChange={(e) => setFormData({ ...formData, type: e.target.value as NotificationType })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value={NotificationTargetType.ALL_USERS}>Tüm Kullanıcılar</option>
-                  <option value={NotificationTargetType.SPECIFIC_ROLES}>Belirli Roller</option>
-                  <option value={NotificationTargetType.SPECIFIC_USERS}>Belirli Kullanıcılar</option>
-                  <option value={NotificationTargetType.SPECIFIC_GROUPS}>Belirli Gruplar</option>
+                  {typeOptions.map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
                 </select>
               </div>
 
-              {/* Rol Seçimi */}
-              {formData.targetType === NotificationTargetType.SPECIFIC_ROLES && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Roller
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {roleOptions.map(option => (
-                      <label key={option.value} className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={formData.targetRoles.includes(option.value)}
-                          onChange={(e) => handleRoleChange(option.value, e.target.checked)}
-                          className="mr-2"
-                        />
-                        {option.label}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Action URL */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Action URL (İsteğe Bağlı)
+                  Öncelik
                 </label>
-                <input
-                  type="url"
-                  value={formData.actionUrl}
-                  onChange={(e) => setFormData({ ...formData, actionUrl: e.target.value })}
+                <select
+                  value={formData.priority}
+                  onChange={(e) => setFormData({ ...formData, priority: e.target.value as NotificationPriority })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="https://example.com/page"
-                />
+                >
+                  {priorityOptions.map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </div>
+            </div>
 
-              {/* Butonlar */}
-              <div className="flex gap-2 pt-4">
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                  disabled={loading}
-                >
-                  İptal
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-2 text-white rounded-md bg-gradient-to-r from-blue-500 to-purple-600"
-                  disabled={loading}
-                >
-                  {loading ? 'Gönderiliyor...' : 'Gönder'}
-                </button>
+            {/* Hedef Tip */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Hedef Kitle
+              </label>
+              <select
+                value={formData.targetType}
+                onChange={(e) => setFormData({ ...formData, targetType: e.target.value as NotificationTargetType })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value={NotificationTargetType.ALL_USERS}>Tüm Kullanıcılar</option>
+                <option value={NotificationTargetType.SPECIFIC_ROLES}>Belirli Roller</option>
+                <option value={NotificationTargetType.SPECIFIC_USERS}>Belirli Kullanıcılar</option>
+                <option value={NotificationTargetType.SPECIFIC_GROUPS}>Belirli Gruplar</option>
+              </select>
+            </div>
+
+            {/* Rol Seçimi */}
+            {formData.targetType === NotificationTargetType.SPECIFIC_ROLES && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Roller
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {roleOptions.map(option => (
+                    <label key={option.value} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={formData.targetRoles.includes(option.value)}
+                        onChange={(e) => handleRoleChange(option.value, e.target.checked)}
+                        className="mr-2"
+                      />
+                      {option.label}
+                    </label>
+                  ))}
+                </div>
               </div>
-            </form>
-          </div>
-        </div>
+            )}
+
+            {/* Action URL */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Action URL (İsteğe Bağlı)
+              </label>
+              <input
+                type="url"
+                value={formData.actionUrl}
+                onChange={(e) => setFormData({ ...formData, actionUrl: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="https://example.com/page"
+              />
+            </div>
+
+            {/* Butonlar */}
+            <div className="flex gap-2 pt-4">
+              <button
+                type="button"
+                onClick={resetForm}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                disabled={loading}
+              >
+                İptal
+              </button>
+              <button
+                type="submit"
+                className="flex-1 px-4 py-2 text-white rounded-md bg-gradient-to-r from-blue-500 to-purple-600"
+                disabled={loading}
+              >
+                {loading ? 'Gönderiliyor...' : 'Gönder'}
+              </button>
+            </div>
+          </form>
+        </BasicModal>,
+        document.body
       )}
     </div>
   );

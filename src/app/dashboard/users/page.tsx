@@ -16,6 +16,7 @@ import PageTitle from '@/components/page-title';
 import StatCard from '@/components/stat-card';
 import Modal from '@mui/material/Modal';
 import BasicModal from '@/components/modal';
+import { createPortal } from 'react-dom';
 
 interface UserWithId extends UserData {
   id: string;
@@ -434,8 +435,8 @@ export default function UsersPage() {
       </div>
 
       {/* Modal */}
-      {showModal && (
-        <BasicModal open={showModal} onClose={() => resetForm()}>
+      {showModal && typeof document !== 'undefined' && createPortal(
+        <BasicModal className='max-w-lg' open={showModal} onClose={() => resetForm()}>
           <ModalTitle modalTitle={editingUser ? 'Kullanıcı Düzenle' : 'Yeni Kullanıcı Ekle'} onClose={() => resetForm()} />
           <form onSubmit={handleSubmit} className="space-y-4">
             {!editingUser && (
@@ -627,7 +628,8 @@ export default function UsersPage() {
               </button>
             </div>
           </form>
-        </BasicModal>
+        </BasicModal>,
+        document.body
       )}
     </div>
   );

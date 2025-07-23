@@ -38,6 +38,8 @@ import PageTitle from '@/components/page-title';
 import StatCard from '@/components/stat-card';
 import Loading from '@/components/loading';
 import ModalTitle from '@/components/modal-title';
+import BasicModal from '@/components/modal';
+import { createPortal } from 'react-dom';
 
 interface Match {
   id: string;
@@ -667,7 +669,7 @@ export default function MatchesPage() {
           iconBgColor="bg-orange-500"
           textColor="text-orange-900"
         />
-        </div>
+      </div>
       {/* Filtreler ve Görünüm */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
         <div className="flex flex-col lg:flex-row gap-4">
@@ -929,307 +931,306 @@ export default function MatchesPage() {
       )}
 
       {/* Maç Ekleme/Düzenleme Modalı */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-[9999] p-4" onClick={resetForm}>
-          <div className="bg-white rounded-2xl p-8 w-full max-w-3xl shadow-2xl border border-gray-100 transform transition-all" onClick={(e) => e.stopPropagation()}>
-            <ModalTitle modalTitle={editingMatch ? 'Maçı Düzenle' : 'Yeni Maç Takvimi Ekle'} onClose={resetForm} />
-            <form onSubmit={handleSubmit} className="space-y-4 max-h-[80vh] overflow-y-auto">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Ev Sahibi Takım */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Ev Sahibi Takım *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.homeTeam}
-                    onChange={(e) => setFormData({ ...formData, homeTeam: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Takım adı"
-                  />
-                </div>
-
-                {/* Deplasman Takımı */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Deplasman Takımı *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.awayTeam}
-                    onChange={(e) => setFormData({ ...formData, awayTeam: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Takım adı"
-                  />
-                </div>
-
-                {/* Ev Sahibi Skor */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Ev Sahibi Skor
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={formData.homeScore}
-                    onChange={(e) => setFormData({ ...formData, homeScore: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="0"
-                  />
-                </div>
-
-                {/* Deplasman Skor */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Deplasman Skor
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={formData.awayScore}
-                    onChange={(e) => setFormData({ ...formData, awayScore: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="0"
-                  />
-                </div>
-
-                {/* Tarih */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tarih *
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                {/* Saat */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Saat *
-                  </label>
-                  <input
-                    type="time"
-                    required
-                    value={formData.time}
-                    onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                {/* Mekan */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Mekan *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.venue}
-                    onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Stadyum/Salon adı"
-                  />
-                </div>
-
-                {/* Lig */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Lig/Müsabaka *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.league}
-                    onChange={(e) => setFormData({ ...formData, league: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Lig adı"
-                  />
-                </div>
-
-                {/* Sezon */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Sezon
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.season}
-                    onChange={(e) => setFormData({ ...formData, season: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="2024-25"
-                  />
-                </div>
-
-                {/* Durum */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Durum
-                  </label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value as Match['status'] })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="scheduled">Planlandı</option>
-                    <option value="live">Canlı</option>
-                    <option value="finished">Bitti</option>
-                    <option value="postponed">Ertelendi</option>
-                    <option value="cancelled">İptal Edildi</option>
-                  </select>
-                </div>
-
-                {/* Maç Tipi */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Maç Tipi
-                  </label>
-                  <select
-                    value={formData.matchType}
-                    onChange={(e) => setFormData({ ...formData, matchType: e.target.value as Match['matchType'] })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="league">Lig Maçı</option>
-                    <option value="cup">Kupa Maçı</option>
-                    <option value="tournament">Turnuva</option>
-                    <option value="friendly">Hazırlık Maçı</option>
-                  </select>
-                </div>
-
-                {/* Hakem */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Hakem
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.referee}
-                    onChange={(e) => setFormData({ ...formData, referee: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Hakem adı"
-                  />
-                </div>
-
-                {/* Seyirci Sayısı */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Seyirci Sayısı
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={formData.attendance}
-                    onChange={(e) => setFormData({ ...formData, attendance: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="0"
-                  />
-                </div>
-              </div>
-
-              {/* Notlar */}
-              <div className="mt-6">
+      {showModal && typeof document !== 'undefined' && createPortal(
+        <BasicModal className='max-w-lg' open={showModal} onClose={() => resetForm()}>
+          <ModalTitle modalTitle={editingMatch ? 'Maçı Düzenle' : 'Yeni Maç Takvimi Ekle'} onClose={resetForm} />
+          <form onSubmit={handleSubmit} className="space-y-4 max-h-[80vh] overflow-y-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Ev Sahibi Takım */}
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Notlar
+                  Ev Sahibi Takım *
                 </label>
-                <textarea
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  rows={3}
+                <input
+                  type="text"
+                  required
+                  value={formData.homeTeam}
+                  onChange={(e) => setFormData({ ...formData, homeTeam: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Maç hakkında notlar..."
+                  placeholder="Takım adı"
                 />
               </div>
 
-              {/* Oyuncu İstatistikleri ve Olaylar Sekmesi */}
-              <div className="mt-8 border-t border-gray-200 pt-6">
-                <h4 className="text-lg font-semibold text-gray-900 mb-4">Detaylı İstatistikler ve Olaylar</h4>
-
-                {/* Sekme Butonları */}
-                <div className="flex gap-3 mb-6">
-                  <button
-                    type="button"
-                    onClick={() => setShowPlayerStatsModal(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
-                  >
-                    <Users className="h-4 w-4" />
-                    Oyuncu İstatistikleri ({playerStats.length})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowEventsModal(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors"
-                  >
-                    <Activity className="h-4 w-4" />
-                    Maç Olayları ({matchEvents.length})
-                  </button>
-                </div>
-
-                {/* Özet Görünüm */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Oyuncu İstatistikleri Özet */}
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <h5 className="font-medium text-gray-900 mb-2">Kayıtlı Oyuncular</h5>
-                    {playerStats.length > 0 ? (
-                      <div className="space-y-1">
-                        {playerStats.slice(0, 3).map((stat, index) => (
-                          <div key={index} className="text-sm text-gray-600">
-                            {stat.playerName} - {stat.team === 'home' ? formData.homeTeam : formData.awayTeam}
-                          </div>
-                        ))}
-                        {playerStats.length > 3 && (
-                          <div className="text-sm text-gray-500">+{playerStats.length - 3} diğer oyuncu</div>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-gray-500">Henüz oyuncu istatistiği eklenmedi</p>
-                    )}
-                  </div>
-
-                  {/* Maç Olayları Özet */}
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <h5 className="font-medium text-gray-900 mb-2">Son Olaylar</h5>
-                    {matchEvents.length > 0 ? (
-                      <div className="space-y-1">
-                        {matchEvents.slice(-3).map((event, index) => (
-                          <div key={index} className="text-sm text-gray-600">
-                            {event.minute}&apos; {getEventIcon(event.type)} {event.playerName}
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-gray-500">Henüz maç olayı eklenmedi</p>
-                    )}
-                  </div>
-                </div>
+              {/* Deplasman Takımı */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Deplasman Takımı *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.awayTeam}
+                  onChange={(e) => setFormData({ ...formData, awayTeam: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Takım adı"
+                />
               </div>
 
-              {/* Butonlar */}
-              <div className="flex gap-3 pt-4">
+              {/* Ev Sahibi Skor */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Ev Sahibi Skor
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={formData.homeScore}
+                  onChange={(e) => setFormData({ ...formData, homeScore: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="0"
+                />
+              </div>
+
+              {/* Deplasman Skor */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Deplasman Skor
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={formData.awayScore}
+                  onChange={(e) => setFormData({ ...formData, awayScore: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="0"
+                />
+              </div>
+
+              {/* Tarih */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Tarih *
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={formData.date}
+                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {/* Saat */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Saat *
+                </label>
+                <input
+                  type="time"
+                  required
+                  value={formData.time}
+                  onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {/* Mekan */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Mekan *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.venue}
+                  onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Stadyum/Salon adı"
+                />
+              </div>
+
+              {/* Lig */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Lig/Müsabaka *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.league}
+                  onChange={(e) => setFormData({ ...formData, league: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Lig adı"
+                />
+              </div>
+
+              {/* Sezon */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Sezon
+                </label>
+                <input
+                  type="text"
+                  value={formData.season}
+                  onChange={(e) => setFormData({ ...formData, season: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="2024-25"
+                />
+              </div>
+
+              {/* Durum */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Durum
+                </label>
+                <select
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value as Match['status'] })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="scheduled">Planlandı</option>
+                  <option value="live">Canlı</option>
+                  <option value="finished">Bitti</option>
+                  <option value="postponed">Ertelendi</option>
+                  <option value="cancelled">İptal Edildi</option>
+                </select>
+              </div>
+
+              {/* Maç Tipi */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Maç Tipi
+                </label>
+                <select
+                  value={formData.matchType}
+                  onChange={(e) => setFormData({ ...formData, matchType: e.target.value as Match['matchType'] })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="league">Lig Maçı</option>
+                  <option value="cup">Kupa Maçı</option>
+                  <option value="tournament">Turnuva</option>
+                  <option value="friendly">Hazırlık Maçı</option>
+                </select>
+              </div>
+
+              {/* Hakem */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Hakem
+                </label>
+                <input
+                  type="text"
+                  value={formData.referee}
+                  onChange={(e) => setFormData({ ...formData, referee: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Hakem adı"
+                />
+              </div>
+
+              {/* Seyirci Sayısı */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Seyirci Sayısı
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={formData.attendance}
+                  onChange={(e) => setFormData({ ...formData, attendance: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="0"
+                />
+              </div>
+            </div>
+
+            {/* Notlar */}
+            <div className="mt-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Notlar
+              </label>
+              <textarea
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Maç hakkında notlar..."
+              />
+            </div>
+
+            {/* Oyuncu İstatistikleri ve Olaylar Sekmesi */}
+            <div className="mt-8 border-t border-gray-200 pt-6">
+              <h4 className="text-lg font-semibold text-gray-900 mb-4">Detaylı İstatistikler ve Olaylar</h4>
+
+              {/* Sekme Butonları */}
+              <div className="flex gap-3 mb-6">
                 <button
                   type="button"
-                  onClick={() => {
-                    resetForm();
-                  }}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  onClick={() => setShowPlayerStatsModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
                 >
-                  İptal
+                  <Users className="h-4 w-4" />
+                  Oyuncu İstatistikleri ({playerStats.length})
                 </button>
                 <button
-                  type="submit"
-                  className="flex-1 px-4 py-2 text-white rounded-md bg-gradient-to-r from-blue-500 to-purple-600"
+                  type="button"
+                  onClick={() => setShowEventsModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors"
                 >
-                  {editingMatch ? 'Güncelle' : 'Kaydet'}
+                  <Activity className="h-4 w-4" />
+                  Maç Olayları ({matchEvents.length})
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
+
+              {/* Özet Görünüm */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Oyuncu İstatistikleri Özet */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h5 className="font-medium text-gray-900 mb-2">Kayıtlı Oyuncular</h5>
+                  {playerStats.length > 0 ? (
+                    <div className="space-y-1">
+                      {playerStats.slice(0, 3).map((stat, index) => (
+                        <div key={index} className="text-sm text-gray-600">
+                          {stat.playerName} - {stat.team === 'home' ? formData.homeTeam : formData.awayTeam}
+                        </div>
+                      ))}
+                      {playerStats.length > 3 && (
+                        <div className="text-sm text-gray-500">+{playerStats.length - 3} diğer oyuncu</div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">Henüz oyuncu istatistiği eklenmedi</p>
+                  )}
+                </div>
+
+                {/* Maç Olayları Özet */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h5 className="font-medium text-gray-900 mb-2">Son Olaylar</h5>
+                  {matchEvents.length > 0 ? (
+                    <div className="space-y-1">
+                      {matchEvents.slice(-3).map((event, index) => (
+                        <div key={index} className="text-sm text-gray-600">
+                          {event.minute}&apos; {getEventIcon(event.type)} {event.playerName}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">Henüz maç olayı eklenmedi</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Butonlar */}
+            <div className="flex gap-3 pt-4">
+              <button
+                type="button"
+                onClick={() => {
+                  resetForm();
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                İptal
+              </button>
+              <button
+                type="submit"
+                className="flex-1 px-4 py-2 text-white rounded-md bg-gradient-to-r from-blue-500 to-purple-600"
+              >
+                {editingMatch ? 'Güncelle' : 'Kaydet'}
+              </button>
+            </div>
+          </form>
+        </BasicModal>,
+        document.body
       )}
 
       {/* İstatistikler Modalı */}

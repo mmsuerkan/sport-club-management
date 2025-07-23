@@ -4,11 +4,11 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { db, storage } from '@/lib/firebase/config';
-import { 
-  collection, 
-  query, 
-  orderBy, 
-  limit, 
+import {
+  collection,
+  query,
+  orderBy,
+  limit,
   getDocs,
   addDoc,
   updateDoc,
@@ -20,7 +20,7 @@ import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import Image from 'next/image';
-import { 
+import {
   Calendar,
   Clock,
   MapPin,
@@ -29,7 +29,6 @@ import {
   Image as ImageIcon,
   Edit2,
   Trash2,
-  Plus,
   X,
   Check,
   ChevronLeft,
@@ -41,15 +40,17 @@ import {
   Eye,
   Heart,
   Share2,
-  Sparkles,
   Star,
   UserPlus,
   CalendarDays,
   User,
-  Activity} from 'lucide-react';
+  CalendarClock
+} from 'lucide-react';
 import PageTitle from '@/components/page-title';
 import Loading from '@/components/loading';
 import ModalTitle from '@/components/modal-title';
+import BasicModal from '@/components/modal';
+import { createPortal } from 'react-dom';
 
 interface Event {
   id: string;
@@ -98,7 +99,7 @@ export default function EventsPage() {
   const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [showEventModal, setShowEventModal] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -126,13 +127,13 @@ export default function EventsPage() {
   const fetchEvents = async () => {
     try {
       setLoading(true);
-      
+
       const eventsQuery = query(
         collection(db, 'events'),
         orderBy('startDate', 'desc'),
         limit(50)
       );
-      
+
       const snapshot = await getDocs(eventsQuery);
       const eventsData = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -142,7 +143,7 @@ export default function EventsPage() {
         createdAt: doc.data().createdAt?.toDate() || new Date(),
         updatedAt: doc.data().updatedAt?.toDate()
       })) as Event[];
-      
+
       setEvents(eventsData);
     } catch (error) {
       console.error('Etkinlikler yüklenirken hata:', error);
@@ -158,7 +159,7 @@ export default function EventsPage() {
         alert('Dosya boyutu 5MB\'dan küçük olmalıdır');
         return;
       }
-      
+
       setImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -170,7 +171,7 @@ export default function EventsPage() {
 
   const uploadImage = async () => {
     if (!imageFile || !user) return null;
-    
+
     try {
       setUploadingImage(true);
       const storageRef = ref(storage, `events/${Date.now()}-${imageFile.name}`);
@@ -191,7 +192,7 @@ export default function EventsPage() {
 
     try {
       let imageUrl = editingEvent?.imageUrl;
-      
+
       if (imageFile) {
         imageUrl = await uploadImage() || undefined;
       }
@@ -311,8 +312,8 @@ export default function EventsPage() {
   const filteredEvents = events.filter(event => {
     const matchesCategory = selectedCategory === 'all' || event.category === selectedCategory;
     const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         event.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         event.location.toLowerCase().includes(searchTerm.toLowerCase());
+      event.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      event.location.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
@@ -322,8 +323,8 @@ export default function EventsPage() {
   });
 
   const getEventsForDay = (day: Date) => {
-    return filteredEvents.filter(event => 
-      isSameDay(event.startDate, day) || 
+    return filteredEvents.filter(event =>
+      isSameDay(event.startDate, day) ||
       (event.startDate <= day && event.endDate >= day)
     );
   };
@@ -360,7 +361,7 @@ export default function EventsPage() {
         pageTitle="Etkinlikler"
         pageDescription="Kulüp etkinliklerini yönetebilir ve takip edebilirsiniz."
         firstButtonText="Yeni Etkinlik Ekle"
-        pageIcon={<Activity />}
+        pageIcon={<CalendarClock />}
       />
       {/* Filters and View Mode */}
       <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
@@ -396,31 +397,28 @@ export default function EventsPage() {
           <div className="flex gap-2">
             <button
               onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-lg transition-all duration-200 ${
-                viewMode === 'grid' 
-                  ? 'bg-blue-100 text-blue-600' 
+              className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'grid'
+                  ? 'bg-blue-100 text-blue-600'
                   : 'text-gray-400 hover:text-gray-600'
-              }`}
+                }`}
             >
               <Grid className="h-5 w-5" />
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={`p-2 rounded-lg transition-all duration-200 ${
-                viewMode === 'list' 
-                  ? 'bg-blue-100 text-blue-600' 
+              className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'list'
+                  ? 'bg-blue-100 text-blue-600'
                   : 'text-gray-400 hover:text-gray-600'
-              }`}
+                }`}
             >
               <List className="h-5 w-5" />
             </button>
             <button
               onClick={() => setViewMode('calendar')}
-              className={`p-2 rounded-lg transition-all duration-200 ${
-                viewMode === 'calendar' 
-                  ? 'bg-blue-100 text-blue-600' 
+              className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'calendar'
+                  ? 'bg-blue-100 text-blue-600'
                   : 'text-gray-400 hover:text-gray-600'
-              }`}
+                }`}
             >
               <CalendarDays className="h-5 w-5" />
             </button>
@@ -443,8 +441,8 @@ export default function EventsPage() {
               {/* Event Image */}
               <div className="relative h-48 bg-gradient-to-br from-blue-400 to-purple-400 overflow-hidden">
                 {event.imageUrl ? (
-                  <Image 
-                    src={event.imageUrl} 
+                  <Image
+                    src={event.imageUrl}
                     alt={event.title}
                     fill
                     className="object-cover group-hover:scale-110 transition-transform duration-300"
@@ -454,7 +452,7 @@ export default function EventsPage() {
                     <Calendar className="h-16 w-16 text-white/50" />
                   </div>
                 )}
-                
+
                 {/* Category Badge */}
                 <div className="absolute top-4 left-4">
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${categories[event.category].lightColor}`}>
@@ -477,7 +475,7 @@ export default function EventsPage() {
                 <h3 className="font-semibold text-lg text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
                   {event.title}
                 </h3>
-                
+
                 <p className="text-gray-600 text-sm mb-4 line-clamp-2">
                   {event.description}
                 </p>
@@ -487,12 +485,12 @@ export default function EventsPage() {
                     <Clock className="h-4 w-4" />
                     <span>{format(event.startDate, 'dd MMM yyyy HH:mm', { locale: tr })}</span>
                   </div>
-                  
+
                   <div className="flex items-center gap-2 text-gray-500">
                     <MapPin className="h-4 w-4" />
                     <span className="truncate">{event.location}</span>
                   </div>
-                  
+
                   <div className="flex items-center gap-2 text-gray-500">
                     <Users className="h-4 w-4" />
                     <span>{event.attendees.length} / {event.maxAttendees} Katılımcı</span>
@@ -542,17 +540,16 @@ export default function EventsPage() {
                       </>
                     )}
                   </div>
-                  
+
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       handleAttend(event);
                     }}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                      user && event.attendees.includes(user.uid)
+                    className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${user && event.attendees.includes(user.uid)
                         ? 'bg-green-100 text-green-700 hover:bg-green-200'
                         : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                    }`}
+                      }`}
                   >
                     {user && event.attendees.includes(user.uid) ? (
                       <>
@@ -606,8 +603,8 @@ export default function EventsPage() {
                       <div className="flex items-center">
                         {event.imageUrl ? (
                           <div className="relative h-10 w-10 rounded-lg overflow-hidden mr-3">
-                            <Image 
-                              src={event.imageUrl} 
+                            <Image
+                              src={event.imageUrl}
                               alt={event.title}
                               fill
                               className="object-cover"
@@ -646,7 +643,7 @@ export default function EventsPage() {
                           {event.attendees.length} / {event.maxAttendees}
                         </span>
                         <div className="ml-2 w-24 bg-gray-200 rounded-full h-2">
-                          <div 
+                          <div
                             className="bg-blue-600 h-2 rounded-full"
                             style={{ width: `${(event.attendees.length / event.maxAttendees) * 100}%` }}
                           />
@@ -685,11 +682,10 @@ export default function EventsPage() {
                         )}
                         <button
                           onClick={() => handleAttend(event)}
-                          className={`ml-auto px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                            user && event.attendees.includes(user.uid)
+                          className={`ml-auto px-3 py-1 rounded-lg text-sm font-medium transition-colors ${user && event.attendees.includes(user.uid)
                               ? 'bg-green-100 text-green-700 hover:bg-green-200'
                               : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                          }`}
+                            }`}
                         >
                           {user && event.attendees.includes(user.uid) ? 'Katılıyorum' : 'Katıl'}
                         </button>
@@ -740,29 +736,27 @@ export default function EventsPage() {
                 {day}
               </div>
             ))}
-            
+
             {/* Calendar Days */}
             {Array.from({ length: calendarDays[0].getDay() === 0 ? 6 : calendarDays[0].getDay() - 1 }).map((_, i) => (
               <div key={`empty-${i}`} className="bg-white p-2 h-24" />
             ))}
-            
+
             {calendarDays.map(day => {
               const dayEvents = getEventsForDay(day);
               const isToday = isSameDay(day, new Date());
-              
+
               return (
                 <div
                   key={day.toISOString()}
-                  className={`bg-white p-2 h-24 relative overflow-hidden ${
-                    isToday ? 'ring-2 ring-blue-500 ring-inset' : ''
-                  }`}
+                  className={`bg-white p-2 h-24 relative overflow-hidden ${isToday ? 'ring-2 ring-blue-500 ring-inset' : ''
+                    }`}
                 >
-                  <div className={`text-sm font-medium ${
-                    isToday ? 'text-blue-600' : 'text-gray-900'
-                  }`}>
+                  <div className={`text-sm font-medium ${isToday ? 'text-blue-600' : 'text-gray-900'
+                    }`}>
                     {format(day, 'd')}
                   </div>
-                  
+
                   {dayEvents.length > 0 && (
                     <div className="mt-1 space-y-1">
                       {dayEvents.slice(0, 2).map((event, i) => (
@@ -772,9 +766,8 @@ export default function EventsPage() {
                             setSelectedEvent(event);
                             setShowEventModal(true);
                           }}
-                          className={`text-xs p-1 rounded cursor-pointer truncate ${
-                            categories[event.category].lightColor
-                          } hover:opacity-80 transition-opacity`}
+                          className={`text-xs p-1 rounded cursor-pointer truncate ${categories[event.category].lightColor
+                            } hover:opacity-80 transition-opacity`}
                         >
                           {event.title}
                         </div>
@@ -794,251 +787,250 @@ export default function EventsPage() {
       )}
 
       {/* Create/Edit Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-[9999] p-4" onClick={resetForm}>
-          <div className="bg-white rounded-2xl p-8 w-full max-w-2xl shadow-2xl border border-gray-100 transform transition-all" onClick={(e) => e.stopPropagation()}>
-            <ModalTitle modalTitle={editingEvent ? 'Etkinliği Düzenle' : 'Yeni Etkinlik Ekle'} onClose={resetForm} />
-            <form onSubmit={handleSubmit} className="space-y-6 max-h-[80vh] overflow-y-auto">
-              {/* Image Upload */}
+      {showModal && typeof document !== 'undefined' && createPortal(
+        <BasicModal className='max-w-lg' open={showModal} onClose={() => resetForm()}>
+          <ModalTitle modalTitle={editingEvent ? 'Etkinliği Düzenle' : 'Yeni Etkinlik Ekle'} onClose={resetForm} />
+          <form onSubmit={handleSubmit} className="space-y-6 max-h-[80vh] overflow-y-auto">
+            {/* Image Upload */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Etkinlik Görseli
+              </label>
+              <div className="flex items-center gap-4">
+                <div className="relative w-32 h-32 bg-gray-100 rounded-lg overflow-hidden">
+                  {imagePreview ? (
+                    <>
+                      <Image
+                        src={imagePreview}
+                        alt="Preview"
+                        fill
+                        className="object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setImageFile(null);
+                          setImagePreview(null);
+                        }}
+                        className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </>
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <ImageIcon className="h-8 w-8 text-gray-400" />
+                    </div>
+                  )}
+                </div>
+
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="hidden"
+                  id="image-upload"
+                />
+                <label
+                  htmlFor="image-upload"
+                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 cursor-pointer transition-colors"
+                >
+                  Görsel Seç
+                </label>
+              </div>
+            </div>
+
+            {/* Title */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Etkinlik Başlığı
+              </label>
+              <input
+                type="text"
+                value={formData.title}
+                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              />
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Açıklama
+              </label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                rows={4}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                required
+              />
+            </div>
+
+            {/* Category and Dates */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Etkinlik Görseli
+                  Kategori
                 </label>
-                <div className="flex items-center gap-4">
-                  <div className="relative w-32 h-32 bg-gray-100 rounded-lg overflow-hidden">
-                    {imagePreview ? (
-                      <>
-                        <Image 
-                          src={imagePreview} 
-                          alt="Preview" 
-                          fill
-                          className="object-cover"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setImageFile(null);
-                            setImagePreview(null);
-                          }}
-                          className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </>
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <ImageIcon className="h-8 w-8 text-gray-400" />
-                      </div>
-                    )}
-                  </div>
-                  
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="hidden"
-                    id="image-upload"
-                  />
-                  <label
-                    htmlFor="image-upload"
-                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 cursor-pointer transition-colors"
-                  >
-                    Görsel Seç
-                  </label>
-                </div>
+                <select
+                  value={formData.category}
+                  onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value as Event['category'] }))}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  {Object.entries(categories).map(([key, value]) => (
+                    <option key={key} value={key}>{value.label}</option>
+                  ))}
+                </select>
               </div>
 
-              {/* Title */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Etkinlik Başlığı
+                  Başlangıç
                 </label>
                 <input
-                  type="text"
-                  value={formData.title}
-                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                  type="datetime-local"
+                  value={formData.startDate}
+                  onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
                 />
               </div>
 
-              {/* Description */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Açıklama
+                  Bitiş
                 </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  rows={4}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                <input
+                  type="datetime-local"
+                  value={formData.endDate}
+                  onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
+                  min={formData.startDate}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Location and Max Attendees */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Konum
+                </label>
+                <input
+                  type="text"
+                  value={formData.location}
+                  onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
                 />
               </div>
 
-              {/* Category and Dates */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Kategori
-                  </label>
-                  <select
-                    value={formData.category}
-                    onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value as Event['category'] }))}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    {Object.entries(categories).map(([key, value]) => (
-                      <option key={key} value={key}>{value.label}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Başlangıç
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={formData.startDate}
-                    onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Bitiş
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={formData.endDate}
-                    onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
-                    min={formData.startDate}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Location and Max Attendees */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Konum
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.location}
-                    onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Maksimum Katılımcı
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.maxAttendees}
-                    onChange={(e) => setFormData(prev => ({ ...prev, maxAttendees: parseInt(e.target.value) }))}
-                    min="1"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Tags */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Etiketler
+                  Maksimum Katılımcı
                 </label>
-                <div className="flex gap-2 mb-2">
-                  <input
-                    type="text"
-                    value={tagInput}
-                    onChange={(e) => setTagInput(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                    placeholder="Etiket ekle..."
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  <button
-                    type="button"
-                    onClick={addTag}
-                    className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
-                  >
-                    Ekle
-                  </button>
-                </div>
-                {formData.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {formData.tags.map((tag, index) => (
-                      <span
-                        key={index}
-                        className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm flex items-center gap-1"
-                      >
-                        #{tag}
-                        <button
-                          type="button"
-                          onClick={() => removeTag(tag)}
-                          className="text-gray-500 hover:text-gray-700"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
+                <input
+                  type="number"
+                  value={formData.maxAttendees}
+                  onChange={(e) => setFormData(prev => ({ ...prev, maxAttendees: parseInt(e.target.value) }))}
+                  min="1"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
               </div>
+            </div>
 
-              {/* Options */}
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.isPublic}
-                    onChange={(e) => setFormData(prev => ({ ...prev, isPublic: e.target.checked }))}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700">Herkese Açık</span>
-                </label>
-
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.isFeatured}
-                    onChange={(e) => setFormData(prev => ({ ...prev, isFeatured: e.target.checked }))}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700">Öne Çıkan</span>
-                </label>
-              </div>
-
-              {/* Submit Buttons */}
-              <div className="flex gap-3 pt-4 border-t">
+            {/* Tags */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Etiketler
+              </label>
+              <div className="flex gap-2 mb-2">
+                <input
+                  type="text"
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                  placeholder="Etiket ekle..."
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
                 <button
                   type="button"
-                  onClick={() => {
-                    resetForm();
-                  }}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  onClick={addTag}
+                  className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
                 >
-                  İptal
-                </button>
-                <button
-                  type="submit"
-                  disabled={uploadingImage}
-                  className="flex-1 px-4 py-2 text-white rounded-md bg-gradient-to-r from-blue-500 to-purple-600"
-                >
-                  {uploadingImage ? 'Yükleniyor...' : editingEvent ? 'Güncelle' : 'Ekle'}
+                  Ekle
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
+              {formData.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {formData.tags.map((tag, index) => (
+                    <span
+                      key={index}
+                      className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm flex items-center gap-1"
+                    >
+                      #{tag}
+                      <button
+                        type="button"
+                        onClick={() => removeTag(tag)}
+                        className="text-gray-500 hover:text-gray-700"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Options */}
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.isPublic}
+                  onChange={(e) => setFormData(prev => ({ ...prev, isPublic: e.target.checked }))}
+                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700">Herkese Açık</span>
+              </label>
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.isFeatured}
+                  onChange={(e) => setFormData(prev => ({ ...prev, isFeatured: e.target.checked }))}
+                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700">Öne Çıkan</span>
+              </label>
+            </div>
+
+            {/* Submit Buttons */}
+            <div className="flex gap-3 pt-4 border-t">
+              <button
+                type="button"
+                onClick={() => {
+                  resetForm();
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                İptal
+              </button>
+              <button
+                type="submit"
+                disabled={uploadingImage}
+                className="flex-1 px-4 py-2 text-white rounded-md bg-gradient-to-r from-blue-500 to-purple-600"
+              >
+                {uploadingImage ? 'Yükleniyor...' : editingEvent ? 'Güncelle' : 'Ekle'}
+              </button>
+            </div>
+          </form>
+        </BasicModal>,
+        document.body
       )}
 
       {/* Delete Confirmation Modal */}
@@ -1084,8 +1076,8 @@ export default function EventsPage() {
             {/* Event Header Image */}
             <div className="relative h-64 bg-gradient-to-br from-blue-400 to-purple-400">
               {selectedEvent.imageUrl ? (
-                <Image 
-                  src={selectedEvent.imageUrl} 
+                <Image
+                  src={selectedEvent.imageUrl}
                   alt={selectedEvent.title}
                   fill
                   className="object-cover"
@@ -1095,7 +1087,7 @@ export default function EventsPage() {
                   <Calendar className="h-20 w-20 text-white/50" />
                 </div>
               )}
-              
+
               <button
                 onClick={() => {
                   setShowEventModal(false);
@@ -1123,7 +1115,7 @@ export default function EventsPage() {
             {/* Event Details */}
             <div className="p-6">
               <h2 className="text-3xl font-bold text-gray-900 mb-4">{selectedEvent.title}</h2>
-              
+
               <p className="text-gray-600 mb-6">{selectedEvent.description}</p>
 
               {/* Event Info Grid */}
@@ -1134,7 +1126,7 @@ export default function EventsPage() {
                     <div>
                       <p className="font-medium text-gray-900">Tarih ve Saat</p>
                       <p className="text-gray-600">
-                        {format(selectedEvent.startDate, 'dd MMMM yyyy HH:mm', { locale: tr })} - 
+                        {format(selectedEvent.startDate, 'dd MMMM yyyy HH:mm', { locale: tr })} -
                         {format(selectedEvent.endDate, 'HH:mm', { locale: tr })}
                       </p>
                     </div>
@@ -1166,7 +1158,7 @@ export default function EventsPage() {
                         {selectedEvent.attendees.length} / {selectedEvent.maxAttendees} Kişi
                       </p>
                       <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
+                        <div
                           className="bg-gradient-to-r from-blue-600 to-purple-600 h-2 rounded-full transition-all duration-300"
                           style={{ width: `${(selectedEvent.attendees.length / selectedEvent.maxAttendees) * 100}%` }}
                         />
@@ -1196,11 +1188,10 @@ export default function EventsPage() {
               <div className="flex gap-3 pt-6 border-t">
                 <button
                   onClick={() => handleAttend(selectedEvent)}
-                  className={`flex-1 px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
-                    user && selectedEvent.attendees.includes(user.uid)
+                  className={`flex-1 px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 ${user && selectedEvent.attendees.includes(user.uid)
                       ? 'bg-green-100 text-green-700 hover:bg-green-200'
                       : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700'
-                  }`}
+                    }`}
                 >
                   {user && selectedEvent.attendees.includes(user.uid) ? (
                     <>

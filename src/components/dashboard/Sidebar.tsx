@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
   Home,
-  Users,
   Calendar,
   DollarSign,
   Activity,
@@ -14,7 +13,10 @@ import {
   Dumbbell,
   ClipboardCheck,
   UserCog,
-  Bell
+  Bell,
+  ShieldUser,
+  CalendarClock,
+  UsersRound 
 } from 'lucide-react';
 
 const menuItems = [
@@ -40,7 +42,7 @@ const menuItems = [
   },
   {
     title: 'Gruplar',
-    icon: UsersIcon,
+    icon: UsersRound,
     href: '/dashboard/groups'
   },
   {
@@ -50,7 +52,7 @@ const menuItems = [
   },
   {
     title: 'Antrenörler',
-    icon: Users,
+    icon: ShieldUser,
     href: '/dashboard/trainers'
   },
   {
@@ -75,7 +77,7 @@ const menuItems = [
   },
   {
     title: 'Etkinlikler',
-    icon: Activity,
+    icon: CalendarClock,
     href: '/dashboard/events'
   },
   {
