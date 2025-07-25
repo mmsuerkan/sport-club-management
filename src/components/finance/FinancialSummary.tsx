@@ -92,9 +92,7 @@ export default function FinancialSummary() {
 
       // Sabit giderler
       const recurringStats = await RecurringExpenseService.getRecurringExpenseStats();
-      console.log('Sabit gider istatistikleri:', recurringStats);
       const recurringThisMonth = await getThisMonthRecurringExpenses();
-      console.log('Bu ay sabit giderler:', recurringThisMonth);
 
       // Manuel işlemler - TransactionService kullan
       const transactionStats = await TransactionService.getTransactionStats();
