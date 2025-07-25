@@ -931,7 +931,7 @@ export default function MatchesPage() {
       )}
 
       {/* Maç Ekleme/Düzenleme Modalı */}
-      {showModal && typeof document !== 'undefined' && createPortal(
+      {typeof document !== 'undefined' && createPortal(
         <BasicModal className='max-w-lg' open={showModal} onClose={() => resetForm()}>
           <ModalTitle modalTitle={editingMatch ? 'Maçı Düzenle' : 'Yeni Maç Takvimi Ekle'} onClose={resetForm} />
           <form onSubmit={handleSubmit} className="space-y-4 max-h-[80vh] overflow-y-auto">

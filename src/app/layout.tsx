@@ -5,8 +5,8 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 
 export const metadata: Metadata = {
-  title: "Spor Klübü Yönetim Sistemi",
-  description: "Spor klübü yönetimi için kapsamlı çözüm",
+  title: "Spor Kulübü Yönetim Sistemi",
+  description: "Spor kulübü yönetimi için kapsamlı çözüm",
 };
 
 export default function RootLayout({

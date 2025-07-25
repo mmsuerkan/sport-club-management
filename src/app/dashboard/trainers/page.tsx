@@ -380,8 +380,8 @@ export default function TrainersPage() {
         pageIcon={<ShieldUser />}
       />
       {/* Form Modal */}
-      {showModal && typeof document !== 'undefined' && createPortal(
-        <BasicModal className='max-w-3x1' open={showModal} onClose={() => resetForm()}>
+      {typeof document !== 'undefined' && createPortal(
+        <BasicModal className='max-w-2xl' open={showModal} onClose={() => resetForm()}>
           <ModalTitle
             modalTitle={editingTrainer ? 'Antrenör Düzenle' : 'Yeni Antrenör Ekle'}
             onClose={resetForm}
