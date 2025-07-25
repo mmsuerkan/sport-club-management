@@ -28,6 +28,8 @@ export interface Budget {
   createdAt: Date;
   updatedAt: Date;
   createdBy: string;
+  branchId?: string;
+  branchName?: string;
 }
 
 const BUDGETS_COLLECTION = 'budgets';

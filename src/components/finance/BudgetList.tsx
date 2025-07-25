@@ -224,6 +224,12 @@ export default function BudgetList() {
                       </span>
                     </div>
                     <div className="flex items-center gap-4 text-sm text-gray-600">
+                      {(budget as any).branchName && (
+                        <>
+                          <span>Şube: {(budget as any).branchName}</span>
+                          <span>•</span>
+                        </>
+                      )}
                       <span>Dönem: {budget.period === 'monthly' ? 'Aylık' : budget.period === 'quarterly' ? 'Üç Aylık' : 'Yıllık'}</span>
                       <span>•</span>
                       <span>{new Date(budget.startDate).toLocaleDateString('tr-TR')} - {new Date(budget.endDate).toLocaleDateString('tr-TR')}</span>

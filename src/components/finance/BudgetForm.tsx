@@ -1,8 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Calendar, DollarSign, Tag, FileText } from 'lucide-react';
+import { X, Calendar, DollarSign, Tag, FileText, Building } from 'lucide-react';
 import { BudgetService, Budget } from '@/lib/firebase/budget-service';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase/config';
+
+interface Branch {
+  id: string;
+  name: string;
+}
 
 interface BudgetFormProps {
   isOpen: boolean;
@@ -20,16 +27,45 @@ export default function BudgetForm({ isOpen, onClose, onSuccess, budget, mode }:
     startDate: budget?.startDate ? budget.startDate.toISOString().split('T')[0] : '',
     endDate: budget?.endDate ? budget.endDate.toISOString().split('T')[0] : '',
     description: budget?.description || '',
-    tags: budget?.tags?.join(', ') || ''
+    tags: budget?.tags?.join(', ') || '',
+    branchId: (budget as any)?.branchId || ''
   });
 
   const [useCustomDates, setUseCustomDates] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [branches, setBranches] = useState<Branch[]>([]);
+
+  // Fetch branches on component mount
+  useEffect(() => {
+    if (isOpen) {
+      fetchBranches();
+    }
+  }, [isOpen]);
+
+  const fetchBranches = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, 'branches'));
+      const branchesData: Branch[] = [];
+      querySnapshot.forEach((doc) => {
+        branchesData.push({
+          id: doc.id,
+          name: doc.data().name
+        });
+      });
+      setBranches(branchesData);
+    } catch (error) {
+      console.error('Branches fetch error:', error);
+    }
+  };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
+
+    if (!formData.branchId) {
+      newErrors.branchId = 'Şube seçimi gereklidir';
+    }
 
     if (!formData.category.trim()) {
       newErrors.category = 'Kategori gereklidir';
@@ -65,6 +101,8 @@ export default function BudgetForm({ isOpen, onClose, onSuccess, budget, mode }:
     setLoading(true);
 
     try {
+      const selectedBranch = branches.find(b => b.id === formData.branchId);
+      
       const budgetData = {
         category: formData.category.trim(),
         plannedAmount: formData.plannedAmount,
@@ -73,38 +111,30 @@ export default function BudgetForm({ isOpen, onClose, onSuccess, budget, mode }:
         endDate: new Date(formData.endDate),
         description: formData.description.trim(),
         tags: formData.tags ? formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag) : [],
-        createdBy: 'current-user' // TODO: Replace with actual user ID
+        createdBy: 'current-user', // TODO: Replace with actual user ID
+        branchId: formData.branchId,
+        branchName: selectedBranch?.name || ''
       };
 
       if (mode === 'create') {
-        // Check for overlapping budgets
+        // Check for existing active budget for this branch
         const existingBudgets = await BudgetService.getBudgets();
-        const overlappingBudget = existingBudgets.find(existing => 
-          existing.category === budgetData.category &&
-          existing.status !== 'completed' &&
-          (
-            // New budget starts during existing budget period
-            (budgetData.startDate >= existing.startDate && budgetData.startDate <= existing.endDate) ||
-            // New budget ends during existing budget period
-            (budgetData.endDate >= existing.startDate && budgetData.endDate <= existing.endDate) ||
-            // New budget completely contains existing budget
-            (budgetData.startDate <= existing.startDate && budgetData.endDate >= existing.endDate)
-          )
+        const existingBranchBudget = existingBudgets.find(existing => 
+          (existing as any).branchId === budgetData.branchId &&
+          existing.status !== 'completed'
         );
 
-        if (overlappingBudget) {
-          const confirm = window.confirm(
-            `Dikkat! ${budgetData.category} kategorisinde \u00e7akışan bir bütçe var:\n\n` +
-            `Mevcut Bütçe: ${overlappingBudget.startDate.toLocaleDateString('tr-TR')} - ${overlappingBudget.endDate.toLocaleDateString('tr-TR')}\n` +
-            `Planlanan: ${overlappingBudget.plannedAmount.toLocaleString('tr-TR')} ₺\n` +
-            `Harcanan: ${overlappingBudget.spentAmount.toLocaleString('tr-TR')} ₺\n\n` +
-            `Yine de devam etmek istiyor musunuz?`
+        if (existingBranchBudget) {
+          alert(
+            `Dikkat! ${selectedBranch?.name} şubesi için zaten aktif bir bütçe bulunuyor:\n\n` +
+            `Mevcut Bütçe: ${existingBranchBudget.category}\n` +
+            `Dönem: ${existingBranchBudget.startDate.toLocaleDateString('tr-TR')} - ${existingBranchBudget.endDate.toLocaleDateString('tr-TR')}\n` +
+            `Planlanan: ${existingBranchBudget.plannedAmount.toLocaleString('tr-TR')} ₺\n` +
+            `Harcanan: ${existingBranchBudget.spentAmount.toLocaleString('tr-TR')} ₺\n\n` +
+            `Her şube için sadece 1 aktif bütçe oluşturulabilir. Önce mevcut bütçeyi tamamlayın veya silin.`
           );
-
-          if (!confirm) {
-            setLoading(false);
-            return;
-          }
+          setLoading(false);
+          return;
         }
 
         await BudgetService.createBudget(budgetData);
@@ -206,6 +236,29 @@ export default function BudgetForm({ isOpen, onClose, onSuccess, budget, mode }:
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+          {/* Branch Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <Building size={16} className="inline mr-1" />
+              Şube *
+            </label>
+            <select
+              value={formData.branchId}
+              onChange={(e) => handleInputChange('branchId', e.target.value)}
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                errors.branchId ? 'border-red-500' : 'border-gray-300'
+              }`}
+            >
+              <option value="">Şube seçin</option>
+              {branches.map(branch => (
+                <option key={branch.id} value={branch.id}>{branch.name}</option>
+              ))}
+            </select>
+            {errors.branchId && (
+              <p className="text-red-500 text-sm mt-1">{errors.branchId}</p>
+            )}
+          </div>
+
           {/* Category */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
