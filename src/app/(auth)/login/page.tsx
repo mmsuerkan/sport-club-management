@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { signIn, resetPassword } from '@/lib/firebase/auth';
+import { useAuth } from '@/contexts/AuthContext';
+import { resetPassword } from '@/lib/firebase/auth';
 import { Loader2, Mail, Lock, Eye, EyeOff, Activity, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface LoginForm {
   email: string;
@@ -12,6 +14,8 @@ interface LoginForm {
 }
 
 export default function LoginPage() {
+  const { signIn, user, loading } = useAuth();
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -24,6 +28,13 @@ export default function LoginPage() {
   useEffect(() => {
     setIsVisible(true);
   }, []);
+
+  // Redirect if already logged in (only on page load, not after form submission)
+  useEffect(() => {
+    if (!loading && user && !isLoading) { // Don't redirect if form is being submitted
+      window.location.href = '/dashboard';
+    }
+  }, [user, loading, isLoading]);
   
   const {
     register,
@@ -36,35 +47,18 @@ export default function LoginPage() {
     setError(null);
     
     try {
-      console.log('Attempting login with:', data.email);
-      const user = await signIn(data.email, data.password, rememberMe);
+      // Use AuthContext signIn method
+      await signIn(data.email, data.password);
       
-      console.log('SignIn response:', user);
+      // Immediate redirect without waiting for useEffect
+      window.location.href = '/dashboard';
       
-      if (!user) {
-        throw new Error('Login failed - no user returned');
-      }
-      
-      console.log('User object type:', typeof user, user);
-      
-      // Set auth cookie for middleware
-      const token = await user.getIdToken();
-      document.cookie = `auth-token=${token}; path=/; max-age=3600; SameSite=Lax`;
-      
-      console.log('Login successful, token:', token.substring(0, 50) + '...');
-      console.log('Cookie set, checking cookies:', document.cookie);
-      
-      // Force page reload to trigger middleware
-      setTimeout(() => {
-        window.location.href = '/dashboard';
-      }, 500);
     } catch (error) {
-      console.error('Login error details:', error);
       const errorMessage = error instanceof Error ? error.message : 'E-posta veya şifre hatalı';
       setError(`Giriş hatası: ${errorMessage}`);
-    } finally {
-      setIsLoading(false);
+      setIsLoading(false); // Only reset loading on error
     }
+    // Don't reset loading on success - keeps button in loading state during redirect
   };
 
   const handleResetPassword = async () => {

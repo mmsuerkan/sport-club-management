@@ -1,5 +1,5 @@
 import { getMessaging, getToken, onMessage, MessagePayload } from 'firebase/messaging';
-import { app } from './config';
+import app from './config';
 
 // FCM Messaging instance
 let messaging: any = null;

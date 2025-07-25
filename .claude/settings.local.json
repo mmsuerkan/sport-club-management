@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(firebase deploy:*)",
+      "Bash(curl:*)",
+      "Bash(git add:*)",
+      "Bash(git push:*)",
+      "Bash(git rm:*)",
+      "Bash(npm install:*)",
+      "Bash(npx expo start:*)",
+      "Bash(git commit:*)",
+      "Bash(npm audit:*)",
+      "Bash(npx expo install:*)",
+      "Bash(rg:*)",
+      "Bash(npx tsc:*)"
+    ],
+    "deny": []
+  }
+}

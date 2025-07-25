@@ -66,7 +66,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       // Fallback to client-side clearing if API fails
       document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=strict';
-      document.cookie = 'auth-state=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=strict';
+      // auth-state is httpOnly, cannot be cleared from client-side
+      console.warn('Could not clear auth-state cookie from client-side (httpOnly)');
     }
   };
 
@@ -138,7 +139,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const user = await firebaseSignIn(email, password);
+      const user = await firebaseSignIn(email, password, false);
       
       // Update cookies and setup refresh immediately after successful login
       await updateAuthCookies(user);
