@@ -27,6 +27,7 @@ import PageTitle from '@/components/page-title';
 import Loading from '@/components/loading';
 import BasicModal from '@/components/modal';
 import { createPortal } from 'react-dom';
+import StatCard from '@/components/stat-card';
 
 export default function NotificationsPage() {
   const { user } = useAuth();
@@ -185,6 +186,16 @@ export default function NotificationsPage() {
     }
   };
 
+  const getStatusText = (text: string) => {
+    switch (text) {
+      case 'SENT': return 'Gönderildi';
+      case 'SENDING': return 'Gönderiliyor';
+      case 'FAILE': return 'Hatalı';
+      case 'SCHEDULED': return 'Planlanmış';
+      default: return text;
+    }
+  };
+
   if (loading && notifications.length === 0) {
     return (
       <Loading message="Bildirimler yükleniyor..." />
@@ -210,61 +221,55 @@ export default function NotificationsPage() {
       />
       {/* İstatistikler */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 my-5">
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 border border-blue-200">
-          <div className="flex items-center gap-3">
-            <div className="bg-blue-500 p-2 rounded-lg w-12 h-12 flex items-center justify-center">
-              <Bell className="h-6 w-6 text-white" size={20} />
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-blue-900">
-                {notifications.length}
-              </div>
-              <div className="text-blue-700 text-sm">Toplam Bildirim</div>
-            </div>
-          </div>
-        </div>
 
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-6 border border-green-200">
-          <div className="flex items-center gap-3">
-            <div className="bg-green-500 p-2 rounded-lg w-12 h-12 flex items-center justify-center">
-              <CheckCircle className="h-6 w-6 text-white" size={20} />
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-green-900">
-                {notifications.filter(n => n.status === 'SENT').length}
-              </div>
-              <div className="text-sm text-green-700">Gönderildi</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-2xl p-6 border border-yellow-200">
-          <div className="flex items-center gap-3">
-            <div className="bg-yellow-500 p-2 rounded-lg w-12 h-12 flex items-center justify-center">
-              <Clock className="h-6 w-6 text-white" size={20} />
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-yellow-900">
-                {notifications.filter(n => n.status === 'SENDING' || n.status === 'SCHEDULED').length}
-              </div>
-              <div className="text-sm text-yellow-700">Beklemede</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-2xl p-6 border border-red-200">
-          <div className="flex items-center gap-3">
-            <div className="bg-red-500 p-2 rounded-lg w-12 h-12 flex items-center justify-center">
-              <XCircle className="h-6 w-6 text-white" size={20} />
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-red-900">
-                {notifications.filter(n => n.status === 'FAILED').length}
-              </div>
-              <div className="text-sm text-red-700">Başarısız</div>
-            </div>
-          </div>
-        </div>
+        <StatCard
+          value={notifications.length}
+          subLabel="Toplam Bildirim"
+          subLabelTextColor="text-blue"
+          gradientFrom="from-blue-50"
+          gradientTo="to-blue-100"
+          borderColor="border-blue-200"
+          textColor='text-blue-900'
+          iconBgColor='bg-blue-500'
+          icon={<Bell />}
+          notify={true}
+        />
+        <StatCard
+          value={notifications.filter(n => n.status === 'SENT').length}
+          subLabel="Gönderildi"
+          subLabelTextColor="text-green-700"
+          gradientFrom="from-green-50"
+          gradientTo="to-green-100"
+          borderColor="border-green-200"
+          textColor='text-green-900'
+          iconBgColor='bg-green-500'
+          icon={<CheckCircle />}
+          notify={true}
+        />
+        <StatCard
+          value={notifications.filter(n => n.status === 'SENDING' || n.status === 'SCHEDULED').length}
+          subLabel="Beklemede"
+          subLabelTextColor="text-yellow-700"
+          gradientFrom="from-yellow-50"
+          gradientTo="to-yellow-100"
+          borderColor="border-yellow-200"
+          textColor='text-yellow-900'
+          iconBgColor='bg-yellow-500'
+          icon={<Clock />}
+          notify={true}
+        />
+        <StatCard
+          value={notifications.filter(n => n.status === 'FAILED').length}
+          subLabel="Başarısız"
+          subLabelTextColor="text-red-700"
+          gradientFrom="from-red-50"
+          gradientTo="to-red-100"
+          borderColor="border-red-200"        
+          textColor='text-red-900'
+          iconBgColor='bg-red-500'
+          icon={<XCircle />}
+          notify={true}
+        />
       </div>
 
       {/* Bildirim Listesi */}
@@ -323,7 +328,7 @@ export default function NotificationsPage() {
                   <td className="px-6 py-4">
                     <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(notification.status)}`}>
                       {getStatusIcon(notification.status)}
-                      {notification.status}
+                      {getStatusText(notification.status)}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-900">

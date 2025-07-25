@@ -492,7 +492,7 @@ export default function TrainingsPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'scheduled': return 'bg-blue-100 text-blue-800';
+      case 'scheduled': return 'bg-purple-100 text-purple-800';
       case 'ongoing': return 'bg-green-100 text-green-800';
       case 'completed': return 'bg-gray-100 text-gray-800';
       case 'cancelled': return 'bg-red-100 text-red-800';
@@ -598,7 +598,7 @@ export default function TrainingsPage() {
           label="Bugün"
           labelTextColor="text-green-600"
           value={expandedTrainings.filter(t => t.date === new Date().toISOString().split('T')[0] && t.status === 'ongoing').length}
-          subLabel="Devam Eden"
+          subLabel="Devam Ediyor"
           subLabelTextColor="text-green-700"
           gradientFrom="from-green-50"
           gradientTo="to-green-100"
@@ -611,7 +611,7 @@ export default function TrainingsPage() {
           label="Aktif"
           labelTextColor="text-purple-600"
           value={expandedTrainings.filter(t => t.status === 'scheduled').length}
-          subLabel="Planlanmış"
+          subLabel="Planlandı"
           subLabelTextColor="text-purple-700"
           gradientFrom="from-purple-50"
           gradientTo="to-purple-100"
