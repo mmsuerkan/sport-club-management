@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { Edit2, Trash2, GraduationCap, Phone, Mail, Building, Clock } from 'lucide-react';
 import { collection, getDocs, doc, setDoc, deleteDoc, updateDoc, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
+import { StudentDebtService } from '@/lib/firebase/student-debt-service';
 import PageTitle from '@/components/page-title';
 import ModalTitle from '@/components/modal-title';
 import Loading from '@/components/loading';
@@ -63,9 +64,18 @@ export default function StudentsPage() {
     emergencyPhone: '',
     notes: '',
     branchId: '',
-    groupId: ''
+    groupId: '',
+    monthlyTuition: 1500, // Varsayılan aylık aidat
+    createTuitionPlan: true // 12 aylık aidat planı oluştur
   });
   const [loading, setLoading] = useState(true);
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('tr-TR', {
+      style: 'currency',
+      currency: 'TRY'
+    }).format(amount);
+  };
 
   useEffect(() => {
     fetchStudents();
@@ -206,6 +216,26 @@ export default function StudentsPage() {
           createdAt: new Date()
         });
 
+        // 12 aylık aidat planı oluştur
+        if (formData.createTuitionPlan) {
+          const currentDate = new Date();
+          const academicYear = `${currentDate.getFullYear()}-${currentDate.getFullYear() + 1}`;
+          
+          await StudentDebtService.createYearlyTuition(
+            newStudentRef.id,
+            {
+              name: formData.fullName.trim(),
+              groupId: formData.groupId,
+              groupName: selectedGroup?.name || '',
+              branchId: formData.branchId,
+              branchName: selectedBranch?.name || ''
+            },
+            formData.monthlyTuition,
+            currentDate,
+            academicYear
+          );
+        }
+
         // Aktivite log'u ekle
         await addActivityLog(
           'member',
@@ -236,7 +266,9 @@ export default function StudentsPage() {
       emergencyPhone: student.emergencyPhone,
       notes: student.notes,
       branchId: student.branchId,
-      groupId: student.groupId
+      groupId: student.groupId,
+      monthlyTuition: 1500, // Edit modunda aidat oluşturma disabled
+      createTuitionPlan: false // Edit modunda aidat oluşturma disabled
     });
     setShowModal(true);
   };
@@ -268,7 +300,9 @@ export default function StudentsPage() {
       emergencyPhone: '',
       notes: '',
       branchId: '',
-      groupId: ''
+      groupId: '',
+      monthlyTuition: 1500,
+      createTuitionPlan: true
     });
   };
 
@@ -471,6 +505,52 @@ export default function StudentsPage() {
                 rows={2}
               />
             </div>
+
+            {/* Aidat Ayarları - Sadece yeni öğrenci eklerken */}
+            {!editingStudent && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-green-800 mb-3">💰 Aidat Ayarları</h4>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Aylık Aidat (₺)
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.monthlyTuition}
+                      onChange={(e) => setFormData({ ...formData, monthlyTuition: Number(e.target.value) })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      min="0"
+                      step="50"
+                    />
+                  </div>
+
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="createTuitionPlan"
+                      checked={formData.createTuitionPlan}
+                      onChange={(e) => setFormData({ ...formData, createTuitionPlan: e.target.checked })}
+                      className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="createTuitionPlan" className="ml-2 block text-sm text-gray-700">
+                      12 aylık aidat planı oluştur
+                    </label>
+                  </div>
+                </div>
+
+                {formData.createTuitionPlan && (
+                  <div className="mt-3 p-3 bg-green-100 rounded-lg">
+                    <p className="text-sm text-green-700">
+                      📅 Bu öğrenci için {formatCurrency(formData.monthlyTuition)} aylık aidat ile 12 aylık ödeme planı oluşturulacak.
+                      <br />
+                      💰 Toplam yıllık tutar: <strong>{formatCurrency(formData.monthlyTuition * 12)}</strong>
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="flex gap-3 pt-4">
               <button

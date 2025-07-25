@@ -10,6 +10,7 @@ import {
 import TransactionList from '@/components/finance/TransactionList';
 import BudgetList from '@/components/finance/BudgetList';
 import FinanceOverview from '@/components/finance/FinanceOverview';
+import TuitionList from '@/components/finance/TuitionList';
 import PageTitle from '@/components/page-title';
 
 export default function FinancePage() {
@@ -19,6 +20,7 @@ export default function FinancePage() {
     { id: 'overview', name: 'Genel Bakış', icon: TrendingUp },
     { id: 'transactions', name: 'İşlemler', icon: DollarSign },
     { id: 'budgets', name: 'Bütçe', icon: PieChart },
+    { id: 'tuitions', name: 'Aidatlar', icon: Users },
   ];
 
   return (
@@ -60,6 +62,8 @@ export default function FinancePage() {
           <TransactionList />
         ) : activeTab === 'budgets' ? (
           <BudgetList />
+        ) : activeTab === 'tuitions' ? (
+          <TuitionList />
         ) : (
           <div className="text-center">
             <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
