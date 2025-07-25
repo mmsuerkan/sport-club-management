@@ -24,6 +24,24 @@ export const expenseCategories = [
   'Diğer Gider'
 ];
 
+// Sabit gider kategorileri
+export const recurringExpenseCategories = [
+  'Antrenör Ücretleri',
+  'Kira',
+  'Elektrik',
+  'Su',
+  'Doğalgaz',
+  'İnternet',
+  'Telefon',
+  'Muhasebe',
+  'Sigorta',
+  'Temizlik',
+  'Güvenlik',
+  'Maintenance',
+  'Lisans Ücretleri',
+  'Diğer Sabit Gider'
+];
+
 // Tüm kategoriler (gelir + gider) - Bütçe için kullanılacak
 export const allCategories = [
   ...incomeCategories,

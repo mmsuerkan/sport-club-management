@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { collection, query, orderBy, limit, getDocs, doc, deleteDoc, getDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { BudgetService } from '@/lib/firebase/budget-service';
+import { TransactionService, Transaction } from '@/lib/firebase/transaction-service';
 import { 
   DollarSign, 
   TrendingUp, 
@@ -17,23 +18,7 @@ import {
 } from 'lucide-react';
 import TransactionForm from './TransactionForm';
 
-interface Transaction {
-  id: string;
-  type: 'income' | 'expense';
-  amount: number;
-  category: string;
-  description: string;
-  date: Date;
-  createdAt: Date;
-  groupId?: string;
-  groupName?: string;
-  studentId?: string;
-  studentName?: string;
-  trainerId?: string;
-  trainerName?: string;
-  branchId?: string;
-  branchName?: string;
-}
+// Transaction interface TransactionService'den import ediliyor
 
 export default function TransactionList() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -51,37 +36,9 @@ export default function TransactionList() {
   const fetchTransactions = async () => {
     try {
       setLoading(true);
-      const q = query(
-        collection(db, 'transactions'),
-        orderBy('date', 'desc'),
-        limit(50)
-      );
-      
-      const querySnapshot = await getDocs(q);
-      const transactionData: Transaction[] = [];
-      
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        transactionData.push({
-          id: doc.id,
-          type: data.type,
-          amount: data.amount,
-          category: data.category,
-          description: data.description,
-          date: data.date instanceof Timestamp ? data.date.toDate() : new Date(data.date),
-          createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(data.createdAt),
-          groupId: data.groupId,
-          groupName: data.groupName,
-          studentId: data.studentId,
-          studentName: data.studentName,
-          trainerId: data.trainerId,
-          trainerName: data.trainerName,
-          branchId: data.branchId,
-          branchName: data.branchName
-        });
-      });
-      
-      setTransactions(transactionData);
+      // TransactionService kullan
+      const allTransactions = await TransactionService.getAllTransactions();
+      setTransactions(allTransactions.slice(0, 50)); // Son 50 işlem
     } catch (error) {
       console.error('Transactions fetch error:', error);
     } finally {

@@ -3,24 +3,24 @@
 import { useState } from 'react';
 import {
   DollarSign,
-  TrendingUp,
   Users,
-  PieChart
+  BarChart3,
+  Calendar
 } from 'lucide-react';
 import TransactionList from '@/components/finance/TransactionList';
-import BudgetList from '@/components/finance/BudgetList';
-import FinanceOverview from '@/components/finance/FinanceOverview';
 import TuitionList from '@/components/finance/TuitionList';
+import RecurringExpenseList from '@/components/finance/RecurringExpenseList';
+import FinancialSummary from '@/components/finance/FinancialSummary';
 import PageTitle from '@/components/page-title';
 
 export default function FinancePage() {
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('summary');
 
   const tabs = [
-    { id: 'overview', name: 'Genel Bakış', icon: TrendingUp },
+    { id: 'summary', name: 'Finansal Özet', icon: BarChart3 },
     { id: 'transactions', name: 'İşlemler', icon: DollarSign },
-    { id: 'budgets', name: 'Bütçe', icon: PieChart },
     { id: 'tuitions', name: 'Aidatlar', icon: Users },
+    { id: 'recurring', name: 'Sabit Giderler', icon: Calendar },
   ];
 
   return (
@@ -56,14 +56,14 @@ export default function FinancePage() {
 
       {/* Tab Content */}
       <div className="bg-white rounded-lg border border-gray-200 p-8">
-        {activeTab === 'overview' ? (
-          <FinanceOverview />
+        {activeTab === 'summary' ? (
+          <FinancialSummary />
         ) : activeTab === 'transactions' ? (
           <TransactionList />
-        ) : activeTab === 'budgets' ? (
-          <BudgetList />
         ) : activeTab === 'tuitions' ? (
           <TuitionList />
+        ) : activeTab === 'recurring' ? (
+          <RecurringExpenseList />
         ) : (
           <div className="text-center">
             <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
