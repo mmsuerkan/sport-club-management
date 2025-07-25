@@ -2,13 +2,123 @@
 
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Edit2, Trash2, Phone, Mail, Award, Building, Clock, ShieldUser } from 'lucide-react';
+import { Edit2, Trash2, Phone, Mail, Award, Building, Clock, ShieldUser, Users } from 'lucide-react';
 import { collection, getDocs, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import PageTitle from '@/components/page-title';
 import ModalTitle from '@/components/modal-title';
 import Loading from '@/components/loading';
 import BasicModal from '@/components/modal';
+
+// Group Assignment Modal Component
+function GroupAssignmentModal({ 
+  trainer, 
+  groups, 
+  onSave, 
+  onClose 
+}: {
+  trainer: Trainer;
+  groups: Group[];
+  onSave: (trainerId: string, selectedGroupIds: string[]) => void;
+  onClose: () => void;
+}) {
+  const [selectedGroups, setSelectedGroups] = useState<string[]>(
+    trainer.groupIds || (trainer.groupId ? [trainer.groupId] : [])
+  );
+  const [groupsByBranch, setGroupsByBranch] = useState<{[key: string]: Group[]}>({});
+
+  useEffect(() => {
+    // Group groups by branch
+    const grouped = groups.reduce((acc, group) => {
+      if (!acc[group.branchId]) {
+        acc[group.branchId] = [];
+      }
+      acc[group.branchId].push(group);
+      return acc;
+    }, {} as {[key: string]: Group[]});
+    setGroupsByBranch(grouped);
+  }, [groups]);
+
+  const handleGroupToggle = (groupId: string) => {
+    setSelectedGroups(prev => 
+      prev.includes(groupId) 
+        ? prev.filter(id => id !== groupId)
+        : [...prev, groupId]
+    );
+  };
+
+  const handleSave = () => {
+    onSave(trainer.id, selectedGroups);
+  };
+
+  return (
+    <BasicModal className='max-w-4xl' open={true} onClose={onClose}>
+      <ModalTitle
+        modalTitle={`${trainer.fullName} - Grup Ataması`}
+        onClose={onClose}
+      />
+      <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+        <div className="text-sm text-gray-600 mb-4">
+          Bu antrenörü atamak istediğiniz grupları seçiniz:
+        </div>
+        
+        {Object.entries(groupsByBranch).map(([branchId, branchGroups]) => {
+          const branchName = branchGroups[0]?.branchName || 'Bilinmeyen Şube';
+          return (
+            <div key={branchId} className="border border-gray-200 rounded-lg p-4">
+              <h4 className="font-medium text-gray-900 mb-3 flex items-center">
+                <Building className="h-4 w-4 mr-2" />
+                {branchName}
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {branchGroups.map(group => (
+                  <label
+                    key={group.id}
+                    className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedGroups.includes(group.id)}
+                      onChange={() => handleGroupToggle(group.id)}
+                      className="mr-3 h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium text-sm">{group.name}</div>
+                      <div className="text-xs text-gray-500 flex items-center mt-1">
+                        <Clock className="h-3 w-3 mr-1" />
+                        {group.time}
+                      </div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+
+        <div className="flex justify-between items-center pt-4 border-t">
+          <div className="text-sm text-gray-600">
+            Seçilen grup sayısı: <span className="font-medium">{selectedGroups.length}</span>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+            >
+              İptal
+            </button>
+            <button
+              onClick={handleSave}
+              className="px-4 py-2 text-white rounded-md bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+            >
+              Kaydet
+            </button>
+          </div>
+        </div>
+      </div>
+    </BasicModal>
+  );
+}
 
 interface Branch {
   id: string;
@@ -34,8 +144,10 @@ interface Trainer {
   salary: string;
   branchId: string;
   branchName: string;
-  groupId: string;
-  groupName: string;
+  groupId: string; // Backward compatibility için
+  groupName: string; // Backward compatibility için
+  groupIds?: string[]; // Çoklu grup ataması
+  groupNames?: string[]; // Çoklu grup ataması
   notes: string;
   createdAt: Date;
   userId?: string; // Kullanıcı hesabı ile ilişkilendirme
@@ -47,7 +159,9 @@ export default function TrainersPage() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [filteredGroups, setFilteredGroups] = useState<Group[]>([]);
   const [showModal, setShowModal] = useState(false);
+  const [showGroupModal, setShowGroupModal] = useState(false);
   const [editingTrainer, setEditingTrainer] = useState<Trainer | null>(null);
+  const [assigningTrainer, setAssigningTrainer] = useState<Trainer | null>(null);
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
@@ -210,6 +324,31 @@ export default function TrainersPage() {
       } catch (error) {
         console.error('Antrenör silme hatası:', error);
       }
+    }
+  };
+
+  const handleGroupAssignment = (trainer: Trainer) => {
+    setAssigningTrainer(trainer);
+    setShowGroupModal(true);
+  };
+
+  const updateTrainerGroups = async (trainerId: string, selectedGroupIds: string[]) => {
+    try {
+      const selectedGroups = groups.filter(g => selectedGroupIds.includes(g.id));
+      const groupNames = selectedGroups.map(g => g.name);
+      
+      await updateDoc(doc(db, 'trainers', trainerId), {
+        groupIds: selectedGroupIds,
+        groupNames: groupNames,
+        updatedAt: new Date()
+      });
+      
+      setShowGroupModal(false);
+      setAssigningTrainer(null);
+      fetchTrainers();
+    } catch (error) {
+      console.error('Grup atama hatası:', error);
+      alert('Grup atama işlemi başarısız oldu. Lütfen tekrar deneyin.');
     }
   };
 
@@ -413,6 +552,20 @@ export default function TrainersPage() {
         document.body
       )}
 
+      {/* Group Assignment Modal */}
+      {showGroupModal && assigningTrainer && typeof document !== 'undefined' && createPortal(
+        <GroupAssignmentModal
+          trainer={assigningTrainer}
+          groups={groups}
+          onSave={updateTrainerGroups}
+          onClose={() => {
+            setShowGroupModal(false);
+            setAssigningTrainer(null);
+          }}
+        />,
+        document.body
+      )}
+
       {/* Trainers List */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100">
         {loading ? (
@@ -485,7 +638,17 @@ export default function TrainersPage() {
                           <Building className="h-3 w-3 mr-2" />
                           {trainer.branchName}
                         </div>
-                        {trainer.groupName && (
+                        {/* Çoklu grup gösterimi */}
+                        {(trainer.groupIds && trainer.groupIds.length > 0) ? (
+                          <div className="space-y-1">
+                            {trainer.groupNames?.map((groupName, index) => (
+                              <div key={index} className="flex items-center text-sm text-gray-600">
+                                <Clock className="h-3 w-3 mr-2" />
+                                {groupName}
+                              </div>
+                            ))}
+                          </div>
+                        ) : trainer.groupName && (
                           <div className="flex items-center text-sm text-gray-600">
                             <Clock className="h-3 w-3 mr-2" />
                             {trainer.groupName}
@@ -507,12 +670,21 @@ export default function TrainersPage() {
                         <button
                           onClick={() => handleEdit(trainer)}
                           className="text-blue-400 hover:text-blue-700 p-1"
+                          title="Antrenör Düzenle"
                         >
                           <Edit2 size={16} />
                         </button>
                         <button
+                          onClick={() => handleGroupAssignment(trainer)}
+                          className="text-green-400 hover:text-green-700 p-1"
+                          title="Gruplara Ata"
+                        >
+                          <Users size={16} />
+                        </button>
+                        <button
                           onClick={() => handleDelete(trainer.id)}
                           className="text-red-400 hover:text-red-700 p-1"
+                          title="Antrenör Sil"
                         >
                           <Trash2 size={16} />
                         </button>
