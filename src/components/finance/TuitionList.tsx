@@ -12,9 +12,14 @@ import {
   TrendingUp,
   Filter,
   Search,
-  Eye
+  Eye,
+  Download,
+  FileText
 } from 'lucide-react';
 import { StudentDebtService, StudentDebt } from '@/lib/firebase/student-debt-service';
+import { PaymentReceiptService } from '@/lib/pdf/payment-receipt-service';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from '@/lib/firebase/config';
 
 export default function TuitionList() {
   const [debts, setDebts] = useState<StudentDebt[]>([]);
@@ -72,6 +77,95 @@ export default function TuitionList() {
       fetchStats();
     } catch (error) {
       console.error('Error toggling payment:', error);
+    }
+  };
+
+  const handleDownloadReceipt = async (studentId: string, studentName: string) => {
+    try {
+      // Öğrencinin ödenen borçlarını getir
+      const studentDebts = debts.filter(debt => 
+        debt.studentId === studentId && debt.status === 'paid'
+      );
+
+      if (studentDebts.length === 0) {
+        alert('Bu öğrenci için henüz ödenmiş aidat bulunmamaktadır.');
+        return;
+      }
+
+      // Öğrenci bilgilerini getir
+      const studentsSnapshot = await getDocs(
+        query(collection(db, 'students'), where('__name__', '==', studentId))
+      );
+      
+      let studentInfo = {
+        name: studentName,
+        phone: '',
+        parentName: '',
+        parentPhone: ''
+      };
+
+      if (!studentsSnapshot.empty) {
+        const studentData = studentsSnapshot.docs[0].data();
+        studentInfo = {
+          name: studentData.fullName || studentName,
+          phone: studentData.phone || '',
+          parentName: studentData.parentName || '',
+          parentPhone: studentData.parentPhone || ''
+        };
+      }
+
+      // PDF verilerini hazırla ve indir
+      const receiptData = await PaymentReceiptService.prepareReceiptData(
+        studentDebts,
+        studentInfo
+      );
+
+      PaymentReceiptService.generatePaymentReceipt(receiptData);
+    } catch (error) {
+      console.error('Error generating PDF receipt:', error);
+      alert('Makbuz oluşturulurken hata oluştu.');
+    }
+  };
+
+  const handleDownloadMonthlyReceipt = async (debt: StudentDebt) => {
+    try {
+      if (debt.status !== 'paid') {
+        alert('Sadece ödenmiş aidatlar için makbuz oluşturulabilir.');
+        return;
+      }
+
+      // Tek ödeme için öğrenci bilgilerini getir
+      const studentsSnapshot = await getDocs(
+        query(collection(db, 'students'), where('__name__', '==', debt.studentId))
+      );
+      
+      let studentInfo = {
+        name: debt.studentName,
+        phone: '',
+        parentName: '',
+        parentPhone: ''
+      };
+
+      if (!studentsSnapshot.empty) {
+        const studentData = studentsSnapshot.docs[0].data();
+        studentInfo = {
+          name: studentData.fullName || debt.studentName,
+          phone: studentData.phone || '',
+          parentName: studentData.parentName || '',
+          parentPhone: studentData.parentPhone || ''
+        };
+      }
+
+      // Tek ödeme için PDF oluştur
+      const receiptData = await PaymentReceiptService.prepareReceiptData(
+        [debt],
+        studentInfo
+      );
+
+      PaymentReceiptService.generatePaymentReceipt(receiptData);
+    } catch (error) {
+      console.error('Error generating monthly PDF receipt:', error);
+      alert('Makbuz oluşturulurken hata oluştu.');
     }
   };
 
@@ -434,7 +528,28 @@ export default function TuitionList() {
                         {formatCurrency(student.totalAmount - student.paidAmount)}
                       </div>
                     </div>
-                    <Eye size={20} className="text-gray-400" />
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (student.paidAmount === 0) {
+                            alert('Bu öğrenci için henüz ödenmiş aidat bulunmamaktadır.');
+                            return;
+                          }
+                          handleDownloadReceipt(student.studentId, student.studentName);
+                        }}
+                        className={`flex items-center gap-1 px-3 py-1 rounded-md transition-colors text-sm font-medium ${
+                          student.paidAmount > 0 
+                            ? 'text-blue-600 hover:bg-blue-100' 
+                            : 'text-gray-400 hover:bg-gray-100'
+                        }`}
+                        title="Ödeme Makbuzu İndir"
+                      >
+                        <Download size={14} />
+                        İndir
+                      </button>
+                      <Eye size={20} className="text-gray-400" />
+                    </div>
                   </div>
                 </div>
 
@@ -456,19 +571,33 @@ export default function TuitionList() {
                         </div>
                         <div className="flex items-center gap-3">
                           <span className="font-medium">{formatCurrency(debt.amount)}</span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handlePaymentToggle(debt);
-                            }}
-                            className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                              debt.status === 'paid'
-                                ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                                : 'bg-green-100 text-green-700 hover:bg-green-200'
-                            }`}
-                          >
-                            {debt.status === 'paid' ? 'İptal' : 'Ödendi'}
-                          </button>
+                          <div className="flex items-center gap-2">
+                            {debt.status === 'paid' && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDownloadMonthlyReceipt(debt);
+                                }}
+                                className="p-1 text-blue-600 hover:bg-blue-100 rounded transition-colors"
+                                title="Bu Taksit İçin Makbuz İndir"
+                              >
+                                <Download size={14} />
+                              </button>
+                            )}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handlePaymentToggle(debt);
+                              }}
+                              className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                                debt.status === 'paid'
+                                  ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                                  : 'bg-green-100 text-green-700 hover:bg-green-200'
+                              }`}
+                            >
+                              {debt.status === 'paid' ? 'İptal' : 'Ödendi'}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ))}
