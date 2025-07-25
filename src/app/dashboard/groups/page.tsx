@@ -160,7 +160,7 @@ export default function GroupsPage() {
         pageIcon={<UsersRound />}
       />
       {/* Form Modal */}
-      {showModal && typeof document !== 'undefined' && createPortal(
+      {typeof document !== 'undefined' && createPortal(
         <BasicModal className='max-w-lg' open={showModal} onClose={() => resetForm()}>
           <ModalTitle
             modalTitle={editingGroup ? 'Grup Düzenle' : 'Yeni Grup Ekle'}

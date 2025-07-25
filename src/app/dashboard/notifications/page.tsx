@@ -349,7 +349,7 @@ export default function NotificationsPage() {
       </div>
 
       {/* Bildirim Gönderme Formu Modal */}
-      {showModal && typeof document !== 'undefined' && createPortal(
+      {typeof document !== 'undefined' && createPortal(
         <BasicModal className='max-w-lg' open={showModal} onClose={() => resetForm()}>
           <ModalTitle modalTitle="Bildirim Gönder" onClose={resetForm} />
           <form onSubmit={handleSubmit} className="space-y-4 max-h-[90vh] overflow-y-auto">

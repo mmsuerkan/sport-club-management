@@ -1,7 +1,18 @@
-import React from 'react';
+import Reactt, { useEffect } from 'react';
 import Modal from '@mui/material/Modal';
 
 const BasicModal = ({ open, onClose, children, className }: { open: boolean; onClose: () => void; children: React.ReactNode; className?: string; }) => {
+    useEffect(() => {
+    if (open) {
+    
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [open]);
     return (
         <Modal open={open} onClose={onClose}>
             <div

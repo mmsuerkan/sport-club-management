@@ -435,8 +435,8 @@ export default function UsersPage() {
       </div>
 
       {/* Modal */}
-      {showModal && typeof document !== 'undefined' && createPortal(
-        <BasicModal className='max-w-lg' open={showModal} onClose={() => resetForm()}>
+      {typeof document !== 'undefined' && createPortal(
+        <BasicModal className='max-w-lg' open={showModal}  onClose={() => resetForm()}>
           <ModalTitle modalTitle={editingUser ? 'Kullanıcı Düzenle' : 'Yeni Kullanıcı Ekle'} onClose={() => resetForm()} />
           <form onSubmit={handleSubmit} className="space-y-4">
             {!editingUser && (

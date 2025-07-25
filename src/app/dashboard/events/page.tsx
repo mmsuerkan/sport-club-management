@@ -787,7 +787,7 @@ export default function EventsPage() {
       )}
 
       {/* Create/Edit Modal */}
-      {showModal && typeof document !== 'undefined' && createPortal(
+      {typeof document !== 'undefined' && createPortal(
         <BasicModal className='max-w-lg' open={showModal} onClose={() => resetForm()}>
           <ModalTitle modalTitle={editingEvent ? 'Etkinliği Düzenle' : 'Yeni Etkinlik Ekle'} onClose={resetForm} />
           <form onSubmit={handleSubmit} className="space-y-6 max-h-[80vh] overflow-y-auto">

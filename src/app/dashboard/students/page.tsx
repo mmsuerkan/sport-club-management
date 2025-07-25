@@ -284,7 +284,7 @@ export default function StudentsPage() {
       />
 
       {/* Form Modal */}
-      {showModal && typeof document !== 'undefined' && createPortal(
+      {typeof document !== 'undefined' && createPortal(
         <BasicModal className='max-w-3xl' open={showModal} onClose={() => resetForm()}>
           <ModalTitle
             modalTitle={editingStudent ? 'Öğrenci Düzenle' : 'Yeni Öğrenci Ekle'}

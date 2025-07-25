@@ -194,7 +194,7 @@ export default function EmployeesPage() {
       />
 
       {/* Form Modal */}
-      {showModal && typeof document !== 'undefined' && createPortal(
+      {typeof document !== 'undefined' && createPortal(
         <BasicModal className='max-w-lg' open={showModal} onClose={() => resetForm()}>
           <ModalTitle
             modalTitle={editingEmployee ? 'Çalışan Düzenle' : 'Yeni Çalışan Ekle'}

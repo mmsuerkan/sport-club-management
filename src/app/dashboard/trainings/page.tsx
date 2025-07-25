@@ -908,7 +908,7 @@ export default function TrainingsPage() {
         )}
       </div>
 
-      {showModal && typeof document !== 'undefined' && createPortal(
+      {typeof document !== 'undefined' && createPortal(
         <BasicModal className='max-w-3xl' open={showModal} onClose={() => resetForm()}>
           <ModalTitle
             modalTitle={editingTraining ? 'Antrenmanı Düzenle' : 'Yeni Antrenman Ekle'}
