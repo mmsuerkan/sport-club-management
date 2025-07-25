@@ -28,6 +28,10 @@ interface Transaction {
   groupName?: string;
   studentId?: string;
   studentName?: string;
+  trainerId?: string;
+  trainerName?: string;
+  branchId?: string;
+  branchName?: string;
 }
 
 export default function TransactionList() {
@@ -68,7 +72,11 @@ export default function TransactionList() {
           groupId: data.groupId,
           groupName: data.groupName,
           studentId: data.studentId,
-          studentName: data.studentName
+          studentName: data.studentName,
+          trainerId: data.trainerId,
+          trainerName: data.trainerName,
+          branchId: data.branchId,
+          branchName: data.branchName
         });
       });
       
@@ -227,6 +235,12 @@ export default function TransactionList() {
                       )}
                       {transaction.studentName && (
                         <span>• {transaction.studentName}</span>
+                      )}
+                      {transaction.trainerName && (
+                        <span>• {transaction.trainerName}</span>
+                      )}
+                      {transaction.branchName && (
+                        <span>• {transaction.branchName}</span>
                       )}
                       <div className="flex items-center gap-1">
                         <Calendar size={14} />
