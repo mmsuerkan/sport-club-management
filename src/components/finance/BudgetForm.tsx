@@ -5,6 +5,7 @@ import { X, Calendar, DollarSign, Tag, FileText, Building } from 'lucide-react';
 import { BudgetService, Budget } from '@/lib/firebase/budget-service';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
+import { allCategories } from '@/lib/categories';
 
 interface Branch {
   id: string;
@@ -117,21 +118,22 @@ export default function BudgetForm({ isOpen, onClose, onSuccess, budget, mode }:
       };
 
       if (mode === 'create') {
-        // Check for existing active budget for this branch
+        // Check for existing active budget for this branch + category combination
         const existingBudgets = await BudgetService.getBudgets();
-        const existingBranchBudget = existingBudgets.find(existing => 
+        const existingBranchCategoryBudget = existingBudgets.find(existing => 
           (existing as any).branchId === budgetData.branchId &&
+          existing.category === budgetData.category &&
           existing.status !== 'completed'
         );
 
-        if (existingBranchBudget) {
+        if (existingBranchCategoryBudget) {
           alert(
-            `Dikkat! ${selectedBranch?.name} şubesi için zaten aktif bir bütçe bulunuyor:\n\n` +
-            `Mevcut Bütçe: ${existingBranchBudget.category}\n` +
-            `Dönem: ${existingBranchBudget.startDate.toLocaleDateString('tr-TR')} - ${existingBranchBudget.endDate.toLocaleDateString('tr-TR')}\n` +
-            `Planlanan: ${existingBranchBudget.plannedAmount.toLocaleString('tr-TR')} ₺\n` +
-            `Harcanan: ${existingBranchBudget.spentAmount.toLocaleString('tr-TR')} ₺\n\n` +
-            `Her şube için sadece 1 aktif bütçe oluşturulabilir. Önce mevcut bütçeyi tamamlayın veya silin.`
+            `Dikkat! ${selectedBranch?.name} şubesi için "${budgetData.category}" kategorisinde zaten aktif bir bütçe bulunuyor:\n\n` +
+            `Mevcut Bütçe: ${existingBranchCategoryBudget.category}\n` +
+            `Dönem: ${existingBranchCategoryBudget.startDate.toLocaleDateString('tr-TR')} - ${existingBranchCategoryBudget.endDate.toLocaleDateString('tr-TR')}\n` +
+            `Planlanan: ${existingBranchCategoryBudget.plannedAmount.toLocaleString('tr-TR')} ₺\n` +
+            `Harcanan: ${existingBranchCategoryBudget.spentAmount.toLocaleString('tr-TR')} ₺\n\n` +
+            `Aynı şube ve kategori için sadece 1 aktif bütçe oluşturulabilir. Önce mevcut bütçeyi tamamlayın veya silin.`
           );
           setLoading(false);
           return;
@@ -203,18 +205,8 @@ export default function BudgetForm({ isOpen, onClose, onSuccess, budget, mode }:
     }
   };
 
-  const predefinedCategories = [
-    'Antrenör Ücretleri',
-    'Ekipman',
-    'Tesis Bakım',
-    'Utilities',
-    'Marketing',
-    'Turnuva/Organizasyon',
-    'Sağlık/Sigorta',
-    'Ulaşım',
-    'Beslenme',
-    'Diğer'
-  ];
+  // Tüm kategoriler (gelir + gider) bütçe için kullanılabilir
+  const predefinedCategories = allCategories;
 
   if (!isOpen) return null;
 

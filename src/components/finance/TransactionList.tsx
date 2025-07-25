@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, query, orderBy, limit, getDocs, doc, deleteDoc, Timestamp } from 'firebase/firestore';
+import { collection, query, orderBy, limit, getDocs, doc, deleteDoc, getDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
+import { BudgetService } from '@/lib/firebase/budget-service';
 import { 
   DollarSign, 
   TrendingUp, 
@@ -99,11 +100,74 @@ export default function TransactionList() {
     }
 
     try {
+      // Önce işlem detaylarını al (bütçe güncellemesi için)
+      const transactionDoc = await getDoc(doc(db, 'transactions', transactionId));
+      if (!transactionDoc.exists()) {
+        alert('İşlem bulunamadı');
+        return;
+      }
+
+      const transactionData = transactionDoc.data();
+      
+      // İşlemi sil
       await deleteDoc(doc(db, 'transactions', transactionId));
+
+      // Eğer gider işlemiyse, bütçeyi geri artır
+      if (transactionData.type === 'expense') {
+        await updateBudgetForDeletedExpense(
+          transactionData.category,
+          transactionData.amount,
+          transactionData.date instanceof Timestamp ? transactionData.date.toDate() : new Date(transactionData.date),
+          transactionData.branchId
+        );
+      }
+
       fetchTransactions();
     } catch (error) {
       console.error('Transaction delete error:', error);
       alert('İşlem silinirken bir hata oluştu');
+    }
+  };
+
+  const updateBudgetForDeletedExpense = async (category: string, amount: number, transactionDate: Date, branchId?: string) => {
+    try {
+      // Get all budgets
+      const budgets = await BudgetService.getBudgets();
+      
+      // Find matching budget by category, date range, and branch
+      const matchingBudgets = budgets.filter(budget => 
+        budget.category === category &&
+        budget.status !== 'completed' &&
+        transactionDate >= budget.startDate &&
+        transactionDate <= budget.endDate &&
+        (branchId ? (budget as any).branchId === branchId : true)
+      );
+
+      if (matchingBudgets.length === 0) {
+        console.warn(`No active budget found for category: ${category} on date: ${transactionDate} for branch: ${branchId}`);
+        return;
+      }
+
+      if (matchingBudgets.length > 1) {
+        console.warn(`Multiple budgets found for category: ${category}. Updating the most recent one.`);
+        matchingBudgets.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      }
+
+      // Update the first (most recent) matching budget
+      const budgetToUpdate = matchingBudgets[0];
+      if (budgetToUpdate && budgetToUpdate.id) {
+        // Decrease the spent amount (add back the deleted expense)
+        const newSpentAmount = Math.max(0, budgetToUpdate.spentAmount - amount);
+        const newStatus = newSpentAmount > budgetToUpdate.plannedAmount ? 'exceeded' : 'active';
+        
+        await BudgetService.updateBudget(budgetToUpdate.id, {
+          spentAmount: newSpentAmount,
+          status: newStatus
+        });
+      }
+    } catch (error) {
+      console.error('Error updating budget for deleted expense:', error);
+      // Don't throw - let transaction deletion succeed even if budget update fails
     }
   };
 

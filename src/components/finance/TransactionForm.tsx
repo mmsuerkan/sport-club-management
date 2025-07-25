@@ -5,6 +5,7 @@ import { collection, addDoc, doc, updateDoc, getDocs, query, where, Timestamp } 
 import { db } from '@/lib/firebase/config';
 import { X, DollarSign, Calendar, Tag, FileText, Users, GraduationCap, ShieldUser, Building } from 'lucide-react';
 import { BudgetService } from '@/lib/firebase/budget-service';
+import { incomeCategories, expenseCategories } from '@/lib/categories';
 
 interface Transaction {
   id: string;
@@ -52,26 +53,7 @@ interface TransactionFormProps {
   editTransaction?: Transaction | null;
 }
 
-const incomeCategories = [
-  'Üyelik Aidatı',
-  'Sponsorluk',
-  'Bağış',
-  'Etkinlik Geliri',
-  'Diğer Gelir'
-];
-
-const expenseCategories = [
-  'Antrenör Ücretleri',
-  'Ekipman',
-  'Tesis Bakım',
-  'Utilities',
-  'Marketing',
-  'Turnuva/Organizasyon',
-  'Sağlık/Sigorta',
-  'Ulaşım',
-  'Beslenme',
-  'Diğer'
-];
+// Kategoriler artık @/lib/categories'den import ediliyor
 
 export default function TransactionForm({ isOpen, onClose, onSuccess, editTransaction }: TransactionFormProps) {
   const [loading, setLoading] = useState(false);
@@ -319,9 +301,25 @@ export default function TransactionForm({ isOpen, onClose, onSuccess, editTransa
         });
       }
 
-      // If it's an expense, update the corresponding budget
-      if (formData.type === 'expense' && !editTransaction) {
-        await updateBudgetForExpense(formData.category, parseFloat(formData.amount), new Date(formData.date));
+      // Update budget for expense transactions
+      if (formData.type === 'expense') {
+        if (editTransaction) {
+          // For edit: first revert old expense, then add new expense
+          if (editTransaction.type === 'expense') {
+            // Revert old expense (add back to budget)
+            await updateBudgetForDeletedExpense(
+              editTransaction.category, 
+              editTransaction.amount, 
+              editTransaction.date,
+              (editTransaction as any).branchId
+            );
+          }
+          // Add new expense (subtract from budget)
+          await updateBudgetForExpense(formData.category, parseFloat(formData.amount), new Date(formData.date), formData.branchId);
+        } else {
+          // For new expense: just subtract from budget
+          await updateBudgetForExpense(formData.category, parseFloat(formData.amount), new Date(formData.date), formData.branchId);
+        }
       }
 
       onSuccess();
@@ -334,17 +332,18 @@ export default function TransactionForm({ isOpen, onClose, onSuccess, editTransa
     }
   };
 
-  const updateBudgetForExpense = async (category: string, amount: number, transactionDate: Date) => {
+  const updateBudgetForExpense = async (category: string, amount: number, transactionDate: Date, branchId?: string) => {
     try {
       // Get all budgets
       const budgets = await BudgetService.getBudgets();
       
-      // Find all matching budgets by category and date range
+      // Find all matching budgets by category, date range, and branch
       const matchingBudgets = budgets.filter(budget => 
         budget.category === category &&
         budget.status !== 'completed' && // Don't update completed budgets
         transactionDate >= budget.startDate &&
-        transactionDate <= budget.endDate
+        transactionDate <= budget.endDate &&
+        (branchId ? (budget as any).branchId === branchId : true)
       );
 
       if (matchingBudgets.length === 0) {
@@ -377,6 +376,48 @@ export default function TransactionForm({ isOpen, onClose, onSuccess, editTransa
       }
     } catch (error) {
       console.error('Error updating budget for expense:', error);
+      // Don't throw - let transaction save even if budget update fails
+    }
+  };
+
+  const updateBudgetForDeletedExpense = async (category: string, amount: number, transactionDate: Date, branchId?: string) => {
+    try {
+      // Get all budgets
+      const budgets = await BudgetService.getBudgets();
+      
+      // Find matching budget by category, date range, and branch
+      const matchingBudgets = budgets.filter(budget => 
+        budget.category === category &&
+        budget.status !== 'completed' &&
+        transactionDate >= budget.startDate &&
+        transactionDate <= budget.endDate &&
+        (branchId ? (budget as any).branchId === branchId : true)
+      );
+
+      if (matchingBudgets.length === 0) {
+        console.warn(`No active budget found for category: ${category} on date: ${transactionDate} for branch: ${branchId}`);
+        return;
+      }
+
+      if (matchingBudgets.length > 1) {
+        console.warn(`Multiple budgets found for category: ${category}. Updating the most recent one.`);
+        matchingBudgets.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      }
+
+      // Update the first (most recent) matching budget
+      const budgetToUpdate = matchingBudgets[0];
+      if (budgetToUpdate && budgetToUpdate.id) {
+        // Decrease the spent amount (add back the deleted expense)
+        const newSpentAmount = Math.max(0, budgetToUpdate.spentAmount - amount);
+        const newStatus = newSpentAmount > budgetToUpdate.plannedAmount ? 'exceeded' : 'active';
+        
+        await BudgetService.updateBudget(budgetToUpdate.id, {
+          spentAmount: newSpentAmount,
+          status: newStatus
+        });
+      }
+    } catch (error) {
+      console.error('Error updating budget for deleted expense:', error);
       // Don't throw - let transaction save even if budget update fails
     }
   };
