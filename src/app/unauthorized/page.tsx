@@ -48,7 +48,7 @@ export default function UnauthorizedPage() {
 
         <p className="text-gray-600 mb-6">
           Web yönetim paneline erişim yetkiniz bulunmamaktadır. 
-          Bu panel sadece yönetici (ADMIN) hesapları için kullanılabilir.
+          Bu panel sadece yönetici (ADMIN) ve antrenör (TRAINER) hesapları için kullanılabilir.
         </p>
 
         <div className="space-y-4">

@@ -1,83 +1,51 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import {
-  ClipboardCheck,
-  Users,
-  Calendar,
-  Search,
-  CheckCircle,
-  XCircle,
-  Clock,
-  Building,
-  Dumbbell,
-  Eye,
-  UserCheck,
-  UserX,
-  Download,
-  AlertCircle
-} from 'lucide-react';
-import {
-  collection,
-  query,
-  orderBy,
-  Timestamp
-} from 'firebase/firestore';
+import { useAuth } from '@/contexts/AuthContext';
+import { canTakeAttendance, isTrainer } from '@/lib/firebase/auth';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useRouter } from 'next/navigation';
+import { Plus, Calendar, Users, Search, Clock, CheckCircle, AlertCircle, Dumbbell } from 'lucide-react';
+import { collection, getDocs, query, where, orderBy, Timestamp, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import { createListener } from '@/lib/firebase/listener-utils';
-import { attendanceService } from '@/lib/firebase/attendance-service';
-import dynamic from 'next/dynamic';
-import PageTitle from '@/components/page-title';
-import Loading from '@/components/loading';
-
-const AttendanceAnalytics = dynamic(
-  () => import('@/components/attendance/AttendanceAnalytics'),
-  { ssr: false }
-);
-
-interface Branch {
-  id: string;
-  name: string;
-}
-
-interface Group {
-  id: string;
-  name: string;
-  branchId: string;
-  branchName: string;
-  time: string;
-}
-
-interface Student {
-  id: string;
-  fullName: string;
-  phone: string;
-  branchId: string;
-  branchName: string;
-  groupId: string;
-  groupName: string;
-}
+import LoadingSpinner from '@/components/LoadingSpinner';
+import { format, isToday, isPast, isFuture } from 'date-fns';
+import { tr } from 'date-fns/locale';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 
 interface Training {
   id: string;
   name: string;
-  branchId: string;
-  branchName?: string;
-  groupId: string;
-  groupName?: string;
-  date: Date;
+  description?: string;
   trainerId: string;
   trainerName?: string;
-  duration?: string;
+  groupId: string;
+  groupName?: string;
+  branchId: string;
+  branchName?: string;
+  location?: string;
+  date: Date;
+  startTime: string;
+  endTime: string;
+  maxParticipants?: number;
+  currentParticipants?: number;
+  status: 'scheduled' | 'ongoing' | 'completed' | 'cancelled';
+  createdAt: Date;
+  updatedAt?: Date;
+  // Yoklama durumu
+  attendanceTaken?: boolean;
+  attendanceId?: string;
 }
 
 interface AttendanceRecord {
   id: string;
   trainingId: string;
-  trainingName: string;
   studentId: string;
   studentName: string;
+  trainerId: string;
+  trainerName: string;
   branchId: string;
   branchName: string;
   groupId: string;
@@ -85,936 +53,565 @@ interface AttendanceRecord {
   date: Date;
   status: 'present' | 'absent' | 'late' | 'excused';
   notes: string;
-  recordedBy: string;
-  recordedAt: Date;
+  createdAt: Date;
 }
 
 interface AttendanceSession {
   id: string;
   trainingId: string;
   trainingName: string;
+  trainerId: string;
+  trainerName: string;
   branchId: string;
   branchName: string;
   groupId: string;
   groupName: string;
   date: Date;
-  trainerId: string;
-  trainerName: string;
-  totalStudents: number;
+  startTime: string;
+  endTime: string;
+  records: AttendanceRecord[];
   presentCount: number;
   absentCount: number;
   lateCount: number;
   excusedCount: number;
+  totalCount: number;
   isCompleted: boolean;
   completedAt?: Date;
-  notes: string;
 }
 
 export default function AttendancePage() {
-  const [branches, setBranches] = useState<Branch[]>([]);
-  const [groups, setGroups] = useState<Group[]>([]);
-  const [students, setStudents] = useState<Student[]>([]);
-  const [trainings, setTrainings] = useState<Training[]>([]);
-  const [attendanceSessions, setAttendanceSessions] = useState<AttendanceSession[]>([]);
-  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
-
-  const [selectedBranch, setSelectedBranch] = useState('');
-  const [selectedGroup, setSelectedGroup] = useState('');
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [searchTerm, setSearchTerm] = useState('');
-
-  const [showAttendanceModal, setShowAttendanceModal] = useState(false);
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const [selectedTraining, setSelectedTraining] = useState<Training | null>(null);
-  const [selectedSession, setSelectedSession] = useState<AttendanceSession | null>(null);
-  const [currentAttendance, setCurrentAttendance] = useState<{ [studentId: string]: AttendanceRecord }>({});
-  const [sessionDetails, setSessionDetails] = useState<AttendanceRecord[]>([]);
-
+  const { userData } = useAuth();
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'analytics'>('list');
-  const [showQRModal, setShowQRModal] = useState(false);
-  const [selectedSessionForQR, setSelectedSessionForQR] = useState<AttendanceSession | null>(null);
-  const [showOnlyPending, setShowOnlyPending] = useState(false);
+  const [trainings, setTrainings] = useState<Training[]>([]);
+  const [filteredTrainings, setFilteredTrainings] = useState<Training[]>([]);
+  const [attendanceSessions, setAttendanceSessions] = useState<AttendanceSession[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [trainerId, setTrainerId] = useState<string | null>(null);
+  const [selectedTab, setSelectedTab] = useState<'today' | 'upcoming' | 'completed'>('today');
 
+  // Yetki kontrolü
   useEffect(() => {
-    // Firebase listeners
-    const unsubscribeBranches = createListener(
-      collection(db, 'branches'),
-      (snapshot: any) => {
-        const branchesData = snapshot.docs.map((doc: any) => ({
-          id: doc.id,
-          ...doc.data()
-        } as Branch));
-        setBranches(branchesData);
+    if (!loading && userData && !canTakeAttendance(userData)) {
+      router.push('/unauthorized');
+    }
+  }, [userData, loading, router]);
+
+  // Antrenör ID'sini bul
+  useEffect(() => {
+    const findTrainerId = async () => {
+      if (userData && isTrainer(userData)) {
+        
+        // Antrenör rolündeyse, email ile trainers koleksiyonundan ID'yi bul
+        const trainersQuery = query(
+          collection(db, 'trainers'),
+          where('email', '==', userData.email)
+        );
+        const trainersSnapshot = await getDocs(trainersQuery);
+        if (!trainersSnapshot.empty) {
+          const foundTrainerId = trainersSnapshot.docs[0].id;
+          setTrainerId(foundTrainerId);
+        }
       }
-    );
+    };
 
-    const unsubscribeGroups = createListener(
-      collection(db, 'groups'),
-      (snapshot:any) => {
-        const groupsData = snapshot.docs.map((doc: any) => ({
-          id: doc.id,
-          ...doc.data()
-        } as Group));
-        setGroups(groupsData);
+    if (userData) {
+      findTrainerId();
+    }
+  }, [userData]);
+
+  // Antrenmanları ve yoklama durumlarını yükle
+  useEffect(() => {
+    const loadTrainingsAndAttendance = async () => {
+      if (!userData || !canTakeAttendance(userData)) {
+        setLoading(false);
+        return;
       }
-    );
 
-    const unsubscribeStudents = createListener(
-      collection(db, 'students'),
-      (snapshot: any) => {
-        const studentsData = snapshot.docs.map((doc: any) => ({
-          id: doc.id,
-          ...doc.data()
-        } as Student));
-        setStudents(studentsData);
-      }
-    );
+      try {
+        let trainingsQuery;
+        
+        // Eğer antrenörse sadece kendi antrenmanlarını göster
+        if (isTrainer(userData) && trainerId) {
+          trainingsQuery = query(
+            collection(db, 'trainings'),
+            where('trainerId', '==', trainerId),
+            orderBy('date', 'desc')
+          );
+        } else if (isTrainer(userData) && !trainerId) {
+          setLoading(false);
+          return;
+        } else {
+          // Admin ise tüm antrenmanları göster
+          trainingsQuery = query(
+            collection(db, 'trainings'),
+            orderBy('date', 'desc')
+          );
+        }
 
-    const unsubscribeTrainings = createListener(
-      query(collection(db, 'trainings'), orderBy('date', 'desc')),
-      (snapshot: any) => {
-        const trainingsData = snapshot.docs.map((doc: any) => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            ...data,
-            date: data.date instanceof Timestamp ? data.date.toDate() : new Date(data.date),
-            startTime: data.startTime,
-            endTime: data.endTime
-          } as Training;
-        });
-        setTrainings(trainingsData);
+        const trainingsSnapshot = await getDocs(trainingsQuery);
+        const trainingsData: Training[] = [];
 
-        // Create attendance sessions for trainings that don't have one
-        trainingsData.forEach((training: any)=> {
-          if (training.status === 'scheduled') {
-            attendanceService.createAttendanceSessionFromTraining(training);
+        // Antrenmanları yükle
+        for (const docSnap of trainingsSnapshot.docs) {
+          const data = docSnap.data();
+          
+          // Date field'ını güvenli şekilde dönüştür
+          let trainingDate: Date;
+          if (data.date) {
+            if (typeof data.date.toDate === 'function') {
+              // Firestore Timestamp
+              trainingDate = data.date.toDate();
+            } else if (data.date instanceof Date) {
+              // JavaScript Date
+              trainingDate = data.date;
+            } else if (typeof data.date === 'string') {
+              // String date
+              trainingDate = new Date(data.date);
+            } else {
+              trainingDate = new Date();
+            }
+          } else {
+            trainingDate = new Date();
           }
-        });
-      }
-    );
 
-    const unsubscribeAttendanceSessions = createListener(
-      query(collection(db, 'attendanceSessions'), orderBy('date', 'desc')),
-      (snapshot: any) => {
-        const sessionsData = snapshot.docs.map((doc: any) => {
-          const data = doc.data();
-          return {
-            id: doc.id,
+          // CreatedAt field'ını güvenli şekilde dönüştür
+          let createdAtDate: Date;
+          if (data.createdAt) {
+            if (typeof data.createdAt.toDate === 'function') {
+              createdAtDate = data.createdAt.toDate();
+            } else if (data.createdAt instanceof Date) {
+              createdAtDate = data.createdAt;
+            } else if (typeof data.createdAt === 'string') {
+              createdAtDate = new Date(data.createdAt);
+            } else {
+              createdAtDate = new Date();
+            }
+          } else {
+            createdAtDate = new Date();
+          }
+          
+          const training: Training = {
+            id: docSnap.id,
             ...data,
-            date: data.date?.toDate() || new Date(),
-            completedAt: data.completedAt?.toDate()
-          } as AttendanceSession;
-        });
-        setAttendanceSessions(sessionsData);
+            date: trainingDate,
+            createdAt: createdAtDate,
+            attendanceTaken: false
+          };
+
+          // Bu antrenman için yoklama alınmış mı kontrol et
+          const attendanceQuery = query(
+            collection(db, 'attendance'),
+            where('trainingId', '==', training.id)
+          );
+          const attendanceSnapshot = await getDocs(attendanceQuery);
+          
+          if (!attendanceSnapshot.empty) {
+            training.attendanceTaken = true;
+            training.attendanceId = attendanceSnapshot.docs[0].id;
+          }
+
+          trainingsData.push(training);
+        }
+
+        
+        setTrainings(trainingsData);
+        setFilteredTrainings(trainingsData);
+        
+        // Yoklama oturumlarını da yükle (geçmiş kayıtlar için)
+        await loadAttendanceSessions();
+      } catch (error) {
+        console.error('Antrenmanlar yüklenirken hata:', error);
+      } finally {
         setLoading(false);
       }
-    );
-
-    fetchData();
-
-    return () => {
-      unsubscribeBranches();
-      unsubscribeGroups();
-      unsubscribeStudents();
-      unsubscribeTrainings();
-      unsubscribeAttendanceSessions();
     };
-  }, []);
 
+    const loadAttendanceSessions = async () => {
+      try {
+        let attendanceQuery;
+        
+        if (isTrainer(userData) && trainerId) {
+          attendanceQuery = query(
+            collection(db, 'attendance'),
+            where('trainerId', '==', trainerId),
+            orderBy('date', 'desc')
+          );
+        } else {
+          attendanceQuery = query(
+            collection(db, 'attendance'),
+            orderBy('date', 'desc')
+          );
+        }
+
+        const snapshot = await getDocs(attendanceQuery);
+        const records: AttendanceRecord[] = [];
+
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          
+          // Date field'ını güvenli şekilde dönüştür
+          let recordDate: Date;
+          if (data.date) {
+            if (typeof data.date.toDate === 'function') {
+              recordDate = data.date.toDate();
+            } else if (data.date instanceof Date) {
+              recordDate = data.date;
+            } else if (typeof data.date === 'string') {
+              recordDate = new Date(data.date);
+            } else {
+              recordDate = new Date();
+            }
+          } else {
+            recordDate = new Date();
+          }
+
+          // CreatedAt field'ını güvenli şekilde dönüştür
+          let createdAtDate: Date;
+          if (data.createdAt) {
+            if (typeof data.createdAt.toDate === 'function') {
+              createdAtDate = data.createdAt.toDate();
+            } else if (data.createdAt instanceof Date) {
+              createdAtDate = data.createdAt;
+            } else if (typeof data.createdAt === 'string') {
+              createdAtDate = new Date(data.createdAt);
+            } else {
+              createdAtDate = new Date();
+            }
+          } else {
+            createdAtDate = new Date();
+          }
+          
+          records.push({
+            id: doc.id,
+            ...data,
+            date: recordDate,
+            createdAt: createdAtDate,
+          } as AttendanceRecord);
+        });
+
+        // Kayıtları oturumlara grupla
+        const sessionsMap = new Map<string, AttendanceSession>();
+        
+        records.forEach((record) => {
+          const sessionKey = record.trainingId || `${format(record.date, 'yyyy-MM-dd')}_${record.groupId}_${record.trainerId}`;
+          
+          if (!sessionsMap.has(sessionKey)) {
+            sessionsMap.set(sessionKey, {
+              id: sessionKey,
+              trainingId: record.trainingId || '',
+              trainingName: record.trainingName || 'Antrenman',
+              trainerId: record.trainerId,
+              trainerName: record.trainerName,
+              branchId: record.branchId,
+              branchName: record.branchName,
+              groupId: record.groupId,
+              groupName: record.groupName,
+              date: record.date,
+              startTime: '',
+              endTime: '',
+              records: [],
+              presentCount: 0,
+              absentCount: 0,
+              lateCount: 0,
+              excusedCount: 0,
+              totalCount: 0,
+              isCompleted: true,
+              completedAt: record.createdAt
+            });
+          }
+
+          const session = sessionsMap.get(sessionKey)!;
+          session.records.push(record);
+          session.totalCount++;
+
+          switch (record.status) {
+            case 'present':
+              session.presentCount++;
+              break;
+            case 'absent':
+              session.absentCount++;
+              break;
+            case 'late':
+              session.lateCount++;
+              break;
+            case 'excused':
+              session.excusedCount++;
+              break;
+          }
+        });
+
+        const sessions = Array.from(sessionsMap.values()).sort(
+          (a, b) => b.date.getTime() - a.date.getTime()
+        );
+
+        setAttendanceSessions(sessions);
+      } catch (error) {
+        console.error('Yoklama oturumları yüklenirken hata:', error);
+      }
+    };
+
+    if (userData && (trainerId || !isTrainer(userData))) {
+      loadTrainingsAndAttendance();
+    }
+  }, [userData, trainerId]);
+
+  // Arama ve filtreleme işlevi
   useEffect(() => {
-    if (selectedBranch || selectedGroup || selectedDate) {
-      fetchAttendanceSessions();
+    let filtered = trainings;
+
+    // Tab filtreleme
+    const now = new Date();
+    switch (selectedTab) {
+      case 'today':
+        filtered = filtered.filter(training => isToday(training.date));
+        break;
+      case 'upcoming':
+        filtered = filtered.filter(training => isFuture(training.date));
+        break;
+      case 'completed':
+        filtered = filtered.filter(training => 
+          isPast(training.date) && training.attendanceTaken
+        );
+        break;
     }
-  }, [selectedBranch, selectedGroup, selectedDate]);
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-    } catch (error) {
-      console.error('Veri yükleme hatası:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchAttendanceSessions = async () => {
-    try {
-      const filters: any = {};
-      if (selectedBranch) filters.branchId = selectedBranch;
-      if (selectedGroup) filters.groupId = selectedGroup;
-
-      const startOfDay = new Date(selectedDate);
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(selectedDate);
-      endOfDay.setHours(23, 59, 59, 999);
-
-      filters.startDate = startOfDay;
-      filters.endDate = endOfDay;
-
-      const sessions = await attendanceService.getAttendanceSessions(filters);
-      setAttendanceSessions(sessions);
-    } catch (error) {
-      console.error('Error fetching attendance sessions:', error);
-    }
-  };
-
-  const startAttendance = (training: Training) => {
-    setSelectedTraining(training);
-
-    // Get students for this group
-    const groupStudents = students.filter(s => s.groupId === training.groupId);
-
-    // Initialize attendance records
-    const initialAttendance: { [studentId: string]: AttendanceRecord } = {};
-    groupStudents.forEach(student => {
-      initialAttendance[student.id] = {
-        id: `${training.id}_${student.id}_${selectedDate}`,
-        trainingId: training.id,
-        trainingName: training.name,
-        studentId: student.id,
-        studentName: student.fullName,
-        branchId: training.branchId,
-        branchName: training.branchName,
-        groupId: training.groupId,
-        groupName: training.groupName,
-        date: new Date(selectedDate),
-        status: 'present',
-        notes: '',
-        recordedBy: 'Admin', // TODO: Get from auth context
-        recordedAt: new Date()
-      };
-    });
-
-    setCurrentAttendance(initialAttendance);
-    setShowAttendanceModal(true);
-  };
-
-  const updateAttendanceStatus = (studentId: string, status: 'present' | 'absent' | 'late' | 'excused') => {
-    setCurrentAttendance(prev => ({
-      ...prev,
-      [studentId]: {
-        ...prev[studentId],
-        status
-      }
-    }));
-  };
-
-  const updateAttendanceNotes = (studentId: string, notes: string) => {
-    setCurrentAttendance(prev => ({
-      ...prev,
-      [studentId]: {
-        ...prev[studentId],
-        notes
-      }
-    }));
-  };
-
-  const viewAttendanceDetails = async (session: AttendanceSession) => {
-    setSelectedSession(session);
-
-    // Filter attendance records for this session
-    const sessionRecords = attendanceRecords.filter(record =>
-      record.trainingId === session.trainingId &&
-      record.date.toDateString() === session.date.toDateString()
-    );
-
-    setSessionDetails(sessionRecords);
-    setShowDetailModal(true);
-  };
-
-  const exportSessionToCSV = (session: AttendanceSession, records: AttendanceRecord[]) => {
-    try {
-      // CSV içeriği oluştur
-      const csvContent = [
-        'Yoklama Raporu',
-        '',
-        `Antrenman: ${session.trainingName}`,
-        `Şube: ${session.branchName}`,
-        `Grup: ${session.groupName}`,
-        `Tarih: ${session.date.toLocaleDateString('tr-TR')}`,
-        `Antrenör: ${session.trainerName}`,
-        '',
-        'Özet:',
-        `Toplam Öğrenci: ${session.totalStudents}`,
-        `Katılan: ${session.presentCount}`,
-        `Katılmayan: ${session.absentCount}`,
-        `Geç Gelen: ${session.lateCount}`,
-        `Mazeretli: ${session.excusedCount}`,
-        `Katılım Oranı: %${((session.presentCount / session.totalStudents) * 100).toFixed(1)}`,
-        '',
-        'Detaylı Liste:',
-        'Öğrenci Adı,Durum,Not,Kaydeden,Kayıt Zamanı',
-        ...records.map(record =>
-          `"${record.studentName}","${getStatusText(record.status)}","${record.notes || '-'}","${record.recordedBy}","${record.recordedAt.toLocaleString('tr-TR')}"`
-        )
-      ].join('\n');
-
-      // CSV dosyasını indir
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      if (link.download !== undefined) {
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        const fileName = `yoklama_${session.groupName}_${session.date.toISOString().split('T')[0]}.csv`;
-        link.setAttribute('download', fileName);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
-
-      alert('CSV dosyası başarıyla indirildi!');
-    } catch (error) {
-      console.error('CSV export hatası:', error);
-      alert('CSV dosyası indirilemedi.');
-    }
-  };
-
-  const saveAttendance = async () => {
-    if (!selectedTraining) return;
-
-    try {
-      setSaving(true);
-
-      const attendanceList = Object.values(currentAttendance);
-      const presentCount = attendanceList.filter(a => a.status === 'present').length;
-      const absentCount = attendanceList.filter(a => a.status === 'absent').length;
-      const lateCount = attendanceList.filter(a => a.status === 'late').length;
-      const excusedCount = attendanceList.filter(a => a.status === 'excused').length;
-
-      // Mock save - simulate saving attendance
-      console.log('Yoklama kaydediliyor (mock):', {
-        training: selectedTraining.name,
-        present: presentCount,
-        absent: absentCount,
-        late: lateCount,
-        excused: excusedCount
-      });
-
-      // Add to mock sessions
-      const newSession: AttendanceSession = {
-        id: `session_${selectedTraining.id}_${selectedDate}`,
-        trainingId: selectedTraining.id,
-        trainingName: selectedTraining.name,
-        branchId: selectedTraining.branchId,
-        branchName: selectedTraining.branchName || '',
-        groupId: selectedTraining.groupId,
-        groupName: selectedTraining.groupName || '',
-        date: new Date(selectedDate),
-        trainerId: selectedTraining.trainerId,
-        trainerName: selectedTraining.trainerName || '',
-        totalStudents: attendanceList.length,
-        presentCount,
-        absentCount,
-        lateCount,
-        excusedCount,
-        isCompleted: true,
-        completedAt: new Date(),
-        notes: ''
-      };
-
-      setAttendanceSessions(prev => [...prev, newSession]);
-
-      // Also save the individual records for detail view
-      setAttendanceRecords(prev => [...prev, ...attendanceList]);
-
-      setShowAttendanceModal(false);
-
-      alert('Yoklama başarıyla kaydedildi (demo)!');
-
-    } catch (error) {
-      console.error('Yoklama kaydetme hatası:', error);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const filteredTrainings = trainings.filter(training => {
-    const matchesBranch = !selectedBranch || training.branchId === selectedBranch;
-    const matchesGroup = !selectedGroup || training.groupId === selectedGroup;
-    const matchesDate = training.date.toDateString() === new Date(selectedDate).toDateString();
-    const matchesSearch = !searchTerm ||
-      training.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      training.trainerName.toLowerCase().includes(searchTerm.toLowerCase());
-
-    // Check if only pending attendances should be shown
-    let matchesPending = true;
-    if (showOnlyPending) {
-      const session = attendanceSessions.find(s =>
-        s.trainingId === training.id &&
-        s.date.toDateString() === new Date(selectedDate).toDateString()
+    // Arama filtreleme
+    if (searchQuery) {
+      const searchLower = searchQuery.toLowerCase();
+      filtered = filtered.filter(training => 
+        training.name.toLowerCase().includes(searchLower) ||
+        training.groupName?.toLowerCase().includes(searchLower) ||
+        training.branchName?.toLowerCase().includes(searchLower) ||
+        training.trainerName?.toLowerCase().includes(searchLower)
       );
-      matchesPending = !session || !session.isCompleted;
     }
 
-    return matchesBranch && matchesGroup && matchesDate && matchesSearch && matchesPending;
-  });
+    setFilteredTrainings(filtered);
+  }, [searchQuery, trainings, selectedTab]);
 
-  const filteredGroups = groups.filter(group =>
-    !selectedBranch || group.branchId === selectedBranch
-  );
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'present': return 'text-green-600 bg-green-50';
-      case 'absent': return 'text-red-600 bg-red-50';
-      case 'late': return 'text-yellow-600 bg-yellow-50';
-      case 'excused': return 'text-blue-600 bg-blue-50';
-      default: return 'text-gray-600 bg-gray-50';
+  const getTrainingStatusBadge = (training: Training) => {
+    if (training.attendanceTaken) {
+      return <Badge className="bg-green-500">Yoklama Alındı</Badge>;
     }
+    
+    if (isToday(training.date)) {
+      return <Badge className="bg-blue-500">Bugün</Badge>;
+    }
+    
+    if (isPast(training.date)) {
+      return <Badge variant="destructive">Yoklama Alınmadı</Badge>;
+    }
+    
+    return <Badge variant="outline">Gelecek</Badge>;
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'present': return <UserCheck className="h-4 w-4" />;
-      case 'absent': return <UserX className="h-4 w-4" />;
-      case 'late': return <Clock className="h-4 w-4" />;
-      case 'excused': return <CheckCircle className="h-4 w-4" />;
-      default: return <Users className="h-4 w-4" />;
-    }
+  const handleTakeAttendance = (training: Training) => {
+    router.push(`/dashboard/attendance/take?trainingId=${training.id}`);
   };
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'present': return 'Katıldı';
-      case 'absent': return 'Katılmadı';
-      case 'late': return 'Geç Geldi';
-      case 'excused': return 'Mazeret';
-      default: return 'Bilinmiyor';
-    }
+  const getTrainingStats = () => {
+    const today = trainings.filter(t => isToday(t.date));
+    const upcoming = trainings.filter(t => isFuture(t.date));
+    const completed = trainings.filter(t => isPast(t.date) && t.attendanceTaken);
+    const pending = trainings.filter(t => isPast(t.date) && !t.attendanceTaken);
+    
+    return { today, upcoming, completed, pending };
   };
-
 
   if (loading) {
-    return (
-      <Loading message='Veriler yükleniyor...' />
-    );
+    return <LoadingSpinner />;
   }
 
+  if (!canTakeAttendance(userData)) {
+    return null;
+  }
+
+  const stats = getTrainingStats();
+
   return (
-    <div>
-      <PageTitle
-        setEditingUser={undefined}
-        pageTitle="Yoklama Takip"
-        pageDescription="Antrenman katılım durumlarını takip edebilirsiniz."
-        firstButtonText="Listele"
-        secondButtonText="Yeni Analizler"
-        pageIcon={<ClipboardCheck />}
-        viewMode={viewMode}
-        setViewMode={setViewMode}
-      />
-      {viewMode === 'analytics' ? (
-        <AttendanceAnalytics
-          branchId={selectedBranch}
-          groupId={selectedGroup}
-        />
-      ) : (
-        <>
-          {/* Filters */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Şube
-                </label>
-                <select
-                  value={selectedBranch}
-                  onChange={(e) => {
-                    setSelectedBranch(e.target.value);
-                    setSelectedGroup('');
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Tüm Şubeler</option>
-                  {branches.map((branch) => (
-                    <option key={branch.id} value={branch.id}>
-                      {branch.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+    <div className="container mx-auto py-6 px-4">
+      {/* Başlık */}
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold">Yoklama Yönetimi</h1>
+        <p className="text-muted-foreground mt-1">
+          {isTrainer(userData) 
+            ? 'Antrenmanlarınız için yoklama alın ve görüntüleyin' 
+            : 'Tüm antrenmanlar için yoklama kayıtlarını yönetin'}
+        </p>
+      </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Grup
-                </label>
-                <select
-                  value={selectedGroup}
-                  onChange={(e) => setSelectedGroup(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={!selectedBranch}
-                >
-                  <option value="">Tüm Gruplar</option>
-                  {filteredGroups.map((group) => (
-                    <option key={group.id} value={group.id}>
-                      {group.name} ({group.time})
-                    </option>
-                  ))}
-                </select>
-              </div>
+      {/* İstatistik Kartları */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Bugünkü Antrenmanlar</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.today.length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Gelecek Antrenmanlar</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.upcoming.length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Tamamlanan Yoklamalar</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.completed.length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Bekleyen Yoklamalar</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">{stats.pending.length}</div>
+          </CardContent>
+        </Card>
+      </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tarih
-                </label>
-                <input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+      {/* Tab Navigasyonu */}
+      <div className="flex space-x-1 bg-gray-100 rounded-lg p-1 mb-6">
+        <Button
+          variant={selectedTab === 'today' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setSelectedTab('today')}
+          className="flex-1"
+        >
+          <Calendar className="h-4 w-4 mr-2" />
+          Bugün ({stats.today.length})
+        </Button>
+        <Button
+          variant={selectedTab === 'upcoming' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setSelectedTab('upcoming')}
+          className="flex-1"
+        >
+          <Clock className="h-4 w-4 mr-2" />
+          Gelecek ({stats.upcoming.length})
+        </Button>
+        <Button
+          variant={selectedTab === 'completed' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setSelectedTab('completed')}
+          className="flex-1"
+        >
+          <CheckCircle className="h-4 w-4 mr-2" />
+          Tamamlanan ({stats.completed.length})
+        </Button>
+      </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Arama
-                </label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <input
-                    type="text"
-                    placeholder="Antrenman veya antrenör ara..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
+      {/* Arama */}
+      <div className="mb-6">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input
+            placeholder="Antrenman, grup, şube veya antrenör ara..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+      </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Filtre
-                </label>
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="showOnlyPending"
-                    checked={showOnlyPending}
-                    onChange={(e) => setShowOnlyPending(e.target.checked)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <label htmlFor="showOnlyPending" className="ml-2 text-sm text-gray-700">
-                    Sadece bekleyenleri göster
-                  </label>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Trainings List */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-            {filteredTrainings.length === 0 ? (
-              <div className="p-8 text-center">
-                <Calendar className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">Antrenman bulunamadı</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  Seçilen kriterlere uygun antrenman bulunmuyor.
-                </p>
-              </div>
-            ) : (
-              <div className="overflow-hidden">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
-                        Antrenman
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
-                        Şube & Grup
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
-                        Antrenör
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
-                        Katılım Durumu
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase ">
-                        İşlemler
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredTrainings.map((training) => {
-                      const session = attendanceSessions.find(s =>
-                        s.trainingId === training.id &&
-                        s.date.toDateString() === new Date(selectedDate).toDateString()
-                      );
-
-                      return (
-                        <tr key={training.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <Dumbbell className="h-5 w-5 text-gray-400 mr-3" />
-                              <div>
-                                <div className="text-sm font-medium text-gray-900">
-                                  {training.name}
-                                </div>
-                                {training.duration && (
-                                  <div className="text-xs text-gray-500">
-                                    {training.duration} dakika
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="space-y-1">
-                              <div className="flex items-center text-sm text-gray-600">
-                                <Building className="h-3 w-3 mr-2" />
-                                {training.branchName || 'Şube bilgisi yok'}
-                              </div>
-                              <div className="flex items-center text-sm text-gray-600">
-                                <Users className="h-3 w-3 mr-2" />
-                                {training.groupName || 'Grup bilgisi yok'}
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            {training.trainerName || 'Antrenör bilgisi yok'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {session ? (
-                              session.isCompleted ? (
-                                <div className="space-y-1">
-                                  <div className="flex items-center text-sm">
-                                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                                    <span className="text-green-600 font-medium">Tamamlandı</span>
-                                  </div>
-                                  <div className="text-xs text-gray-500">
-                                    {session.presentCount}/{session.totalStudents} katıldı
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="space-y-1">
-                                  <div className="flex items-center text-sm">
-                                    <Clock className="h-4 w-4 text-yellow-500 mr-2" />
-                                    <span className="text-yellow-600 font-medium">Devam Ediyor</span>
-                                  </div>
-                                  <div className="text-xs text-gray-500">
-                                    Yoklama alınıyor...
-                                  </div>
-                                </div>
-                              )
-                            ) : (
-                              (() => {
-                                const trainingDate = new Date(training.date);
-                                const now = new Date();
-                                const isPast = trainingDate < now;
-
-                                return (
-                                  <div className="flex items-center text-sm">
-                                    {isPast ? (
-                                      <>
-                                        <AlertCircle className="h-4 w-4 text-red-500 mr-2" />
-                                        <span className="text-red-600 font-medium">Yoklama Alınmadı!</span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Clock className="h-4 w-4 text-gray-400 mr-2" />
-                                        <span className="text-gray-500">Beklemede</span>
-                                      </>
-                                    )}
-                                  </div>
-                                );
-                              })()
-                            )}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <div className="flex items-center justify-end gap-2">
-                              {session ? (
-                                <button
-                                  onClick={() => viewAttendanceDetails(session)}
-                                  className="text-blue-600 hover:text-blue-700 p-1 hover:bg-blue-50 rounded"
-                                  title="Detayları Görüntüle"
-                                >
-                                  <Eye size={16} />
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => startAttendance(training)}
-                                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm flex items-center gap-1"
-                                >
-                                  <ClipboardCheck size={14} />
-                                  Yoklama Al
-                                </button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-
-          {/* Attendance Modal */}
-          {showAttendanceModal && selectedTraining && typeof document !== 'undefined' && createPortal(
-            <div className="fixed inset-0 bg-black/20 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-[9999] p-4">
-              <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl">
-                <div className="p-6 border-b border-gray-200">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-xl font-semibold text-gray-900">
-                        Yoklama Al - {selectedTraining.name}
-                      </h2>
-                      <p className="text-sm text-gray-600 mt-1">
-                        {selectedTraining.branchName} - {selectedTraining.groupName} | {new Date(selectedDate).toLocaleDateString('tr-TR')}
-                      </p>
+      {/* Antrenman Listesi */}
+      <div className="space-y-4">
+        {filteredTrainings.length === 0 ? (
+          <Card>
+            <CardContent className="text-center py-8">
+              <Dumbbell className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">
+                {searchQuery
+                  ? 'Arama kriterlerine uygun antrenman bulunamadı.'
+                  : selectedTab === 'today'
+                  ? 'Bugün antrenman bulunmuyor.'
+                  : selectedTab === 'upcoming'
+                  ? 'Gelecek antrenman bulunmuyor.'
+                  : 'Tamamlanan yoklama bulunmuyor.'}
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          filteredTrainings.map((training) => (
+            <Card
+              key={training.id}
+              className="hover:shadow-md transition-shadow"
+            >
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Dumbbell className="h-5 w-5 text-gray-500" />
+                      <CardTitle className="text-lg">{training.name}</CardTitle>
+                      {getTrainingStatusBadge(training)}
                     </div>
-                    <button
-                      onClick={() => setShowAttendanceModal(false)}
-                      className="text-gray-400 hover:text-gray-600"
-                    >
-                      <XCircle size={24} />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
-                  <div className="space-y-4">
-                    {Object.values(currentAttendance).map((record) => (
-                      <div key={record.studentId} className="bg-gray-50 rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <h3 className="font-medium text-gray-900">{record.studentName}</h3>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => updateAttendanceStatus(record.studentId, 'present')}
-                              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${record.status === 'present'
-                                ? 'bg-green-100 text-green-700 border-2 border-green-300'
-                                : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-green-50'
-                                }`}
-                            >
-                              <UserCheck className="h-4 w-4 inline mr-1" />
-                              Katıldı
-                            </button>
-                            <button
-                              onClick={() => updateAttendanceStatus(record.studentId, 'late')}
-                              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${record.status === 'late'
-                                ? 'bg-yellow-100 text-yellow-700 border-2 border-yellow-300'
-                                : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-yellow-50'
-                                }`}
-                            >
-                              <Clock className="h-4 w-4 inline mr-1" />
-                              Geç Geldi
-                            </button>
-                            <button
-                              onClick={() => updateAttendanceStatus(record.studentId, 'excused')}
-                              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${record.status === 'excused'
-                                ? 'bg-blue-100 text-blue-700 border-2 border-blue-300'
-                                : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-blue-50'
-                                }`}
-                            >
-                              <CheckCircle className="h-4 w-4 inline mr-1" />
-                              Mazeret
-                            </button>
-                            <button
-                              onClick={() => updateAttendanceStatus(record.studentId, 'absent')}
-                              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${record.status === 'absent'
-                                ? 'bg-red-100 text-red-700 border-2 border-red-300'
-                                : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-red-50'
-                                }`}
-                            >
-                              <UserX className="h-4 w-4 inline mr-1" />
-                              Katılmadı
-                            </button>
-                          </div>
+                    <div className="text-sm text-muted-foreground">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-4 w-4" />
+                          {format(training.date, 'dd MMMM yyyy, EEEE', { locale: tr })}
                         </div>
-
-                        <input
-                          type="text"
-                          placeholder="Not ekleyin..."
-                          value={record.notes}
-                          onChange={(e) => updateAttendanceNotes(record.studentId, e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="p-6 border-t border-gray-200 bg-gray-50">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="text-sm text-gray-600">
-                        Toplam {Object.keys(currentAttendance).length} öğrenci
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => {
-                            const updatedAttendance = { ...currentAttendance };
-                            Object.keys(updatedAttendance).forEach(studentId => {
-                              updatedAttendance[studentId] = {
-                                ...updatedAttendance[studentId],
-                                status: 'present'
-                              };
-                            });
-                            setCurrentAttendance(updatedAttendance);
-                          }}
-                          className="text-xs px-3 py-1 bg-green-100 hover:bg-green-200 text-green-700 rounded-md transition-colors"
-                        >
-                          Tümü Katıldı
-                        </button>
-                        <button
-                          onClick={() => {
-                            const updatedAttendance = { ...currentAttendance };
-                            Object.keys(updatedAttendance).forEach(studentId => {
-                              updatedAttendance[studentId] = {
-                                ...updatedAttendance[studentId],
-                                status: 'absent'
-                              };
-                            });
-                            setCurrentAttendance(updatedAttendance);
-                          }}
-                          className="text-xs px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded-md transition-colors"
-                        >
-                          Tümü Katılmadı
-                        </button>
-                      </div>
-                    </div>
-                    <div className="flex gap-3">
-                      <button
-                        onClick={() => setShowAttendanceModal(false)}
-                        className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-                      >
-                        İptal
-                      </button>
-                      <button
-                        onClick={saveAttendance}
-                        disabled={saving}
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
-                      >
-                        {saving ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                            Kaydediliyor...
-                          </>
-                        ) : (
-                          <>
-                            <ClipboardCheck size={16} />
-                            Yoklamayı Kaydet
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>,
-            document.body
-          )}
-
-          {/* Attendance Details Modal */}
-          {showDetailModal && selectedSession && typeof document !== 'undefined' && createPortal(
-            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
-              <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl">
-                <div className="p-6 border-b border-gray-200">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-xl font-semibold text-gray-900">
-                        Yoklama Detayları - {selectedSession.trainingName}
-                      </h2>
-                      <p className="text-sm text-gray-600 mt-1">
-                        {selectedSession.branchName} - {selectedSession.groupName} | {selectedSession.date.toLocaleDateString('tr-TR')}
-                      </p>
-                      <div className="flex items-center gap-4 mt-2 text-sm">
-                        <span className="text-green-600">✓ {selectedSession.presentCount} Katıldı</span>
-                        <span className="text-red-600">✗ {selectedSession.absentCount} Katılmadı</span>
-                        {selectedSession.lateCount > 0 && (
-                          <span className="text-yellow-600">⏰ {selectedSession.lateCount} Geç Geldi</span>
-                        )}
-                        {selectedSession.excusedCount > 0 && (
-                          <span className="text-blue-600">📋 {selectedSession.excusedCount} Mazeret</span>
-                        )}
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => setShowDetailModal(false)}
-                      className="text-gray-400 hover:text-gray-600"
-                    >
-                      <XCircle size={24} />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
-                  {sessionDetails.length === 0 ? (
-                    <div className="text-center py-8">
-                      <Users className="mx-auto h-12 w-12 text-gray-400" />
-                      <h3 className="mt-2 text-sm font-medium text-gray-900">Detay bulunamadı</h3>
-                      <p className="mt-1 text-sm text-gray-500">Bu oturum için yoklama detayları yüklenmedi.</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {sessionDetails.map((record) => (
-                        <div key={record.id} className="bg-gray-50 rounded-lg p-4">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className={`p-2 rounded-lg ${getStatusColor(record.status)}`}>
-                                {getStatusIcon(record.status)}
-                              </div>
-                              <div>
-                                <h3 className="font-medium text-gray-900">{record.studentName}</h3>
-                                <p className="text-sm text-gray-600">
-                                  Durum: <span className="font-medium">{getStatusText(record.status)}</span>
-                                </p>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-sm text-gray-500">
-                                Kaydeden: {record.recordedBy}
-                              </p>
-                              <p className="text-xs text-gray-400">
-                                {record.recordedAt.toLocaleString('tr-TR')}
-                              </p>
-                            </div>
-                          </div>
-
-                          {record.notes && (
-                            <div className="mt-3 p-3 bg-white rounded border border-gray-200">
-                              <p className="text-sm text-gray-700">
-                                <strong>Not:</strong> {record.notes}
-                              </p>
-                            </div>
-                          )}
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-4 w-4" />
+                          {training.startTime} - {training.endTime}
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="p-6 border-t border-gray-200 bg-gray-50">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-gray-600">
-                      Toplam {selectedSession.totalStudents} öğrenci
-                    </div>
-                    <div className="flex gap-3">
-                      <button
-                        onClick={() => exportSessionToCSV(selectedSession, sessionDetails)}
-                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center gap-2"
-                      >
-                        <Download size={16} />
-                        CSV İndir
-                      </button>
-                      <button
-                        onClick={() => setShowDetailModal(false)}
-                        className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
-                      >
-                        Kapat
-                      </button>
+                        <div className="flex items-center gap-1">
+                          <Users className="h-4 w-4" />
+                          {training.groupName} - {training.branchName}
+                        </div>
+                      </div>
+                      {training.description && (
+                        <div className="mt-2 text-gray-600">
+                          {training.description}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>,
-            document.body
-          )}
-        </>
-      )}
+              </CardHeader>
+              <CardContent>
+                <div className="flex justify-between items-center">
+                  <div className="text-sm text-muted-foreground">
+                    Antrenör: {training.trainerName}
+                  </div>
+                  <div className="flex gap-2">
+                    {training.attendanceTaken ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => router.push(`/dashboard/attendance/view/${training.id}`)}
+                      >
+                        <CheckCircle className="h-4 w-4 mr-1" />
+                        Yoklamayı Görüntüle
+                      </Button>
+                    ) : isPast(training.date) || isToday(training.date) ? (
+                      <Button
+                        onClick={() => handleTakeAttendance(training)}
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Yoklama Al
+                      </Button>
+                    ) : (
+                      <Badge variant="outline">
+                        Henüz Zamanı Gelmedi
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
     </div>
   );
 }

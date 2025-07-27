@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import { isAdmin, isTrainer, canTakeAttendance } from '@/lib/firebase/auth';
 import { 
   Home,
   Calendar,
@@ -89,6 +91,32 @@ const menuItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { userData } = useAuth();
+
+  // Rol bazlı menü filtreleme
+  const filteredMenuItems = menuItems.filter(item => {
+    // Dashboard herkes görebilir
+    if (item.href === '/dashboard') return true;
+    
+    // Sadece admin görebilir
+    if (isAdmin(userData)) return true;
+    
+    // Antrenör görebileceği sayfalar
+    if (isTrainer(userData)) {
+      const trainerAllowedPaths = [
+        '/dashboard',
+        '/dashboard/students',
+        '/dashboard/groups',
+        '/dashboard/attendance',
+        '/dashboard/trainings',
+        '/dashboard/notifications'
+      ];
+      return trainerAllowedPaths.includes(item.href);
+    }
+    
+    // Diğer roller için sadece dashboard
+    return false;
+  });
 
   return (
     <div className="w-[280px] bg-white border-r border-gray-200 h-screen flex flex-col">
@@ -99,14 +127,18 @@ export default function Sidebar() {
           </div>
           <div>
             <h1 className="text-xl font-bold text-gray-900">Sports Club</h1>
-            <p className="text-xs text-gray-500 mt-1">Yönetim Paneli</p>
+            <p className="text-xs text-gray-500 mt-1">
+              {isAdmin(userData) ? 'Admin Paneli' : 
+               isTrainer(userData) ? 'Antrenör Paneli' : 
+               'Yönetim Paneli'}
+            </p>
           </div>
         </div>
       </div>
 
       <nav className="flex-1 p-3">
         <ul className="space-y-1">
-          {menuItems.map((item) => {
+          {filteredMenuItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
             

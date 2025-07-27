@@ -228,3 +228,44 @@ export const deactivateUser = async (userId: string): Promise<void> => {
     throw error;
   }
 };
+
+// Role-based utility functions
+export const hasRole = (userData: UserData | null, role: UserRole): boolean => {
+  return userData?.role === role;
+};
+
+export const hasAnyRole = (userData: UserData | null, roles: UserRole[]): boolean => {
+  return userData ? roles.includes(userData.role) : false;
+};
+
+export const isAdmin = (userData: UserData | null): boolean => {
+  return hasRole(userData, UserRole.ADMIN);
+};
+
+export const isTrainer = (userData: UserData | null): boolean => {
+  return hasRole(userData, UserRole.TRAINER);
+};
+
+export const isParent = (userData: UserData | null): boolean => {
+  return hasRole(userData, UserRole.PARENT);
+};
+
+export const isStudent = (userData: UserData | null): boolean => {
+  return hasRole(userData, UserRole.STUDENT);
+};
+
+export const canManageStudents = (userData: UserData | null): boolean => {
+  return hasAnyRole(userData, [UserRole.ADMIN, UserRole.TRAINER]);
+};
+
+export const canManageTrainers = (userData: UserData | null): boolean => {
+  return hasRole(userData, UserRole.ADMIN);
+};
+
+export const canTakeAttendance = (userData: UserData | null): boolean => {
+  return hasAnyRole(userData, [UserRole.ADMIN, UserRole.TRAINER]);
+};
+
+export const canViewReports = (userData: UserData | null): boolean => {
+  return hasAnyRole(userData, [UserRole.ADMIN, UserRole.TRAINER]);
+};
