@@ -10,13 +10,17 @@ import {
   UserRole,
   UserData
 } from '@/lib/firebase/auth';
-import { Trash2, Search, UserCheck, UserX, Edit2, UserCog } from 'lucide-react';
 import ModalTitle from '@/components/modal-title';
 import PageTitle from '@/components/page-title';
 import StatCard from '@/components/stat-card';
-import Modal from '@mui/material/Modal';
-import BasicModal from '@/components/modal';
+import EditModal from '@/components/edit-modal';
 import { createPortal } from 'react-dom';
+import IconButtons from '@/components/icon-buttons';
+import ManageAccountsOutlinedIcon from '@mui/icons-material/ManageAccountsOutlined';
+import Loading from '@/components/loading';
+import SearchIcon from '@mui/icons-material/Search';
+import DeleteModal from '@/components/delete-modal';
+import { formatDate } from "@/lib/utils"
 
 interface UserWithId extends UserData {
   id: string;
@@ -29,6 +33,8 @@ export default function UsersPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<UserRole | 'ALL'>('ALL');
   const [showModal, setShowModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<UserWithId | null>(null);
   const [editingUser, setEditingUser] = useState<UserWithId | null>(null);
   const [formData, setFormData] = useState({
     email: '',
@@ -40,6 +46,7 @@ export default function UsersPage() {
   });
   const [students, setStudents] = useState<any[]>([]);
   const [trainers, setTrainers] = useState<any[]>([]);
+  const [age, setAge] = useState('');
 
   useEffect(() => {
     loadUsers();
@@ -181,16 +188,9 @@ export default function UsersPage() {
   };
 
   const handleDelete = async (userId: string) => {
-    if (confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz?')) {
-      try {
-        await deleteUser(userId);
-        loadUsers();
-        loadStudentsAndTrainers(); // Dropdown'ları güncelle
-      } catch (error) {
-        console.error('Error deleting user:', error);
-        alert('Kullanıcı silinemedi: ' + (error as Error).message);
-      }
-    }
+    await deleteUser(userId);
+    loadUsers();
+    loadStudentsAndTrainers();
   };
 
   const handleToggleActive = async (userId: string, isActive: boolean) => {
@@ -247,11 +247,15 @@ export default function UsersPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
+      <Loading message="Kullanıcılar yükleniyor..." />
     );
   }
+
+
+    const handleChange = (event: any) => {
+    setAge(event.target.value);
+  };
+
 
   return (
     <div>
@@ -262,13 +266,15 @@ export default function UsersPage() {
         pageTitle="Kullanıcı Yönetimi"
         pageDescription="Sistem kullanıcılarını yönetebilirsiniz."
         firstButtonText="Yeni Kullanıcı Ekle"
-        pageIcon={<UserCog />}
+        pageIcon={<ManageAccountsOutlinedIcon />}
       />
 
       {/* Filters */}
       <div className="flex gap-4 items-center">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+            <SearchIcon />
+          </div>
           <input
             type="text"
             placeholder="Kullanıcı ara..."
@@ -277,6 +283,7 @@ export default function UsersPage() {
             className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-full"
           />
         </div>
+
         <select
           value={roleFilter}
           onChange={(e) => setRoleFilter(e.target.value as UserRole | 'ALL')}
@@ -291,17 +298,15 @@ export default function UsersPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 my-5">
-
-
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 my-5">
         <StatCard
           value={users.length}
           subLabel="Toplam Kullanıcı"
-          subLabelTextColor="text-slate-700"
-          gradientFrom="from-slate-50"
-          gradientTo="to-slate-100"
-          borderColor="border-slate-200"
-          textColor='text-slate-600'
+          subLabelTextColor="text-purple-700"
+          gradientFrom="from-purple-50"
+          gradientTo="to-purple-100"
+          borderColor="border-purple-200"
+          textColor='text-purple-600'
         />
         <StatCard
           value={users.filter(u => u.role === UserRole.ADMIN).length}
@@ -331,6 +336,16 @@ export default function UsersPage() {
           borderColor="border-green-200"
           textColor='text-green-600'
         />
+
+        <StatCard
+          value={users.filter(u => !u.isActive).length}
+          subLabel="Pasif"
+          subLabelTextColor="text-slate-700"
+          gradientFrom="from-slate-50"
+          gradientTo="to-slate-100"
+          borderColor="border-slate-200"
+          textColor='text-slate-600'
+        />
       </div>
 
       {/* Users Table */}
@@ -354,7 +369,7 @@ export default function UsersPage() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
                   Durum
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase ">
                   İşlemler
                 </th>
               </tr>
@@ -406,26 +421,26 @@ export default function UsersPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleEdit(userData)}
-                        className="text-blue-400 hover:text-blue-700"
-                      >
-                        <Edit2 size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleToggleActive(userData.id, userData.isActive)}
-                        className={`${userData.isActive ? 'p-1 text-red-400 hover:text-red-700' : 'p-1 text-green-400 hover:text-green-700'}`}
-                      >
-                        {userData.isActive ? <UserX size={16} /> : <UserCheck size={16} />}
-                      </button>
-                      <button
-                        onClick={() => handleDelete(userData.id)}
-                        className="p-1 text-red-400 hover:text-red-700"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
+                    <IconButtons
+                      item={userData}
+                      onEdit={() => handleEdit(userData)}
+                      onDelete={() => { setUserToDelete(userData); setShowDeleteModal(true); }}
+                      onToggleActive={(_, isActive) => handleToggleActive(userData.id, isActive)}
+                    />
+                    <DeleteModal
+              key={userData.id}
+              open={showDeleteModal}
+              title={
+                <ModalTitle modalTitle={'Uyarı !'} />
+              }
+              description={
+                <>
+                  <strong>"{userData.name}"a-aasas</strong> adlı kullanıcıyı silmek istediğinizden emin misiniz?
+                </>
+              }
+              onCancel={() => setShowDeleteModal(false)}
+              onConfirm={() => handleDelete(userData.id)}
+            />
                   </td>
                 </tr>
               ))}
@@ -436,199 +451,205 @@ export default function UsersPage() {
 
       {/* Modal */}
       {typeof document !== 'undefined' && createPortal(
-        <BasicModal className='max-w-lg' open={showModal}  onClose={() => resetForm()}>
-          <ModalTitle modalTitle={editingUser ? 'Kullanıcı Düzenle' : 'Yeni Kullanıcı Ekle'} onClose={() => resetForm()} />
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {!editingUser && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    E-posta
-                  </label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    required
-                  />
-                </div>
+        <>
+          <EditModal className='max-w-lg' open={showModal} onClose={() => resetForm()} onSubmit={() => handleSubmit} editing={!!editingUser}>
+            <ModalTitle modalTitle={editingUser ? 'Kullanıcı Güncelle' : 'Yeni Kullanıcı Ekle'} />
+            <div className="space-y-4">
+              {!editingUser && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      E-posta
+                    </label>
+                    <input
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      required
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Şifre
-                  </label>
-                  <input
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    required
-                    minLength={6}
-                  />
-                </div>
-              </>
-            )}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Şifre
+                    </label>
+                    <input
+                      type="password"
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      required
+                      minLength={6}
+                    />
+                  </div>
+                </>
+              )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Rol
-              </label>
-              <select
-                value={formData.role}
-                onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole, studentId: '', trainerId: '' })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              >
-                <option value={UserRole.ADMIN}>Yönetici</option>
-                <option value={UserRole.TRAINER}>Antrenör</option>
-                <option value={UserRole.PARENT}>Veli</option>
-                <option value={UserRole.STUDENT}>Öğrenci</option>
-              </select>
-            </div>
-
-            {/* Antrenör seçimi - TRAINER rolü için */}
-            {formData.role === UserRole.TRAINER && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Antrenör Kaydı
+                  Rol
                 </label>
-                {(() => {
-                  const availableTrainers = trainers.filter(t => {
-                    const hasUserId = t.userId && t.userId.trim() !== '';
-                    return !hasUserId;
-                  });
+                <select
+                  value={formData.role}
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole, studentId: '', trainerId: '' })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                >
+                  <option value={UserRole.ADMIN}>Yönetici</option>
+                  <option value={UserRole.TRAINER}>Antrenör</option>
+                  <option value={UserRole.PARENT}>Veli</option>
+                  <option value={UserRole.STUDENT}>Öğrenci</option>
+                </select>
+              </div>
 
-                  if (availableTrainers.length === 0) {
+              {/* Antrenör seçimi - TRAINER rolü için */}
+              {formData.role === UserRole.TRAINER && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Antrenör Kaydı
+                  </label>
+                  {(() => {
+                    const availableTrainers = trainers.filter(t => {
+                      const hasUserId = t.userId && t.userId.trim() !== '';
+                      return !hasUserId;
+                    });
+
+                    if (availableTrainers.length === 0) {
+                      return (
+                        <p className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
+                          Tüm antrenör kayıtları zaten bir kullanıcı hesabıyla ilişkilendirilmiş.
+                          Önce yeni bir antrenör kaydı oluşturmanız gerekiyor.
+                        </p>
+                      );
+                    }
+
                     return (
-                      <p className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
-                        Tüm antrenör kayıtları zaten bir kullanıcı hesabıyla ilişkilendirilmiş.
-                        Önce yeni bir antrenör kaydı oluşturmanız gerekiyor.
-                      </p>
+                      <>
+                        <select
+                          value={formData.trainerId}
+                          onChange={(e) => setFormData({ ...formData, trainerId: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                          required
+                        >
+                          <option value="">Antrenör seçin...</option>
+                          {availableTrainers.map((trainer) => (
+                            <option key={trainer.id} value={trainer.id}>
+                              {trainer.fullName || trainer.name}
+                            </option>
+                          ))}
+                        </select>
+                        <p className="text-sm text-gray-500 mt-1">
+                          Bu kullanıcı hesabı seçilen antrenör kaydıyla ilişkilendirilecek
+                        </p>
+                      </>
                     );
-                  }
+                  })()}
+                </div>
+              )}
 
-                  return (
+              {/* Öğrenci seçimi - PARENT rolü için */}
+              {formData.role === UserRole.PARENT && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Öğrenci Kaydı (Çocuk)
+                  </label>
+                  {students.filter(s => !s.parentId).length === 0 ? (
+                    <p className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
+                      Tüm öğrenci kayıtları zaten bir veli hesabıyla ilişkilendirilmiş.
+                      Önce yeni bir öğrenci kaydı oluşturmanız gerekiyor.
+                    </p>
+                  ) : (
                     <>
                       <select
-                        value={formData.trainerId}
-                        onChange={(e) => setFormData({ ...formData, trainerId: e.target.value })}
+                        value={formData.studentId}
+                        onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md"
                         required
                       >
-                        <option value="">Antrenör seçin...</option>
-                        {availableTrainers.map((trainer) => (
-                          <option key={trainer.id} value={trainer.id}>
-                            {trainer.fullName || trainer.name}
+                        <option value="">Öğrenci seçin...</option>
+                        {students.filter(student => !student.parentId).map((student) => (
+                          <option key={student.id} value={student.id}>
+                            {student.fullName || student.name}
                           </option>
                         ))}
                       </select>
                       <p className="text-sm text-gray-500 mt-1">
-                        Bu kullanıcı hesabı seçilen antrenör kaydıyla ilişkilendirilecek
+                        Bu veli hesabı seçilen öğrenciyle ilişkilendirilecek
                       </p>
                     </>
-                  );
-                })()}
-              </div>
-            )}
+                  )}
+                </div>
+              )}
 
-            {/* Öğrenci seçimi - PARENT rolü için */}
-            {formData.role === UserRole.PARENT && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Öğrenci Kaydı (Çocuk)
-                </label>
-                {students.filter(s => !s.parentId).length === 0 ? (
-                  <p className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
-                    Tüm öğrenci kayıtları zaten bir veli hesabıyla ilişkilendirilmiş.
-                    Önce yeni bir öğrenci kaydı oluşturmanız gerekiyor.
-                  </p>
-                ) : (
-                  <>
-                    <select
-                      value={formData.studentId}
-                      onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                      required
-                    >
-                      <option value="">Öğrenci seçin...</option>
-                      {students.filter(student => !student.parentId).map((student) => (
-                        <option key={student.id} value={student.id}>
-                          {student.fullName || student.name}
-                        </option>
-                      ))}
-                    </select>
-                    <p className="text-sm text-gray-500 mt-1">
-                      Bu veli hesabı seçilen öğrenciyle ilişkilendirilecek
+              {/* Öğrenci seçimi - STUDENT rolü için */}
+              {formData.role === UserRole.STUDENT && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Öğrenci Kaydı
+                  </label>
+                  {students.filter(s => !s.userId).length === 0 ? (
+                    <p className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
+                      Tüm öğrenci kayıtları zaten bir kullanıcı hesabıyla ilişkilendirilmiş.
+                      Önce yeni bir öğrenci kaydı oluşturmanız gerekiyor.
                     </p>
-                  </>
-                )}
-              </div>
-            )}
+                  ) : (
+                    <>
+                      <select
+                        value={formData.studentId}
+                        onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        required
+                      >
+                        <option value="">Öğrenci seçin...</option>
+                        {students.filter(student => !student.userId).map((student) => (
+                          <option key={student.id} value={student.id}>
+                            {student.fullName || student.name}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Bu öğrenci hesabı seçilen kayıtla ilişkilendirilecek
+                      </p>
+                    </>
+                  )}
+                </div>
+              )}
 
-            {/* Öğrenci seçimi - STUDENT rolü için */}
-            {formData.role === UserRole.STUDENT && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Öğrenci Kaydı
+
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={formData.isActive}
+                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                  className="mr-2"
+                />
+                <label className="text-sm font-medium text-gray-700">
+                  Aktif kullanıcı
                 </label>
-                {students.filter(s => !s.userId).length === 0 ? (
-                  <p className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
-                    Tüm öğrenci kayıtları zaten bir kullanıcı hesabıyla ilişkilendirilmiş.
-                    Önce yeni bir öğrenci kaydı oluşturmanız gerekiyor.
-                  </p>
-                ) : (
-                  <>
-                    <select
-                      value={formData.studentId}
-                      onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                      required
-                    >
-                      <option value="">Öğrenci seçin...</option>
-                      {students.filter(student => !student.userId).map((student) => (
-                        <option key={student.id} value={student.id}>
-                          {student.fullName || student.name}
-                        </option>
-                      ))}
-                    </select>
-                    <p className="text-sm text-gray-500 mt-1">
-                      Bu öğrenci hesabı seçilen kayıtla ilişkilendirilecek
-                    </p>
-                  </>
-                )}
               </div>
-            )}
-
-
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                checked={formData.isActive}
-                onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                className="mr-2"
-              />
-              <label className="text-sm font-medium text-gray-700">
-                Aktif kullanıcı
-              </label>
             </div>
-
-            <div className="flex gap-2 pt-4">
-              <button
-                type="button"
-                onClick={resetForm}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-              >
-                İptal
-              </button>
-              <button
-                type="submit"
-                className="flex-1 px-4 py-2 text-white rounded-md bg-gradient-to-r from-blue-500 to-purple-600"
-              >
-                {editingUser ? 'Güncelle' : 'Ekle'}
-              </button>
-            </div>
-          </form>
-        </BasicModal>,
+          </EditModal>
+          <DeleteModal
+            open={showDeleteModal}
+            title={
+              <ModalTitle modalTitle={'Uyarı !'} />
+            }
+            description={
+              <>
+                <strong>"{userToDelete?.name}"</strong> kullanıcısını silmek istediğinizden emin misiniz?
+              </>
+            }
+            onCancel={() => { setShowDeleteModal(false); setUserToDelete(null); }}
+            onConfirm={() => {
+              if (userToDelete) {
+                handleDelete(userToDelete.id);
+                setShowDeleteModal(false);
+                setUserToDelete(null);
+              }
+            }}
+          />
+        </>
+        ,
         document.body
       )}
     </div>

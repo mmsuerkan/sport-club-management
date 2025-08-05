@@ -8,7 +8,9 @@ import { db } from '@/lib/firebase/config';
 import PageTitle from '@/components/page-title';
 import ModalTitle from '@/components/modal-title';
 import Loading from '@/components/loading';
-import BasicModal from '@/components/modal';
+import EditModal from '@/components/edit-modal';
+import IconButtons from '@/components/icon-buttons';
+import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 
 interface Branch {
   id: string;
@@ -190,17 +192,16 @@ export default function EmployeesPage() {
         pageTitle="Çalışanlar"
         pageDescription="Kulüp çalışanlarını yönetebilirsiniz."
         firstButtonText="Yeni Çalışan Ekle"
-        pageIcon={<UsersIcon />}
+        pageIcon={<BadgeOutlinedIcon />}
       />
 
       {/* Form Modal */}
       {typeof document !== 'undefined' && createPortal(
-        <BasicModal className='max-w-lg' open={showModal} onClose={() => resetForm()}>
+        <EditModal className='max-w-lg' open={showModal} onClose={() => resetForm()} onSubmit={() => handleSubmit} editing={!!editingEmployee}>
           <ModalTitle
-            modalTitle={editingEmployee ? 'Çalışan Düzenle' : 'Yeni Çalışan Ekle'}
-            onClose={resetForm}
+            modalTitle={editingEmployee ? 'Çalışan Güncelle' : 'Yeni Çalışan Ekle'}
           />
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <div onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Temel Bilgiler */}
               <div>
@@ -350,24 +351,8 @@ export default function EmployeesPage() {
                 placeholder="Ek bilgiler, özel notlar vb."
               />
             </div>
-
-            <div className="flex gap-3 pt-4">
-              <button
-                type="button"
-                onClick={resetForm}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-              >
-                İptal
-              </button>
-              <button
-                type="submit"
-                className="flex-1 px-4 py-2 text-white rounded-md bg-gradient-to-r from-blue-500 to-purple-600"
-              >
-                {editingEmployee ? 'Güncelle' : 'Kaydet'}
-              </button>
-            </div>
-          </form>
-        </BasicModal>
+          </div>
+        </EditModal>
         ,
         document.body
       )}
@@ -401,7 +386,7 @@ export default function EmployeesPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
                     Başlama Tarihi
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase ">
+                  <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase ">
                     İşlemler
                   </th>
                 </tr>
@@ -463,20 +448,11 @@ export default function EmployeesPage() {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => handleEdit(employee)}
-                          className="text-blue-400 hover:text-blue-700 p-1"
-                        >
-                          <Edit2 size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(employee.id)}
-                          className="text-red-400 hover:text-red-700 p-1"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
+                      <IconButtons
+                        item={employee}
+                        onEdit={() => handleEdit(employee)}
+                        onDelete={() => handleDelete(employee.id)}
+                      />
                     </td>
                   </tr>
                 ))}

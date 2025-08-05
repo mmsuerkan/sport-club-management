@@ -2,12 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Calendar, DollarSign } from 'lucide-react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { RecurringExpenseService, RecurringExpense } from '@/lib/firebase/recurring-expense-service';
 import { recurringExpenseCategories } from '@/lib/categories';
-import BasicModal from '@/components/modal';
+import EditModal from '@/components/edit-modal';
 import ModalTitle from '@/components/modal-title';
 
 interface Branch {
@@ -158,10 +157,9 @@ export default function RecurringExpenseForm({
   if (!isOpen) return null;
 
   return typeof document !== 'undefined' ? createPortal(
-    <BasicModal className='max-w-2xl' open={isOpen} onClose={onClose}>
+    <EditModal className='max-w-3xl' open={isOpen} onClose={() => resetForm()} onSubmit={() => handleSubmit} editing={!!editingExpense}>
       <ModalTitle
         modalTitle={editingExpense ? 'Sabit Gider Düzenle' : 'Yeni Sabit Gider Ekle'}
-        onClose={onClose}
       />
       
       <form onSubmit={handleSubmit} className="space-y-4 max-h-[80vh] overflow-y-auto">
@@ -370,7 +368,7 @@ export default function RecurringExpenseForm({
           </button>
         </div>
       </form>
-    </BasicModal>,
+    </EditModal>,
     document.body
   ) : null;
 }

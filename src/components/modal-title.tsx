@@ -1,8 +1,8 @@
 import React from 'react';
 
-const ModalTitle = ({modalTitle, onClose}: {modalTitle: string; onClose: () => void}) => {
+const ModalTitle = ({modalTitle}: {modalTitle: string;}) => {
   return (
-    <div className="flex px-[30px] pb-[30px] border-b border-[#bbb] mb-[18px] -mx-[24px]">
+    <div className="flex px-[24px] pb-[24px] border-b border-b-gray-200 mb-[18px] -mx-[24px]">
       <h2 className="text-xl font-bold">{modalTitle}</h2>
     </div>
   );

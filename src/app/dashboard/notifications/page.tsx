@@ -3,15 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
-  Send,
   Bell,
-  Users,
   Clock,
   Target,
   AlertCircle,
   CheckCircle,
   XCircle,
-  Eye
 } from 'lucide-react';
 import {
   NotificationFormData,
@@ -25,9 +22,11 @@ import { getNotifications } from '@/lib/firebase/notifications';
 import ModalTitle from '@/components/modal-title';
 import PageTitle from '@/components/page-title';
 import Loading from '@/components/loading';
-import BasicModal from '@/components/modal';
+import EditModal from '@/components/edit-modal';
 import { createPortal } from 'react-dom';
 import StatCard from '@/components/stat-card';
+import NotificationsOutlinedIcon from '@mui/icons-material/NotificationsOutlined';
+import SendIcon from '@mui/icons-material/Send';
 
 export default function NotificationsPage() {
   const { user } = useAuth();
@@ -214,10 +213,10 @@ export default function NotificationsPage() {
         setEditingUser={undefined}
         setShowModal={setShowModal}
         pageTitle="Bildirimler"
-        pageIcon={<Send />}
+        pageIcon={<NotificationsOutlinedIcon />}
         pageDescription="Kullanıcılara bildirim gönderebilir ve geçmişi görüntüleyebilirsiniz."
         firstButtonText="Bildirim Gönder"
-        buttonIcon={<Send />}
+        buttonIcon={<SendIcon />}
       />
       {/* İstatistikler */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 my-5">
@@ -355,8 +354,8 @@ export default function NotificationsPage() {
 
       {/* Bildirim Gönderme Formu Modal */}
       {typeof document !== 'undefined' && createPortal(
-        <BasicModal className='max-w-lg' open={showModal} onClose={() => resetForm()}>
-          <ModalTitle modalTitle="Bildirim Gönder" onClose={resetForm} />
+        <EditModal className='max-w-lg' open={showModal} onClose={() => resetForm()} onSubmit={() => handleSubmit}>
+          <ModalTitle modalTitle="Bildirim Gönder" />
           <form onSubmit={handleSubmit} className="space-y-4 max-h-[90vh] overflow-y-auto">
             {/* Başlık */}
             <div>
@@ -497,7 +496,7 @@ export default function NotificationsPage() {
               </button>
             </div>
           </form>
-        </BasicModal>,
+        </EditModal>,
         document.body
       )}
     </div>

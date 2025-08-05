@@ -1,6 +1,7 @@
 import React from 'react';
 import { BarChart2, Plus, Calendar } from 'lucide-react';
 import Button from '@mui/material/Button';
+import AddIcon from '@mui/icons-material/Add';
 
 const PageTitle = ({ viewMode, setViewMode, setEditingUser, buttonIcon, pageIcon, setShowModal, pageTitle, pageDescription, firstButtonText, secondButtonText }: { viewMode?: 'list' | 'analytics'; setViewMode?: (mode: 'list' | 'analytics') => void; setEditingUser?: (user: any) => void; setShowModal?: (show: boolean) => void; pageTitle: string; pageDescription: string; firstButtonText?: string; pageIcon?: React.ReactNode; buttonIcon?: React.ReactNode; secondButtonText?: string }) => {
     const iconWithClass = React.isValidElement(pageIcon)
@@ -34,7 +35,7 @@ const PageTitle = ({ viewMode, setViewMode, setEditingUser, buttonIcon, pageIcon
                     <p className="text-gray-600 mt-2">{pageDescription}</p>
                 </div>
 
-                {firstButtonText ? <div className="flex gap-2">
+                {firstButtonText ? <div className="flex gap-2 first-button-text icon-buttons">
                     <Button
                         onClick={() => {
                             if (viewMode === 'analytics') setViewMode?.('list');
@@ -45,8 +46,7 @@ const PageTitle = ({ viewMode, setViewMode, setEditingUser, buttonIcon, pageIcon
                         variant="contained"
                         color="primary"
                     >
-
-                        {buttonIcon ? buttonIcon : <Plus size={18} />}
+                        {buttonIcon ? buttonIcon : <AddIcon />}
                         {firstButtonText}
                     </Button>
                     {secondButtonText && (

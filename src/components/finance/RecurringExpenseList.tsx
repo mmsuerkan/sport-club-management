@@ -261,7 +261,7 @@ export default function RecurringExpenseList() {
           <select
             value={selectedBranch}
             onChange={(e) => setSelectedBranch(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+            className="px-3 py-2 border border-gray-300 rounded-lg"
           >
             <option value="all">Tüm Şubeler</option>
             {branches.map((branch) => (

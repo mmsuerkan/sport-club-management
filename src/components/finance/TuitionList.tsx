@@ -410,7 +410,7 @@ export default function TuitionList() {
             placeholder="Öğrenci, grup veya şube ara..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg"
           />
         </div>
         
@@ -418,7 +418,7 @@ export default function TuitionList() {
           <select
             value={selectedBranch}
             onChange={(e) => setSelectedBranch(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+            className="px-3 py-2 border border-gray-300 rounded-lg"
           >
             <option value="all">Tüm Şubeler</option>
             {branches.map((branch) => (
@@ -429,7 +429,7 @@ export default function TuitionList() {
           <select
             value={selectedGroup}
             onChange={(e) => setSelectedGroup(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+            className="px-3 py-2 border border-gray-300 rounded-lg"
           >
             <option value="all">Tüm Gruplar</option>
             {groups.map((group) => (
@@ -441,7 +441,7 @@ export default function TuitionList() {
             <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+              className="px-3 py-2 border border-gray-300 rounded-lg  "
             >
               <option value="all">Tüm Aylar</option>
               {months.map((month) => (

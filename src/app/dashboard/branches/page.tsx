@@ -8,7 +8,9 @@ import { db } from '@/lib/firebase/config';
 import ModalTitle from '@/components/modal-title';
 import PageTitle from '@/components/page-title';
 import Loading from '@/components/loading';
-import BasicModal from '@/components/modal';
+import EditModal from '@/components/edit-modal';
+import IconButtons from '@/components/icon-buttons';
+import AccountTreeOutlinedIcon from '@mui/icons-material/AccountTreeOutlined';
 
 interface Branch {
   id: string;
@@ -149,14 +151,13 @@ export default function BranchesPage() {
         pageTitle="Şubeler"
         pageDescription="Kulüp şubelerini yönetebilirsiniz."
         firstButtonText="Yeni Şube Ekle"
-        pageIcon={<Building />}
+        pageIcon={<AccountTreeOutlinedIcon />}
       />
       {/* Form Modal */}
       {typeof document !== 'undefined' && createPortal(
-        <BasicModal className='max-w-lg' open={showModal} onClose={() => resetForm()}>
+      <EditModal className='max-w-lg' open={showModal} onClose={() => resetForm()} onSubmit={() => handleSubmit} editing={!!editingBranch}>
           <ModalTitle
-            modalTitle={editingBranch ? 'Şube Düzenle' : 'Yeni Şube Ekle'}
-            onClose={resetForm}
+            modalTitle={editingBranch ? 'Şube Güncelle' : 'Yeni Şube Ekle'}
           />
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -185,23 +186,8 @@ export default function BranchesPage() {
                 required
               />
             </div>
-            <div className="flex gap-3 pt-4">
-              <button
-                type="button"
-                onClick={resetForm}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-              >
-                İptal
-              </button>
-              <button
-                type="submit"
-                className="flex-1 px-4 py-2 text-white rounded-md bg-gradient-to-r from-blue-500 to-purple-600"
-              >
-                {editingBranch ? 'Güncelle' : 'Kaydet'}
-              </button>
-            </div>
           </form>
-        </BasicModal>,
+        </EditModal>,
         document.body
       )}
 
@@ -231,7 +217,7 @@ export default function BranchesPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
                     Oluşturulma Tarihi
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase ">
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase ">
                     İşlemler
                   </th>
                 </tr>
@@ -258,21 +244,12 @@ export default function BranchesPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {branch.createdAt.toLocaleDateString('tr-TR')}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => handleEdit(branch)}
-                          className="text-blue-400 hover:text-blue-700 p-1"
-                        >
-                          <Edit2 size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(branch.id)}
-                          className="text-red-400 hover:text-red-700 p-1"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
+                    <td className="px-6 py-4 text-right">
+                      <IconButtons
+                        item={branch}
+                        onEdit={() => handleEdit(branch)}
+                        onDelete={() => handleDelete(branch.id)}
+                      />
                     </td>
                   </tr>
                 ))}

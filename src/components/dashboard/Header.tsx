@@ -1,5 +1,4 @@
 'use client';
-
 import { Bell, Search, User, LogOut, Menu } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -7,6 +6,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
+import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
+import NotificationsOutlinedIcon from '@mui/icons-material/NotificationsOutlined';
 
 interface HeaderProps {
   onMenuToggle?: () => void;
@@ -90,7 +91,9 @@ export default function Header({ onMenuToggle }: HeaderProps) {
           </div>
           
           <div className="relative ml-8">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+              <SearchOutlinedIcon />
+            </div>
             <input
               type="text"
               placeholder="Ara..."
@@ -101,7 +104,7 @@ export default function Header({ onMenuToggle }: HeaderProps) {
 
         <div className="flex items-center gap-4">
           <button className="relative p-2 hover:bg-gray-100 rounded-lg">
-            <Bell size={20} className="text-gray-600" />
+            <NotificationsOutlinedIcon className="text-gray-600" />
             <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
           </button>
 
@@ -110,7 +113,7 @@ export default function Header({ onMenuToggle }: HeaderProps) {
               onClick={() => setShowUserMenu(!showUserMenu)}
               className="flex items-center gap-2 p-2"
             >
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                 <User size={16} className="text-white" />
               </div>
               <span className="text-sm font-medium text-gray-700">

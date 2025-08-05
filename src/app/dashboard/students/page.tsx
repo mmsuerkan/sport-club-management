@@ -2,14 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Edit2, Trash2, GraduationCap, Phone, Mail, Building, Clock } from 'lucide-react';
+import { GraduationCap, Phone, Mail, Building, Clock } from 'lucide-react';
 import { collection, getDocs, doc, setDoc, deleteDoc, updateDoc, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { StudentDebtService } from '@/lib/firebase/student-debt-service';
 import PageTitle from '@/components/page-title';
 import ModalTitle from '@/components/modal-title';
 import Loading from '@/components/loading';
-import BasicModal from '@/components/modal';
+import EditModal from '@/components/edit-modal';
+import IconButtons from '@/components/icon-buttons';
+import SchoolOutlinedIcon from '@mui/icons-material/SchoolOutlined';
 
 interface Branch {
   id: string;
@@ -314,17 +316,16 @@ export default function StudentsPage() {
         pageTitle="Öğrenciler"
         pageDescription="Öğrenci kayıtlarını yönetebilirsiniz."
         firstButtonText="Yeni Öğrenci Ekle"
-        pageIcon={<GraduationCap />}
+        pageIcon={<SchoolOutlinedIcon />}
       />
 
       {/* Form Modal */}
       {typeof document !== 'undefined' && createPortal(
-        <BasicModal className='max-w-3xl' open={showModal} onClose={() => resetForm()}>
+        <EditModal className='max-w-3xl' open={showModal} onClose={() => resetForm()} onSubmit={() => handleSubmit} editing={!!editingStudent}>
           <ModalTitle
-            modalTitle={editingStudent ? 'Öğrenci Düzenle' : 'Yeni Öğrenci Ekle'}
-            onClose={resetForm}
+            modalTitle={editingStudent ? 'Öğrenci Güncelle' : 'Yeni Öğrenci Ekle'}
           />
-          <form onSubmit={handleSubmit} className="space-y-4 max-h-[80vh] overflow-y-auto">
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Temel Bilgiler */}
               <div>
@@ -479,7 +480,6 @@ export default function StudentsPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-            </div>
 
             {/* Adres ve Notlar */}
             <div>
@@ -551,24 +551,9 @@ export default function StudentsPage() {
                 )}
               </div>
             )}
-
-            <div className="flex gap-3 pt-4">
-              <button
-                type="submit"
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-              >
-                {editingStudent ? 'Güncelle' : 'Kaydet'}
-              </button>
-              <button
-                type="button"
-                onClick={resetForm}
-                className="flex-1 px-4 py-2 text-white rounded-md bg-gradient-to-r from-blue-500 to-purple-600"
-              >
-                İptal
-              </button>
             </div>
-          </form>
-        </BasicModal>,
+        </div>
+        </EditModal>,
         document.body
       )}
 
@@ -601,7 +586,7 @@ export default function StudentsPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
                     Kayıt Tarihi
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase ">
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase ">
                     İşlemler
                   </th>
                 </tr>
@@ -654,20 +639,11 @@ export default function StudentsPage() {
                       {student.createdAt.toLocaleDateString('tr-TR')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => handleEdit(student)}
-                          className="text-blue-400 hover:text-blue-700 p-1"
-                        >
-                          <Edit2 size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(student.id)}
-                          className="text-red-400 hover:text-red-700 p-1"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
+                    <IconButtons
+                      item={student}
+                      onEdit={() => handleEdit(student)}
+                      onDelete={() => handleDelete(student.id)}
+                    />
                     </td>
                   </tr>
                 ))}

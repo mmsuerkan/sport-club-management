@@ -251,7 +251,7 @@ export default function FinancialSummary() {
         <select
           value={selectedPeriod}
           onChange={(e) => setSelectedPeriod(e.target.value as any)}
-          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+          className="px-3 py-2 border border-gray-300 rounded-lg"
         >
           <option value="current">Bu Ay</option>
           <option value="last3">Son 3 Ay</option>

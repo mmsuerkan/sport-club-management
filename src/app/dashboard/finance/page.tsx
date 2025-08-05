@@ -12,6 +12,7 @@ import TuitionList from '@/components/finance/TuitionList';
 import RecurringExpenseList from '@/components/finance/RecurringExpenseList';
 import FinancialSummary from '@/components/finance/FinancialSummary';
 import PageTitle from '@/components/page-title';
+import CreditCardOutlinedIcon from '@mui/icons-material/CreditCardOutlined';
 
 export default function FinancePage() {
   const [activeTab, setActiveTab] = useState('summary');
@@ -30,7 +31,7 @@ export default function FinancePage() {
         setEditingUser={undefined}
         pageTitle="Finansal Yönetim"
         pageDescription="Gelir, gider ve bütçe yönetimi ile kapsamlı mali raporlama hazırlayabilirsiniz."
-        pageIcon={<DollarSign />}
+        pageIcon={<CreditCardOutlinedIcon />}
       />
       {/* Tabs */}
       <div className="border-b border-gray-200">
@@ -42,7 +43,7 @@ export default function FinancePage() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${activeTab === tab.id
-                    ? 'border-green-500 text-green-600'
+                    ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
               >

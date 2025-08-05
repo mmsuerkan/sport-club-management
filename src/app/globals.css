@@ -60,9 +60,6 @@ label,
   color: #374151 !important;
 }
 
-.css-1uent87-MuiButtonBase-root-MuiButton-root {
-  padding: 0 !important;
-}
 .MuiButtonBase-root {
   text-transform: none !important;
 } 
@@ -71,5 +68,17 @@ label,
   min-width: auto !important;
   &:hover {
     background-color: transparent !important;
+  }
+}
+
+.icon-buttons {
+  svg {
+    font-size: 1.2rem !important;
+  }
+}
+
+.css-53g0n7-MuiButtonBase-root-MuiIconButton-root {
+  &:hover, &:focus {
+    background: transparent !important;
   }
 }

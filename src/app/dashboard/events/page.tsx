@@ -49,8 +49,10 @@ import {
 import PageTitle from '@/components/page-title';
 import Loading from '@/components/loading';
 import ModalTitle from '@/components/modal-title';
-import BasicModal from '@/components/modal';
+import EditModal from '@/components/edit-modal';
 import { createPortal } from 'react-dom';
+import EventOutlinedIcon from '@mui/icons-material/EventOutlined';
+import DeleteModal from '@/components/delete-modal';
 
 interface Event {
   id: string;
@@ -361,7 +363,7 @@ export default function EventsPage() {
         pageTitle="Etkinlikler"
         pageDescription="Kulüp etkinliklerini yönetebilir ve takip edebilirsiniz."
         firstButtonText="Yeni Etkinlik Ekle"
-        pageIcon={<CalendarClock />}
+        pageIcon={<EventOutlinedIcon />}
       />
       {/* Filters and View Mode */}
       <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
@@ -398,8 +400,8 @@ export default function EventsPage() {
             <button
               onClick={() => setViewMode('grid')}
               className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'grid'
-                  ? 'bg-blue-100 text-blue-600'
-                  : 'text-gray-400 hover:text-gray-600'
+                ? 'bg-blue-100 text-blue-600'
+                : 'text-gray-400 hover:text-gray-600'
                 }`}
             >
               <Grid className="h-5 w-5" />
@@ -407,8 +409,8 @@ export default function EventsPage() {
             <button
               onClick={() => setViewMode('list')}
               className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'list'
-                  ? 'bg-blue-100 text-blue-600'
-                  : 'text-gray-400 hover:text-gray-600'
+                ? 'bg-blue-100 text-blue-600'
+                : 'text-gray-400 hover:text-gray-600'
                 }`}
             >
               <List className="h-5 w-5" />
@@ -416,8 +418,8 @@ export default function EventsPage() {
             <button
               onClick={() => setViewMode('calendar')}
               className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'calendar'
-                  ? 'bg-blue-100 text-blue-600'
-                  : 'text-gray-400 hover:text-gray-600'
+                ? 'bg-blue-100 text-blue-600'
+                : 'text-gray-400 hover:text-gray-600'
                 }`}
             >
               <CalendarDays className="h-5 w-5" />
@@ -547,8 +549,8 @@ export default function EventsPage() {
                       handleAttend(event);
                     }}
                     className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${user && event.attendees.includes(user.uid)
-                        ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                        : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                      ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                      : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
                       }`}
                   >
                     {user && event.attendees.includes(user.uid) ? (
@@ -683,8 +685,8 @@ export default function EventsPage() {
                         <button
                           onClick={() => handleAttend(event)}
                           className={`ml-auto px-3 py-1 rounded-lg text-sm font-medium transition-colors ${user && event.attendees.includes(user.uid)
-                              ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                              : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                            : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
                             }`}
                         >
                           {user && event.attendees.includes(user.uid) ? 'Katılıyorum' : 'Katıl'}
@@ -788,9 +790,9 @@ export default function EventsPage() {
 
       {/* Create/Edit Modal */}
       {typeof document !== 'undefined' && createPortal(
-        <BasicModal className='max-w-lg' open={showModal} onClose={() => resetForm()}>
-          <ModalTitle modalTitle={editingEvent ? 'Etkinliği Düzenle' : 'Yeni Etkinlik Ekle'} onClose={resetForm} />
-          <form onSubmit={handleSubmit} className="space-y-6 max-h-[80vh] overflow-y-auto">
+        <EditModal className='max-w-lg' open={showModal} onClose={() => resetForm()} onSubmit={() => handleSubmit} editing={!!editingEvent}>
+          <ModalTitle modalTitle={editingEvent ? 'Etkinliği Güncelle' : 'Yeni Etkinlik Ekle'} />
+          <div className="space-y-6 max-h-[80vh] overflow-y-auto">
             {/* Image Upload */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1008,66 +1010,28 @@ export default function EventsPage() {
                 <span className="text-sm text-gray-700">Öne Çıkan</span>
               </label>
             </div>
-
-            {/* Submit Buttons */}
-            <div className="flex gap-3 pt-4 border-t">
-              <button
-                type="button"
-                onClick={() => {
-                  resetForm();
-                }}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-              >
-                İptal
-              </button>
-              <button
-                type="submit"
-                disabled={uploadingImage}
-                className="flex-1 px-4 py-2 text-white rounded-md bg-gradient-to-r from-blue-500 to-purple-600"
-              >
-                {uploadingImage ? 'Yükleniyor...' : editingEvent ? 'Güncelle' : 'Ekle'}
-              </button>
-            </div>
-          </form>
-        </BasicModal>,
+          </div>
+        </EditModal>,
         document.body
       )}
 
-      {/* Delete Confirmation Modal */}
-      {showDeleteModal && eventToDelete && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6">
-            <div className="text-center">
-              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
-                <Trash2 className="h-6 w-6 text-red-600" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Etkinliği Sil
-              </h3>
-              <p className="text-sm text-gray-500 mb-6">
-                &quot;{eventToDelete.title}&quot; etkinliğini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => {
-                    setShowDeleteModal(false);
-                    setEventToDelete(null);
-                  }}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  İptal
-                </button>
-                <button
-                  onClick={handleDelete}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  Sil
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <DeleteModal
+        open={showDeleteModal}
+        danger
+        title={
+          <ModalTitle modalTitle={'Uyarı !'} />
+        }
+        description={
+          <>
+            <strong>"{eventToDelete?.title}"</strong> etkinliğini silmek istediğinizden emin misiniz?<br />Bu işlem geri alınamaz.
+          </>
+        }
+        onCancel={() => {
+          setShowDeleteModal(false);
+          setEventToDelete(null);
+        }}
+        onConfirm={handleDelete}
+      />
 
       {/* Event Detail Modal */}
       {showEventModal && selectedEvent && (
@@ -1189,8 +1153,8 @@ export default function EventsPage() {
                 <button
                   onClick={() => handleAttend(selectedEvent)}
                   className={`flex-1 px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 ${user && selectedEvent.attendees.includes(user.uid)
-                      ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                      : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700'
+                    ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                    : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700'
                     }`}
                 >
                   {user && selectedEvent.attendees.includes(user.uid) ? (

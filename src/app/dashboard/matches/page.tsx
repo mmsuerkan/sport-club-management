@@ -38,8 +38,10 @@ import PageTitle from '@/components/page-title';
 import StatCard from '@/components/stat-card';
 import Loading from '@/components/loading';
 import ModalTitle from '@/components/modal-title';
-import BasicModal from '@/components/modal';
+import EditModal from '@/components/edit-modal';
 import { createPortal } from 'react-dom';
+import IconButtons from '@/components/icon-buttons';
+import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined';
 
 interface Match {
   id: string;
@@ -609,7 +611,7 @@ export default function MatchesPage() {
         setEditingUser={undefined}
         setShowModal={setShowModal}
         pageTitle="Maç Takvimi"
-        pageIcon={<Calendar />}
+        pageIcon={<CalendarMonthOutlinedIcon />}
         pageDescription="Tüm maçları yönetebilir, sonuçları takip edebilir ve istatistikleri görüntüleyebilirsiniz."
         firstButtonText="Yeni Maç Takvimi Ekle"
       />
@@ -809,33 +811,13 @@ export default function MatchesPage() {
 
               {/* Aksiyonlar */}
               <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
-                <div className="flex items-center justify-between">
-                  <button
-                    onClick={() => {
-                      setSelectedMatch(match);
-                      setShowStatsModal(true);
-                    }}
-                    className="text-slate-400 hover:text-slate-700 p-1"
-                  >
-                    <BarChart3 className="h-4 w-4" />
-                    İstatistikler
-                  </button>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleEdit(match)}
-                      className="text-blue-400 hover:text-blue-700 p-1"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(match.id)}
-                      className="text-red-400 hover:text-red-700 p-1"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
+                <IconButtons
+                      item={match}
+                      onShowStats={(match) => { setSelectedMatch(match); setShowStatsModal(true);
+                      }}
+                        onEdit={() => handleEdit(match)}
+                        onDelete={() => handleDelete(match.id)}
+                      />
               </div>
             </div>
           ))}
@@ -931,9 +913,9 @@ export default function MatchesPage() {
       )}
 
       {/* Maç Ekleme/Düzenleme Modalı */}
-      {typeof document !== 'undefined' && createPortal(
-        <BasicModal className='max-w-lg' open={showModal} onClose={() => resetForm()}>
-          <ModalTitle modalTitle={editingMatch ? 'Maçı Düzenle' : 'Yeni Maç Takvimi Ekle'} onClose={resetForm} />
+      {showModal && typeof document !== 'undefined' && createPortal(
+        <EditModal className='max-w-lg' open={showModal} onClose={() => resetForm()} onSubmit={() => handleSubmit} editing={!!editingMatch}>
+          <ModalTitle modalTitle={editingMatch ? 'Maçı Güncelle' : 'Yeni Maç Takvimi Ekle'} />
           <form onSubmit={handleSubmit} className="space-y-4 max-h-[80vh] overflow-y-auto">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Ev Sahibi Takım */}
@@ -1229,7 +1211,7 @@ export default function MatchesPage() {
               </button>
             </div>
           </form>
-        </BasicModal>,
+        </EditModal>,
         document.body
       )}
 

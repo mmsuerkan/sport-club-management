@@ -2,13 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Edit2, Trash2, Phone, Mail, Award, Building, Clock, ShieldUser, Users } from 'lucide-react';
+import { Phone, Mail, Award, Building, Clock, ShieldUser } from 'lucide-react';
 import { collection, getDocs, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import PageTitle from '@/components/page-title';
 import ModalTitle from '@/components/modal-title';
 import Loading from '@/components/loading';
-import BasicModal from '@/components/modal';
+import EditModal from '@/components/edit-modal';
+import IconButtons from '@/components/icon-buttons';
+import SportsOutlinedIcon from '@mui/icons-material/SportsOutlined';
 
 // Group Assignment Modal Component
 function GroupAssignmentModal({ 
@@ -52,10 +54,9 @@ function GroupAssignmentModal({
   };
 
   return (
-    <BasicModal className='max-w-4xl' open={true} onClose={onClose}>
+    <EditModal className='max-w-3xl' open={true} onClose={onClose}>
       <ModalTitle
         modalTitle={`${trainer.fullName} - Grup Ataması`}
-        onClose={onClose}
       />
       <div className="space-y-4 max-h-[70vh] overflow-y-auto">
         <div className="text-sm text-gray-600 mb-4">
@@ -100,23 +101,9 @@ function GroupAssignmentModal({
           <div className="text-sm text-gray-600">
             Seçilen grup sayısı: <span className="font-medium">{selectedGroups.length}</span>
           </div>
-          <div className="flex gap-3">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-            >
-              İptal
-            </button>
-            <button
-              onClick={handleSave}
-              className="px-4 py-2 text-white rounded-md bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
-            >
-              Kaydet
-            </button>
-          </div>
         </div>
       </div>
-    </BasicModal>
+    </EditModal>
   );
 }
 
@@ -377,16 +364,15 @@ export default function TrainersPage() {
         pageTitle="Antrenörler"
         pageDescription="Antrenör kayıtlarını yönetebilirsiniz"
         firstButtonText="Yeni Antrenör Ekle"
-        pageIcon={<ShieldUser />}
+        pageIcon={<SportsOutlinedIcon />}
       />
       {/* Form Modal */}
       {typeof document !== 'undefined' && createPortal(
-        <BasicModal className='max-w-2xl' open={showModal} onClose={() => resetForm()}>
+        <EditModal className='max-w-2xl' open={showModal} onClose={() => resetForm()} onSubmit={() => handleSubmit} editing={!!editingTrainer}>
           <ModalTitle
-            modalTitle={editingTrainer ? 'Antrenör Düzenle' : 'Yeni Antrenör Ekle'}
-            onClose={resetForm}
+            modalTitle={editingTrainer ? 'Antrenör Güncelle' : 'Yeni Antrenör Ekle'}
           />
-          <form onSubmit={handleSubmit} className="space-y-4 max-h-[90vh] overflow-y-auto">
+          <div className="space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -529,26 +515,8 @@ export default function TrainersPage() {
                 />
               </div>
             </div>
-
-            <div className="flex gap-3 pt-4">
-              <button
-                type="button"
-                onClick={resetForm}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-              >
-                İptal
-              </button>
-
-              <button
-                type="submit"
-                className="flex-1 px-4 py-2 text-white rounded-md bg-gradient-to-r from-blue-500 to-purple-600"
-              >
-                {editingTrainer ? 'Güncelle' : 'Kaydet'}
-              </button>
             </div>
-
-          </form>
-        </BasicModal>,
+        </EditModal>,
         document.body
       )}
 
@@ -595,7 +563,7 @@ export default function TrainersPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
                     Kayıt Tarihi
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase ">
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase ">
                     İşlemler
                   </th>
                 </tr>
@@ -666,29 +634,12 @@ export default function TrainersPage() {
                       {trainer.createdAt.toLocaleDateString('tr-TR')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => handleEdit(trainer)}
-                          className="text-blue-400 hover:text-blue-700 p-1"
-                          title="Antrenör Düzenle"
-                        >
-                          <Edit2 size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleGroupAssignment(trainer)}
-                          className="text-green-400 hover:text-green-700 p-1"
-                          title="Gruplara Ata"
-                        >
-                          <Users size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(trainer.id)}
-                          className="text-red-400 hover:text-red-700 p-1"
-                          title="Antrenör Sil"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
+                      <IconButtons
+                      item={trainer}
+                      onEdit={() => handleEdit(trainer)}
+                      onDelete={() => handleDelete(trainer.id)}
+                      onGroupAssignment={() => handleGroupAssignment(trainer)}
+                    />
                     </td>
                   </tr>
                 ))}

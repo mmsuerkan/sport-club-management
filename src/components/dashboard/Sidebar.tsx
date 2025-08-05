@@ -21,70 +21,84 @@ import {
   UsersRound 
 } from 'lucide-react';
 
+import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
+import ManageAccountsOutlinedIcon from '@mui/icons-material/ManageAccountsOutlined';
+import NotificationsOutlinedIcon from '@mui/icons-material/NotificationsOutlined';
+import Diversity3OutlinedIcon from '@mui/icons-material/Diversity3Outlined';
+import SchoolOutlinedIcon from '@mui/icons-material/SchoolOutlined';
+import AccountTreeOutlinedIcon from '@mui/icons-material/AccountTreeOutlined';
+import SportsOutlinedIcon from '@mui/icons-material/SportsOutlined';
+import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
+import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
+import FitnessCenterOutlinedIcon from '@mui/icons-material/FitnessCenterOutlined';
+import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined';
+import EventOutlinedIcon from '@mui/icons-material/EventOutlined';
+import CreditCardOutlinedIcon from '@mui/icons-material/CreditCardOutlined';
+
 const menuItems = [
   {
     title: 'Dashboard',
-    icon: Home,
+    icon: HomeOutlinedIcon,
     href: '/dashboard'
   },
   {
     title: 'Kullanıcı Yönetimi',
-    icon: UserCog,
+    icon: ManageAccountsOutlinedIcon,
     href: '/dashboard/users'
   },
   {
     title: 'Bildirimler',
-    icon: Bell,
+    icon: NotificationsOutlinedIcon,
     href: '/dashboard/notifications'
   },
   {
     title: 'Şubeler',
-    icon: Building,
+    icon: AccountTreeOutlinedIcon,
     href: '/dashboard/branches'
   },
   {
     title: 'Gruplar',
-    icon: UsersRound,
+    icon: Diversity3OutlinedIcon,
     href: '/dashboard/groups'
   },
   {
     title: 'Öğrenciler',
-    icon: GraduationCap,
+    icon: SchoolOutlinedIcon,
     href: '/dashboard/students'
   },
   {
     title: 'Antrenörler',
-    icon: ShieldUser,
+    icon: SportsOutlinedIcon,
     href: '/dashboard/trainers'
   },
   {
     title: 'Yoklama Takip',
-    icon: ClipboardCheck,
+    icon: FactCheckOutlinedIcon,
     href: '/dashboard/attendance'
   },
   {
     title: 'Çalışanlar',
-    icon: UsersIcon,
+    icon: BadgeOutlinedIcon,
     href: '/dashboard/employees'
   },
   {
     title: 'Antrenmanlar',
-    icon: Dumbbell,
+    icon: FitnessCenterOutlinedIcon,
     href: '/dashboard/trainings'
   },
   {
     title: 'Maç Takvimi',
-    icon: Calendar,
+    icon: CalendarMonthOutlinedIcon,
     href: '/dashboard/matches'
   },
   {
     title: 'Etkinlikler',
-    icon: CalendarClock,
+    icon: EventOutlinedIcon,
     href: '/dashboard/events'
   },
   {
     title: 'Finansal',
-    icon: DollarSign,
+    icon: CreditCardOutlinedIcon,
     href: '/dashboard/finance'
   }
 ];
@@ -124,6 +138,7 @@ export default function Sidebar() {
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center transform transition-transform group-hover:scale-110">
             <Activity className="w-7 h-7 text-white" />
+            
           </div>
           <div>
             <h1 className="text-xl font-bold text-gray-900">Sports Club</h1>
@@ -152,7 +167,7 @@ export default function Sidebar() {
                       : 'text-gray-600 hover:bg-blue-50 hover:text-blue-900'
                   }`}
                 >
-                  <Icon size={18} />
+                  <Icon />
                   <span className="text-sm">{item.title}</span>
                 </Link>
               </li>

@@ -7,8 +7,10 @@ import { db } from '@/lib/firebase/config';
 import PageTitle from '@/components/page-title';
 import ModalTitle from '@/components/modal-title';
 import Loading from '@/components/loading';
-import BasicModal from '@/components/modal';
+import EditModal from '@/components/edit-modal';
 import { createPortal } from 'react-dom';
+import IconButtons from '@/components/icon-buttons';
+import Diversity3OutlinedIcon from '@mui/icons-material/Diversity3Outlined';
 
 interface Branch {
   id: string;
@@ -157,16 +159,15 @@ export default function GroupsPage() {
         pageTitle="Gruplar"
         pageDescription="Antrenman gruplarını yönetebilirsiniz."
         firstButtonText="Yeni Grup Ekle"
-        pageIcon={<UsersRound />}
+        pageIcon={<Diversity3OutlinedIcon />}
       />
       {/* Form Modal */}
       {typeof document !== 'undefined' && createPortal(
-        <BasicModal className='max-w-lg' open={showModal} onClose={() => resetForm()}>
+        <EditModal className='max-w-lg' open={showModal} onClose={() => resetForm()} onSubmit={() => handleSubmit} editing={!!editingGroup}>
           <ModalTitle
-            modalTitle={editingGroup ? 'Grup Düzenle' : 'Yeni Grup Ekle'}
-            onClose={resetForm}
+            modalTitle={editingGroup ? 'Grup Güncelle' : 'Yeni Grup Ekle'}
           />
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <div onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Grup Adı
@@ -200,7 +201,7 @@ export default function GroupsPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Antrenman Saati
+                Antrenman Günü ve Saati
               </label>
               <input
                 type="text"
@@ -211,23 +212,8 @@ export default function GroupsPage() {
                 required
               />
             </div>
-            <div className="flex gap-3 pt-4">
-              <button
-                type="button"
-                onClick={resetForm}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-              >
-                İptal
-              </button>
-              <button
-                type="submit"
-                className="flex-1 px-4 py-2 text-white rounded-md bg-gradient-to-r from-blue-500 to-purple-600"
-              >
-                {editingGroup ? 'Güncelle' : 'Kaydet'}
-              </button>
-            </div>
-          </form>
-        </BasicModal>,
+          </div>
+        </EditModal>,
         document.body
       )}
 
@@ -260,7 +246,7 @@ export default function GroupsPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ">
                     Oluşturulma Tarihi
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase ">
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase ">
                     İşlemler
                   </th>
                 </tr>
@@ -296,20 +282,11 @@ export default function GroupsPage() {
                       {group.createdAt.toLocaleDateString('tr-TR')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => handleEdit(group)}
-                          className="text-blue-400 hover:text-blue-700 p-1"
-                        >
-                          <Edit2 size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(group.id)}
-                          className="text-red-400 hover:text-red-700 p-1"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
+                      <IconButtons
+                        item={group}
+                        onEdit={() => handleEdit(group)}
+                        onDelete={() => handleDelete(group.id)}
+                      />
                     </td>
                   </tr>
                 ))}

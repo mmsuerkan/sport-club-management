@@ -12,9 +12,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
-  Edit2,
-  Trash2,
-  Eye,
   Dumbbell,
   CalendarDays,
   Timer,
@@ -37,7 +34,9 @@ import PageTitle from '@/components/page-title';
 import StatCard from '@/components/stat-card';
 import Loading from '@/components/loading';
 import ModalTitle from '@/components/modal-title';
-import BasicModal from '@/components/modal';
+import EditModal from '@/components/edit-modal';
+import IconButtons from '@/components/icon-buttons';
+import FitnessCenterOutlinedIcon from '@mui/icons-material/FitnessCenterOutlined';
 
 interface Training {
   id: string;
@@ -576,7 +575,7 @@ export default function TrainingsPage() {
         setShowModal={setShowModal}
         pageTitle="Antrenmanlar"
         pageDescription="Tüm antrenmanları görüntüleyebilir ve yönetebilirsiniz."
-        pageIcon={<Dumbbell />}
+        pageIcon={<FitnessCenterOutlinedIcon />}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -728,7 +727,7 @@ export default function TrainingsPage() {
                     <th className="text-left p-4 font-medium text-gray-700">Konum</th>
                     <th className="text-left p-4 font-medium text-gray-700">Katılım</th>
                     <th className="text-left p-4 font-medium text-gray-700">Durum</th>
-                    <th className="text-left p-4 font-medium text-gray-700">İşlemler</th>
+                    <th className="text-center p-4 font-medium text-gray-700">İşlemler</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -801,26 +800,12 @@ export default function TrainingsPage() {
                         </span>
                       </td>
                       <td className="p-4">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleViewDetails(training)}
-                            className="text-slate-400 hover:text-slate-700 p-1"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleEdit(training)}
-                            className="text-blue-400 hover:text-blue-700 p-1"
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(training)}
-                            className="text-red-400 hover:text-red-700 p-1"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
+                        <IconButtons
+                        item={training}
+                        onEdit={() => handleEdit(training)}
+                        onDelete={() => handleDelete(training)}
+                        onViewDetails={() => handleViewDetails(training)}
+                      />
                       </td>
                     </tr>
                   ))}
@@ -909,13 +894,12 @@ export default function TrainingsPage() {
       </div>
 
       {typeof document !== 'undefined' && createPortal(
-        <BasicModal className='max-w-3xl' open={showModal} onClose={() => resetForm()}>
+        <EditModal className='max-w-3xl' open={showModal} onClose={() => resetForm()} onSubmit={() => handleSubmit} editing={!!editingTraining}>
           <ModalTitle
-            modalTitle={editingTraining ? 'Antrenmanı Düzenle' : 'Yeni Antrenman Ekle'}
-            onClose={resetForm}
+            modalTitle={editingTraining ? 'Antrenmanı Güncelle' : 'Yeni Antrenman Ekle'}
           />
 
-          <form onSubmit={handleSubmit} className="space-y-6 max-h-[70vh] overflow-y-auto">
+          <div className="space-y-6 max-h-[70vh] overflow-y-auto">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1169,188 +1153,144 @@ export default function TrainingsPage() {
                 )}
               </div>
             </div>
-
-            <div className="flex justify-end gap-3 pt-6 border-t">
-              <button
-                type="button"
-                onClick={resetForm}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-              >
-                İptal
-              </button>
-              <button
-                type="submit"
-                className="flex-1 px-4 py-2 text-white rounded-md bg-gradient-to-r from-blue-500 to-purple-600"
-              >
-                {editingTraining ? 'Güncelle' : 'Ekle'}
-              </button>
-            </div>
-          </form>
-        </BasicModal>,
+          </div>
+        </EditModal>,
         document.body
       )}
 
       {showDetailsModal && selectedTraining && createPortal(
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-[9999] p-4">
-          <div className="bg-white rounded-2xl p-8 w-full max-w-2xl shadow-2xl border border-gray-100">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Antrenman Detayları</h2>
-              <button
-                onClick={() => setShowDetailsModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="h-6 w-6" />
-              </button>
+        <EditModal className='max-w-3xl' open={showDetailsModal} onClose={() => {resetForm(); setShowDetailsModal(false)}} onSubmit={() => handleSubmit} cancelLabel="Kapat" editLabel="Düzenle" onEdit={()=> {handleEdit(selectedTraining); setShowDetailsModal(false);}}>
+          <ModalTitle
+            modalTitle={'Antrenman Detayları'}
+          />
+          <div className="space-y-6 max-h-[70vh] overflow-y-auto">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <Dumbbell className="h-8 w-8 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">{selectedTraining.name}</h3>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedTraining.status)}`}>
+                  {getStatusText(selectedTraining.status)}
+                </span>
+              </div>
             </div>
 
-            <div className="space-y-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-blue-100 rounded-lg">
-                  <Dumbbell className="h-8 w-8 text-blue-600" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900">{selectedTraining.name}</h3>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedTraining.status)}`}>
-                    {getStatusText(selectedTraining.status)}
-                  </span>
-                </div>
+            {selectedTraining.description && (
+              <div>
+                <h4 className="font-medium text-gray-700 mb-2">Açıklama</h4>
+                <p className="text-gray-600">{selectedTraining.description}</p>
               </div>
+            )}
 
-              {selectedTraining.description && (
-                <div>
-                  <h4 className="font-medium text-gray-700 mb-2">Açıklama</h4>
-                  <p className="text-gray-600">{selectedTraining.description}</p>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-medium text-gray-700 mb-2">Tarih ve Saat</h4>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <Calendar className="h-4 w-4" />
-                      <span>{new Date(selectedTraining.date).toLocaleDateString('tr-TR')}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <Clock className="h-4 w-4" />
-                      <span>{selectedTraining.startTime} - {selectedTraining.endTime}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="font-medium text-gray-700 mb-2">Konum</h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <h4 className="font-medium text-gray-700 mb-2">Tarih ve Saat</h4>
+                <div className="space-y-1">
                   <div className="flex items-center gap-2 text-gray-600">
-                    <MapPin className="h-4 w-4" />
-                    <span>{selectedTraining.location}</span>
+                    <Calendar className="h-4 w-4" />
+                    <span>{new Date(selectedTraining.date).toLocaleDateString('tr-TR')}</span>
                   </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-medium text-gray-700 mb-2">Eğitmen</h4>
-                  <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
-                      <User className="h-4 w-4 text-gray-600" />
-                    </div>
-                    <span className="text-gray-600">{selectedTraining.trainerName}</span>
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <Clock className="h-4 w-4" />
+                    <span>{selectedTraining.startTime} - {selectedTraining.endTime}</span>
                   </div>
-                </div>
-
-                <div>
-                  <h4 className="font-medium text-gray-700 mb-2">Grup</h4>
-                  <p className="text-gray-600">{selectedTraining.groupName}</p>
-                  <p className="text-sm text-gray-500">{selectedTraining.branchName}</p>
                 </div>
               </div>
 
               <div>
-                <h4 className="font-medium text-gray-700 mb-2">Katılım Durumu</h4>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-gray-600">Mevcut / Maksimum</span>
-                    <span className="font-medium">
-                      {selectedTraining.currentParticipants} / {selectedTraining.maxParticipants}
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-3">
-                    <div
-                      className="bg-blue-600 h-3 rounded-full transition-all"
-                      style={{ width: `${(selectedTraining.currentParticipants / selectedTraining.maxParticipants) * 100}%` }}
-                    />
-                  </div>
-                  <p className="text-sm text-gray-500 mt-2">
-                    %{Math.round((selectedTraining.currentParticipants / selectedTraining.maxParticipants) * 100)} dolu
-                  </p>
+                <h4 className="font-medium text-gray-700 mb-2">Konum</h4>
+                <div className="flex items-center gap-2 text-gray-600">
+                  <MapPin className="h-4 w-4" />
+                  <span>{selectedTraining.location}</span>
                 </div>
-              </div>
-
-              {selectedTraining.isRecurring && selectedTraining.recurringDays && selectedTraining.recurringDays.length > 0 && (
-                <div>
-                  <h4 className="font-medium text-gray-700 mb-3">🔄 Tekrarlama Bilgileri</h4>
-                  <div className="space-y-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <div>
-                      <span className="text-sm text-gray-600 font-medium">📅 Tekrarlanan Günler:</span>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {selectedTraining.recurringDays.map((day) => (
-                          <span key={day} className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-sm font-medium">
-                            {day}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-
-                    {selectedTraining.recurringCount && (
-                      <div>
-                        <span className="text-sm text-gray-600 font-medium">⏱️ Tekrarlama Süresi: </span>
-                        <span className="text-sm text-gray-900 font-semibold">
-                          {selectedTraining.recurringCount} {selectedTraining.recurringType === 'weeks' ? 'Hafta' : 'Ay'}
-                        </span>
-                      </div>
-                    )}
-
-                    {selectedTraining.recurringEndDate && (
-                      <div>
-                        <span className="text-sm text-gray-600 font-medium">📆 Bitiş Tarihi: </span>
-                        <span className="text-sm text-gray-900 font-semibold">
-                          {new Date(selectedTraining.recurringEndDate).toLocaleDateString('tr-TR')}
-                        </span>
-                      </div>
-                    )}
-
-                    {'parentId' in selectedTraining && (
-                      <div className="pt-2 border-t border-blue-200">
-                        <span className="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-sm font-medium">
-                          🤖 Bu antrenman otomatik olarak oluşturulmuştur
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <div className="flex justify-end gap-3 pt-6 border-t">
-                <button
-                  onClick={() => setShowDetailsModal(false)}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                >
-                  Kapat
-                </button>
-                <button
-                  onClick={() => {
-                    handleEdit(selectedTraining);
-                    setShowDetailsModal(false);
-                  }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-                >
-                  <Edit2 className="h-4 w-4" />
-                  Düzenle
-                </button>
               </div>
             </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <h4 className="font-medium text-gray-700 mb-2">Eğitmen</h4>
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
+                    <User className="h-4 w-4 text-gray-600" />
+                  </div>
+                  <span className="text-gray-600">{selectedTraining.trainerName}</span>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-medium text-gray-700 mb-2">Grup</h4>
+                <p className="text-gray-600">{selectedTraining.groupName}</p>
+                <p className="text-sm text-gray-500">{selectedTraining.branchName}</p>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="font-medium text-gray-700 mb-2">Katılım Durumu</h4>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-gray-600">Mevcut / Maksimum</span>
+                  <span className="font-medium">
+                    {selectedTraining.currentParticipants} / {selectedTraining.maxParticipants}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div
+                    className="bg-blue-600 h-3 rounded-full transition-all"
+                    style={{ width: `${(selectedTraining.currentParticipants / selectedTraining.maxParticipants) * 100}%` }}
+                  />
+                </div>
+                <p className="text-sm text-gray-500 mt-2">
+                  %{Math.round((selectedTraining.currentParticipants / selectedTraining.maxParticipants) * 100)} dolu
+                </p>
+              </div>
+            </div>
+
+            {selectedTraining.isRecurring && selectedTraining.recurringDays && selectedTraining.recurringDays.length > 0 && (
+              <div>
+                <h4 className="font-medium text-gray-700 mb-3">🔄 Tekrarlama Bilgileri</h4>
+                <div className="space-y-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <div>
+                    <span className="text-sm text-gray-600 font-medium">📅 Tekrarlanan Günler:</span>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {selectedTraining.recurringDays.map((day) => (
+                        <span key={day} className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-sm font-medium">
+                          {day}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {selectedTraining.recurringCount && (
+                    <div>
+                      <span className="text-sm text-gray-600 font-medium">⏱️ Tekrarlama Süresi: </span>
+                      <span className="text-sm text-gray-900 font-semibold">
+                        {selectedTraining.recurringCount} {selectedTraining.recurringType === 'weeks' ? 'Hafta' : 'Ay'}
+                      </span>
+                    </div>
+                  )}
+
+                  {selectedTraining.recurringEndDate && (
+                    <div>
+                      <span className="text-sm text-gray-600 font-medium">📆 Bitiş Tarihi: </span>
+                      <span className="text-sm text-gray-900 font-semibold">
+                        {new Date(selectedTraining.recurringEndDate).toLocaleDateString('tr-TR')}
+                      </span>
+                    </div>
+                  )}
+
+                  {'parentId' in selectedTraining && (
+                    <div className="pt-2 border-t border-blue-200">
+                      <span className="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-sm font-medium">
+                        🤖 Bu antrenman otomatik olarak oluşturulmuştur
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
-        </div>,
+        </EditModal>,
         document.body
       )}
     </div>

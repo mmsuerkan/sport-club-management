@@ -6,6 +6,14 @@ import { useState, useEffect } from 'react';
 import { collection, getDocs, query, where, orderBy, limit, onSnapshot, addDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import Loading from '@/components/loading';
+import SchoolOutlinedIcon from '@mui/icons-material/SchoolOutlined';
+import Diversity3OutlinedIcon from '@mui/icons-material/Diversity3Outlined';
+import CreditCardOutlinedIcon from '@mui/icons-material/CreditCardOutlined';
+import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined';
+import CachedOutlinedIcon from '@mui/icons-material/CachedOutlined';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EventOutlinedIcon from '@mui/icons-material/EventOutlined';
+import { Button } from '@mui/material';
 
 interface DashboardStats {
   totalMembers: number;
@@ -141,27 +149,27 @@ export default function DashboardPage() {
           title="Toplam Öğrenci"
           value={stats.totalMembers.toString()}
           change={stats.totalMembers > 0 ? Math.floor(stats.totalMembers * 0.1) : 0}
-          icon={<Users size={20} />}
+          icon={<SchoolOutlinedIcon />}
           color="blue"
         />
         <StatCard
           title="Aktif Grup"
           value={stats.activeTrainings.toString()}
           change={stats.activeTrainings > 0 ? Math.floor(stats.activeTrainings * 0.2) : 0}
-          icon={<Calendar size={20} />}
+          icon={<Diversity3OutlinedIcon />}
           color="green"
         />
         <StatCard
           title="Tahmini Aylık Gelir"
           value={`₺${stats.monthlyRevenue.toLocaleString('tr-TR')}`}
           change={stats.totalMembers > 0 ? 15 : 0}
-          icon={<DollarSign size={20} />}
+          icon={<CreditCardOutlinedIcon />}
           color="purple"
         />
         <StatCard
           title="Kayıtlı Maç"
           value={stats.upcomingTournaments.toString()}
-          icon={<Trophy size={20} />}
+          icon={<CalendarMonthOutlinedIcon />}
           color="orange"
         />
       </div>
@@ -171,21 +179,21 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-base font-semibold text-gray-900">Son Aktiviteler</h2>
             <div className="flex items-center gap-2">
-              <button
+              <Button
                 onClick={refreshActivities}
                 className="p-1 hover:bg-gray-100 rounded transition-colors"
                 title="Yenile"
               >
-                <RefreshCw size={16} className="text-gray-500" />
-              </button>
-              <button
+                <CachedOutlinedIcon className="text-gray-500 !text-lg" />
+              </Button>
+              {/* <Button
                 onClick={clearActivities}
                 className="p-1 hover:bg-gray-100 rounded transition-colors"
                 title="Temizle"
               >
-                <Trash2 size={16} className="text-gray-500" />
-              </button>
-              <Activity className="text-gray-400" size={18} />
+                <DeleteIcon className="text-gray-500 !text-lg" />
+              </Button>
+              <Activity className="text-gray-400" size={18} /> */}
             </div>
           </div>
           <div className="space-y-2">
@@ -217,7 +225,7 @@ export default function DashboardPage() {
         <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-base font-semibold text-gray-900">Yaklaşan Etkinlikler</h2>
-            <Calendar className="text-gray-400" size={18} />
+            <EventOutlinedIcon className="!text-lg" />
           </div>
           <div className="space-y-2">
             {stats.upcomingTournaments > 0 ? (

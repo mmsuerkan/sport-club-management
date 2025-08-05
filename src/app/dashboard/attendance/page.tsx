@@ -14,6 +14,8 @@ import { format, isToday, isPast, isFuture } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import PageTitle from '@/components/page-title';
+import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
 
 interface Training {
   id: string;
@@ -54,6 +56,7 @@ interface AttendanceRecord {
   status: 'present' | 'absent' | 'late' | 'excused';
   notes: string;
   createdAt: Date;
+
 }
 
 interface AttendanceSession {
@@ -430,16 +433,14 @@ export default function AttendancePage() {
   const stats = getTrainingStats();
 
   return (
-    <div className="container mx-auto py-6 px-4">
-      {/* Başlık */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Yoklama Yönetimi</h1>
-        <p className="text-muted-foreground mt-1">
-          {isTrainer(userData) 
+    <div>
+      <PageTitle
+        pageTitle="Yoklama Takip"
+        pageDescription={isTrainer(userData) 
             ? 'Antrenmanlarınız için yoklama alın ve görüntüleyin' 
             : 'Tüm antrenmanlar için yoklama kayıtlarını yönetin'}
-        </p>
-      </div>
+        pageIcon={<FactCheckOutlinedIcon />}
+      />
 
       {/* İstatistik Kartları */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
